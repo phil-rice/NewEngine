@@ -1,0 +1,100 @@
+package org.cddcore.engine
+
+import org.junit.runner.RunWith
+import scala.language.implicitConversions
+import org.scalatest.junit.JUnitRunner
+
+abstract class LensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] {
+  implicit def toSome[X](x: X) = Some(x)
+
+  val s0 = Scenario[Params, BFn, R, RFn](params(0))
+  val s1 = Scenario[Params, BFn, R, RFn](params(1))
+
+  val uc = UseCase[R, RFn]()
+  val ucS0 = UseCase[R, RFn](nodes = List(s0))
+  val ucS1 = UseCase[R, RFn](nodes = List(s1))
+  val uc1 = UseCase[R, RFn](title = Some("UC1"))
+
+  val ed = EngineDescription[R, RFn]()
+  val ed1 = EngineDescription[R, RFn](title = Some("ED1"))
+  val edUc = EngineDescription[R, RFn](nodes = List(uc))
+  val edUc1 = EngineDescription[R, RFn](nodes = List(uc1))
+  val edUcS0 = EngineDescription[R, RFn](nodes = List(ucS0))
+  val edUcS1 = EngineDescription[R, RFn](nodes = List(ucS1))
+  val edUc1UcS0 = EngineDescription[R, RFn](nodes = List(ucS0, uc))
+  val edUc1UcS1 = EngineDescription[R, RFn](nodes = List(ucS1, uc))
+
+  val builderEd = initializeBuilder(List(ed))
+  val builderEd1 = initializeBuilder(List(ed1))
+  val builderEdUc = initializeBuilder(List(edUc))
+  val builderEdUc1 = initializeBuilder(List(edUc1))
+  val builderEdUcS0 = initializeBuilder(List(edUcS0))
+  val builderEdUcS1 = initializeBuilder(List(edUcS1))
+  val builderEdUc1UcS0 = initializeBuilder(List(edUc1UcS0))
+  val builderEdUc1UcS1 = initializeBuilder(List(edUc1UcS1))
+  val lens = currentBuilder.bl
+
+  s"$builderName with currentNodeL" should "focus on the engine description if no deeper nodes" in {
+    assertEquals(ed, lens.currentNodeL.get(builderEd))
+    assertEquals(ed1, lens.currentNodeL.get(builderEd1))
+
+    assertEquals(builderEd1, lens.currentNodeL.set(builderEd, ed1))
+  }
+
+  it should "focus on the deepest child... checking builder / enginedescription / usecase" in {
+    assertEquals(uc, lens.currentNodeL.get(builderEdUc))
+    assertEquals(uc1, lens.currentNodeL.get(builderEdUc1))
+
+    assertEquals(builderEdUc1, lens.currentNodeL.set(builderEdUc, uc1))
+  }
+
+  it should "focus on the deepest child... checking builder / enginedescription / usecase (two of) / scenario" in {
+    assertEquals(s0, lens.currentNodeL.get(builderEdUcS0))
+    assertEquals(s1, lens.currentNodeL.get(builderEdUcS1))
+    assertEquals(s0, lens.currentNodeL.get(builderEdUc1UcS0))
+    assertEquals(s1, lens.currentNodeL.get(builderEdUc1UcS1))
+
+    assertEquals(builderEdUcS1, lens.currentNodeL.set(builderEdUcS0, s1))
+    assertEquals(builderEdUc1UcS1, lens.currentNodeL.set(builderEdUc1UcS0, s1))
+  }
+
+  s"$builderName with nextUseCaseHolderL" should "focus on the engine description if no deeper nodes" in {
+    assertEquals(ed, lens.nextUseCaseHolderL.get(builderEd))
+    assertEquals(ed1, lens.nextUseCaseHolderL.get(builderEd1))
+
+    assertEquals(builderEd1, lens.nextUseCaseHolderL.set(builderEd, ed1))
+  }
+
+  it should "focus on the engine description if a use case is the bottom item" in {
+    assertEquals(edUc, lens.nextUseCaseHolderL.get(builderEdUc))
+
+    assertEquals(builderEd1, lens.nextUseCaseHolderL.set(builderEdUc, ed1))
+  }
+  it should "focus on the engine description if ed / usecase / scenario is the bottom item" in {
+    assertEquals(edUc1UcS0, lens.nextUseCaseHolderL.get(builderEdUc1UcS0))
+
+    assertEquals(builderEd1, lens.nextUseCaseHolderL.set(builderEdUc1UcS1, ed1))
+  }
+
+}
+
+abstract class Lens1Test[P, R] extends LensTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
+abstract class Lens2Test[P1, P2, R] extends LensTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
+abstract class Lens3Test[P1, P2, P3, R] extends LensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
+
+@RunWith(classOf[JUnitRunner])
+class LensStringIntTest extends Lens1Test[String, Int] with StringIntTest
+
+@RunWith(classOf[JUnitRunner])
+class LensStringStringTest extends Lens1Test[String, String] with StringStringTest
+
+@RunWith(classOf[JUnitRunner])
+class LensStringStringStringTest extends Lens2Test[String, String, String] with StringStringStringTest
+
+@RunWith(classOf[JUnitRunner])
+class LensStringStringStringStringTest extends Lens3Test[String, String, String, String] with StringStringStringStringTest
+
+object LensTest {
+  def main(args: Array[String]) {
+  }
+}
