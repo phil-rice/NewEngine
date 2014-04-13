@@ -47,6 +47,7 @@ case class EngineNodeAndHolderForTest[R, RFn](
 }
 
 class RequirementTest
+
 @RunWith(classOf[JUnitRunner])
 class EngineHolderTest extends AbstractTest {
   implicit def toSome[X](x: X) = Some(x)

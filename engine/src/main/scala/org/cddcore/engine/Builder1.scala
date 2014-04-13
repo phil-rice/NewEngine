@@ -39,14 +39,14 @@ object Builder1 {
   }
 }
 
-case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R])) extends Builder[R, (P) => R, Builder1[P, R]] with BuilderWithModifyChildrenForBuild[R, (P)=>R]{
+case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R])) extends Builder[R, (P) => R, Builder1[P, R]] with BuilderWithModifyChildrenForBuild[R, (P) => R] {
   val bl1 = Builder1.bl[P, R]()
   import bl1._
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
- 
+
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
-  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title)) :: nodes)
+  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title)) :: nodes)
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
     currentNodeL.andThen(codeL).set(withBecause, None)
@@ -59,9 +59,9 @@ trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] w
   def makeResultClosure(p: P): ResultClosure = (rfn) => rfn(p)
 }
 
-trait DecisionTree1[P, R] extends DecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
+case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) extends DecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
+  val lens = new DecisionTreeLens1[P, R]((r) => new Engine1(root))
   def apply(p: P) = evaluate(root, p)
 }
 
-case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) extends Engine[P, (P) => Boolean, R, (P) => R] with DecisionTree1[P, R];
 

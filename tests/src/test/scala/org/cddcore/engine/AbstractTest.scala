@@ -49,6 +49,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engi
   protected def resultCodeHolder(seed: Int): CodeHolder[RFn]
 
   protected def buildImpl(b: B): E;
+  def defaultRoot: DecisionTreeNode[Params, BFn, R, RFn]
   def build: E = buildImpl(builder)
   def resetBuilder = builder = initializeBuilder()
   def params(seed: Int): Params
@@ -91,7 +92,8 @@ trait Builder1Test[P, R] extends BuilderTest[P, (P) => Boolean, R, (P) => R, Bui
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p) => result(seed), s"(p)=>result$seed")
   protected def scenarioObject(p: P) = Scenario[P, (P) => Boolean, R, (P) => R](p)
 
-  protected def buildImpl(b: Builder1[P, R]) = ???
+  protected def buildImpl(b: Builder1[P, R]) = BuildEngine.build1(currentBuilder)
+  def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
 }
 
 trait Builder2Test[P1, P2, R] extends BuilderTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] {
@@ -99,7 +101,8 @@ trait Builder2Test[P1, P2, R] extends BuilderTest[(P1, P2), (P1, P2) => Boolean,
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2) => result(seed), s"(p1,p2)=>result$seed")
   protected def scenarioObject(p: (P1, P2)) = Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](p)
-  def buildImpl(b: Builder2[P1, P2, R]) = ???
+  protected def buildImpl(b: Builder2[P1, P2, R]) = BuildEngine.build2(currentBuilder)
+  def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
 }
 
 trait Builder3Test[P1, P2, P3, R] extends BuilderTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] {
@@ -107,5 +110,6 @@ trait Builder3Test[P1, P2, P3, R] extends BuilderTest[(P1, P2, P3), (P1, P2, P3)
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2, p3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
   protected def scenarioObject(p: (P1, P2, P3)) = Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](p)
-  protected def buildImpl(b: Builder3[P1, P2, P3, R]) = ???
+  protected def buildImpl(b: Builder3[P1, P2, P3, R]) = BuildEngine.build3(currentBuilder)
+  def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
 }

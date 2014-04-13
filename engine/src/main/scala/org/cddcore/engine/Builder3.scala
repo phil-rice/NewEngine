@@ -59,6 +59,7 @@ trait EvaluateTree3[P1, P2, P3, R] extends EvaluateTree[(P1, P2, P3), (P1, P2, P
   def makeResultClosure(params: (P1, P2, P3)): ResultClosure = ((rfn) => rfn(params._1, params._2, params._3))
 }
 
-trait DecisionTree3[P1, P2, P3, R] extends DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] with EvaluateTree3[P1, P2, P3, R] with Function3[P1, P2, P3, R] {
+case class Engine3[P1, P2, P3, R](root: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) extends DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] with EvaluateTree3[P1, P2, P3, R] with Function3[P1, P2, P3, R] {
   def apply(p1: P1, p2: P2, p3: P3) = evaluate(root, (p1, p2, p3))
+  val lens = new DecisionTreeLens3[P1, P2, P3, R]((r) => new Engine3(root))
 }

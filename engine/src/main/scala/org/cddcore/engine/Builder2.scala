@@ -42,7 +42,7 @@ object Builder2 {
     }
   }
 }
-case class Builder2[P1, P2, R](nodes: List[EngineNode[R, (P1, P2) => R]] = List(new EngineDescription[R, (P1, P2) => R])) extends Builder[R, (P1, P2) => R, Builder2[P1, P2, R]] with BuilderWithModifyChildrenForBuild[R, (P1, P2)=>R]{
+case class Builder2[P1, P2, R](nodes: List[EngineNode[R, (P1, P2) => R]] = List(new EngineDescription[R, (P1, P2) => R])) extends Builder[R, (P1, P2) => R, Builder2[P1, P2, R]] with BuilderWithModifyChildrenForBuild[R, (P1, P2) => R] {
   val bl2 = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
   import bl2._
 
@@ -59,6 +59,7 @@ trait EvaluateTree2[P1, P2, R] extends EvaluateTree[(P1, P2), (P1, P2) => Boolea
   def makeResultClosure(params: (P1, P2)): ResultClosure = ((rfn) => rfn(params._1, params._2))
 }
 
-trait DecisionTree2[P1, P2, R] extends DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
+case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) extends DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
+  val lens = new DecisionTreeLens2[P1, P2, R]((r) => new Engine2(root))
   def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
 }

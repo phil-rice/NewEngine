@@ -113,7 +113,3 @@ class EngineNodeConstructionStringStringStringTest extends EngineNodeConstructio
 @RunWith(classOf[JUnitRunner])
 class EngineNodeConstructionStringStringStringStringTest extends EngineNodeConstruction3Test[String, String, String, String] with StringStringStringStringTest
 
-object BuildingTest {
-  def main(args: Array[String]) {
-  }
-}
