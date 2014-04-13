@@ -40,16 +40,19 @@ trait AbstractTest extends FlatSpecLike with Matchers with AssertEquals
 trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] {
   private var builder: B = initializeBuilder()
   def update(fn: (B) => B): B = { val result = fn(builder); builder = result; result }
-  def scenario(params: Params, title: String = null) = builder = scenarioImpl(params, title)
+  def scenario(seed: Int, title: String = null) = builder = scenarioImpl(params(seed), title)
   def code(seed: Int) = update(_.codeHandler(resultCodeHolder(seed)))
   def currentBuilder: B = builder
   def initializeBuilder(nodes: List[EngineNode[R, RFn]] = List(new EngineDescription[R, RFn])): B
   protected def scenarioImpl(params: Params, title: String): B
+  protected def scenarioObject(params: Params): Scenario[Params, BFn, R, RFn]
   protected def resultCodeHolder(seed: Int): CodeHolder[RFn]
 
   protected def buildImpl(b: B): E;
   def build: E = buildImpl(builder)
   def resetBuilder = builder = initializeBuilder()
+  def params(seed: Int): Params
+  def result(seed: Int): R
 }
 
 trait BuilderTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends AbstractTest with BeforeAndAfter with BuilderBeingTested[Params, BFn, R, RFn, B, E] {
@@ -57,8 +60,6 @@ trait BuilderTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Para
     resetBuilder
   }
   def builderName: String
-  def params(seed: Int): Params
-  def result(seed: Int): R
 }
 
 trait StringStringTest {
@@ -88,6 +89,8 @@ trait Builder1Test[P, R] extends BuilderTest[P, (P) => Boolean, R, (P) => R, Bui
   def initializeBuilder(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p) => result(seed), s"(p)=>result$seed")
+  protected def scenarioObject(p: P) = Scenario[P, (P) => Boolean, R, (P) => R](p)
+
   protected def buildImpl(b: Builder1[P, R]) = ???
 }
 
@@ -95,6 +98,7 @@ trait Builder2Test[P1, P2, R] extends BuilderTest[(P1, P2), (P1, P2) => Boolean,
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2) => result(seed), s"(p1,p2)=>result$seed")
+  protected def scenarioObject(p: (P1, P2)) = Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](p)
   def buildImpl(b: Builder2[P1, P2, R]) = ???
 }
 
@@ -102,5 +106,6 @@ trait Builder3Test[P1, P2, P3, R] extends BuilderTest[(P1, P2, P3), (P1, P2, P3)
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2, p3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
+  protected def scenarioObject(p: (P1, P2, P3)) = Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](p)
   protected def buildImpl(b: Builder3[P1, P2, P3, R]) = ???
 }

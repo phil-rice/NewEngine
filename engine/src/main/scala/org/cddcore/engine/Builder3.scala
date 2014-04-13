@@ -47,7 +47,7 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
   val bl3 = new BuilderLens3[P1, P2, P3, R, Builder3[P1, P2, P3, R]]
   import bl3._
 
-  def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => nodes :+ new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Some(title)))
+  def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title)) :: nodes)
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R]
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R]
   def matchWith(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchWithImpl[P1, P2, P3, R]

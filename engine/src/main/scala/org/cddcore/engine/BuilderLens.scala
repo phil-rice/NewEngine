@@ -41,8 +41,25 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     })
 
   val nextScenarioHolderL = Lens[B, EngineNodeHolder[R, RFn]](
-    (b) => b,
-    (b, n) => throw new IllegalStateException)
+    (b) => nextScenarioHolderForHolderL.get(b),
+    (b, n) => nextScenarioHolderForHolderL.set(b, n).asInstanceOf[B])
+
+  protected val nextScenarioHolderForHolderL: Lens[EngineNodeHolder[R, RFn], EngineNodeHolder[R, RFn]] = Lens[EngineNodeHolder[R, RFn], EngineNodeHolder[R, RFn]](
+    (b) => b.nodes match {
+      case (eh: EngineNodeHolder[R, RFn]) :: tail => nextScenarioHolderForHolderL.get(eh);
+      //      case (n: EngineNodeHolder[R, RFn]) :: tail => n
+      case _ => b
+    },
+    (b, n) => {
+      println(s"setting $b     to $n")
+      val result = b.nodes match {
+        case (eh: EngineNodeHolder[R, RFn]) :: tail => b.copy(nodes = nextScenarioHolderForHolderL.set(eh, n).asInstanceOf[EngineNode[R, RFn]] :: tail);
+        case _ :: tail => n
+        case Nil => n
+      }
+      println(s" result $result")
+      result
+    })
 
   val titleL = Lens[EngineNode[R, RFn], Option[String]](
     (en: EngineNode[R, RFn]) => en.title,
@@ -61,7 +78,7 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     (en: EngineNode[R, RFn], ex: Option[Either[Class[_ <: Exception], R]]) => en.copy(expected = ex))
 
   val codeL = Lens[EngineNode[R, RFn], Option[CodeHolder[RFn]]](
-      (b) => b.code, 
-      (b, cCodeHolder) => b.copy(code = cCodeHolder))
+    (b) => b.code,
+    (b, cCodeHolder) => b.copy(code = cCodeHolder))
 
 }

@@ -46,7 +46,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
  
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
-  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => nodes :+ new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Some(title)))
+  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title)) :: nodes)
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
     currentNodeL.andThen(codeL).set(withBecause, None)

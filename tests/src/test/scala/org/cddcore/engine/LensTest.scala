@@ -75,8 +75,24 @@ abstract class LensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engin
 
     assertEquals(builderEd1, lens.nextUseCaseHolderL.set(builderEdUc1UcS1, ed1))
   }
-  
-  
+//  s"$builderName with nextScenarioHolderL" should "focus on the engine description if no deeper nodes" in {
+//    assertEquals(ed, lens.nextScenarioHolderL.get(builderEd))
+//    assertEquals(ed1, lens.nextScenarioHolderL.get(builderEd1))
+//
+//    assertEquals(builderEd1, lens.nextScenarioHolderL.set(builderEd, ed1))
+//  }
+//
+//  it should "focus on a use case is a use case is the bottom item" in {
+//    assertEquals(uc, lens.nextScenarioHolderL.get(builderEdUc))
+//    assertEquals(uc1, lens.nextScenarioHolderL.get(builderEdUc1))
+//
+//    assertEquals(builderEdUc1, lens.nextScenarioHolderL.set(builderEdUc, uc1))
+//  }
+  it should "focus on a use case if a scenario under a use case is the bottom item" in {
+	  assertEquals(ucS0, lens.nextScenarioHolderL.get(builderEdUcS0))
+	  
+	  assertEquals(builderEdUc1, lens.nextScenarioHolderL.set(builderEdUcS0, uc1))
+  }
 
 }
 

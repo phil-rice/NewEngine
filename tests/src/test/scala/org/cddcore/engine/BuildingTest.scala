@@ -25,13 +25,29 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
       title = "EngineTitle",
       nodes = List(UseCase(title = "useCase1", expected = Right(result(0)))))), currentBuilder.nodes)
   }
-  it should "allow a seconduse case to be added" in {
+  it should "allow a second use case to be added" in {
     update((b) => b.title("EngineTitle").useCase("useCase1").useCase("useCase2"))
-    val ed = currentBuilder.nodes.head.asInstanceOf[EngineDescription[R, RFn]]
-    val uc = ed.nodes.head
-    assertEquals(List(EngineDescription[R, RFn](
-      title = "EngineTitle",
-      nodes = List(UseCase(title = "useCase2"), UseCase(title = "useCase1")))), currentBuilder.nodes)
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase2"), UseCase(title = "useCase1")))), currentBuilder.nodes)
+  }
+
+  it should "allow a scenario to added under an engine" in {
+    update((b) => b.title("EngineTitle"))
+    scenario(0)
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(scenarioObject(params(0))))), currentBuilder.nodes)
+
+  }
+  it should "allow a scenario to added under a usecase" in {
+    update((b) => b.title("EngineTitle").useCase("useCase1"))
+    scenario(0)
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(scenarioObject(params(0))))))), currentBuilder.nodes)
+  }
+  it should "allow a multiple scenarios to added under a usecase" in {
+    update((b) => b.title("EngineTitle").useCase("useCase1"))
+    scenario(0)
+    scenario(1)
+    scenario(2)
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(
+      scenarioObject(params(2)), scenarioObject(params(1 )), scenarioObject(params(0))))))), currentBuilder.nodes)
   }
 }
 
