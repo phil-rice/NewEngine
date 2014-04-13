@@ -11,13 +11,13 @@ object BuildEngine {
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] =
     new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
 
-  private def build[Params, BFn, R, RFn, B <: Builder[R, RFn, B]](builder: Builder[R, RFn, B], dt: DecisionTree[Params, BFn, R, RFn]) ={ 
+  private def build[Params, BFn, R, RFn, B <: Builder[R, RFn, B]](builder: Builder[R, RFn, B], dt: DecisionTree[Params, BFn, R, RFn]) = {
     val modifiedChildren = builder.asInstanceOf[BuilderWithModifyChildrenForBuild[R, RFn]].modifyChildrenForBuild
     val scenarios = modifiedChildren.all(classOf[Scenario[Params, BFn, R, RFn]])
-    val newDecisionTree= scenarios.foldLeft(dt)((dt,s) => addScenario(dt, s))
+    val newDecisionTree = scenarios.foldLeft(dt)((dt, s) => addScenario(dt, s))
     newDecisionTree
   }
-    
+
   def build1[P, R](builder: Builder1[P, R]) =
     build(builder, new Engine1(defaultRoot[P, (P) => Boolean, R, (P) => R](defaultRootCode1[P, R]), rootIsDefault = true)).asInstanceOf[Engine1[P, R]]
   def build2[P1, P2, R](builder: Builder2[P1, P2, R]) =
@@ -27,16 +27,17 @@ object BuildEngine {
 
   def addScenario[Params, BFn, R, RFn](tree: DecisionTree[Params, BFn, R, RFn], s: Scenario[Params, BFn, R, RFn]): DecisionTree[Params, BFn, R, RFn] = {
     val bc = tree.makeBecauseClosure(s.params)
+    val newConclusion = Conclusion(List(s), code = s.actualCode(tree.expectedToCode))
     val newRoot = (tree.rootIsDefault, tree.findParentLens(bc)) match {
-      case (true, None) => 
-        Conclusion(List(s), code = s.actualCode(tree.expectedToCode))
+      case (true, None) =>
+        newConclusion
       case (false, None) =>
-        tree.root
+        Decision(List(s.because.get), yes = newConclusion, no=tree.root,  scenarioThatCausedNode = s)
       case (_, Some((parentLens, wasTrue))) =>
         tree.root
     }
-   val result = tree.lens.creator(newRoot)
-   result
+    val result = tree.lens.creator(newRoot)
+    result
   }
 }
 

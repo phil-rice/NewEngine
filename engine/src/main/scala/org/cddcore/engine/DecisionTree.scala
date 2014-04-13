@@ -64,7 +64,7 @@ sealed trait DecisionTreeNode[Params, BFn, R, RFn] {
 
 case class Conclusion[Params, BFn, R, RFn](scenarios: List[Scenario[Params, BFn, R, RFn]], code: CodeHolder[RFn]) extends DecisionTreeNode[Params, BFn, R, RFn]
 
-case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], inputs: Params, yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn]) extends DecisionTreeNode[Params, BFn, R, RFn] {
+case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]],  yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn]) extends DecisionTreeNode[Params, BFn, R, RFn] {
   def scenarios = yes.scenarios ++ no.scenarios
   def isTrue(bc: (BFn) => Boolean) = because.foldLeft(false)((acc, ch) => acc || bc(ch.fn))
 }
