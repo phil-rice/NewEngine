@@ -26,22 +26,25 @@ class DecisionTreeLens3[P1, P2, P3, R](val creator: (DecisionTreeNode[(P1, P2, P
 
 trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn] with Engine[Params, BFn, R, RFn] {
   def root: DTN
+  def rootIsDefault: Boolean
+  def expectedToCode: (Either[Class[_ <: Exception], R]) => CodeHolder[RFn]
   val lens: DecisionTreeLens[Params, BFn, R, RFn]
+  
   import lens._
 
-  type LensToHere = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
+  type LensToNode = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
 
   def findParentLens(bc: BecauseClosure) = findParentLensPrim(root, bc, rootL, None)
 
-  protected def addStep(node: Decision[Params, BFn, R, RFn], bc: BecauseClosure, lensToNode: LensToHere) = node.isTrue(bc) match {
+  protected def addStep(node: Decision[Params, BFn, R, RFn], bc: BecauseClosure, lensToNode: LensToNode) = node.isTrue(bc) match {
     case true => lensToNode.andThen(toDecisionL).andThen(yesL)
     case false => lensToNode.andThen(toDecisionL).andThen(noL)
   }
 
-  protected def findParentLensPrim(root: DTN, bc: BecauseClosure, parentSoFar: LensToHere, parentWasTrue: Option[Boolean]): Option[LensToHere] = {
+  protected def findParentLensPrim(root: DTN, bc: BecauseClosure, parentSoFar: LensToNode, parentWasTrue: Option[Boolean]): Option[(LensToNode, Boolean)] = {
     (parentWasTrue, root) match {
       case (None, c: Conclusion[Params, BFn, R, RFn]) => None //There is no parent
-      case (Some(pWasTrue), c: Conclusion[Params, BFn, R, RFn]) => Some(parentSoFar) // and sadly we waste an evaluation
+      case (Some(pWasTrue), c: Conclusion[Params, BFn, R, RFn]) => Some((parentSoFar, pWasTrue)) 
       case (Some(pWasTrue), d: Decision[Params, BFn, R, RFn]) =>
         val toHere = pWasTrue match {
           case true => parentSoFar.andThen(toDecisionL).andThen(yesL)

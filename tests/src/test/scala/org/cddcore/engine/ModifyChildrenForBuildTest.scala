@@ -12,18 +12,18 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
   "Scenarios when modifiedForBuild" should "inherit priority from parent if not defined" in {
     update(_.priority(2).useCase("UC").priority(1))
     scenario(0)
-    assertEquals(List(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(
-        scenarioObject(params(0)).copyRequirement(priority = 1)))))),
+        scenarioObject(params(0)).copyRequirement(priority = 1))))))),
       currentBuilder.modifyChildrenForBuild)
   }
   it should "use own priority if defined" in {
     update(_.priority(2).useCase("UC").priority(1))
     scenario(0)
     update(_.priority(3))
-    assertEquals(List(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(
-        scenarioObject(params(0)).copyRequirement(priority = 3)))))),
+        scenarioObject(params(0)).copyRequirement(priority = 3))))))),
       currentBuilder.modifyChildrenForBuild)
   }
 
@@ -31,9 +31,9 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     update(_.expected(result(2)).useCase("UC").expected(result(1)))
     scenario(0)
 
-    assertEquals(List(EngineDescription[R, RFn](expected = Right(result(2)), nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](expected = Right(result(2)), nodes = List(
       UseCase(title = "UC", expected = Right(result(1)), nodes = List(
-        scenarioObject(params(0)).copyEngineNode(expected = Right(result(1)))))))),
+        scenarioObject(params(0)).copyEngineNode(expected = Right(result(1))))))))),
       currentBuilder.modifyChildrenForBuild)
   }
 
@@ -41,9 +41,9 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     update(_.expected(result(2)).useCase("UC").expected(result(1)))
     scenario(0)
     update(_.expected(result(4)))
-    assertEquals(List(EngineDescription[R, RFn](expected = Right(result(2)), nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](expected = Right(result(2)), nodes = List(
       UseCase(title = "UC", expected = Right(result(1)), nodes = List(
-        scenarioObject(params(0)).copyEngineNode(expected = Right(result(4)))))))),
+        scenarioObject(params(0)).copyEngineNode(expected = Right(result(4))))))))),
       currentBuilder.modifyChildrenForBuild)
   }
   it should "inherit code from parent if not defined" in {
@@ -52,9 +52,9 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     code(2)
     scenario(0)
 
-    assertEquals(List(EngineDescription[R, RFn](code = resultCodeHolder(1), nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder(1), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder(2), nodes = List(
-        scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(2))))))),
+        scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(2)))))))),
       currentBuilder.modifyChildrenForBuild)
   }
 
@@ -65,19 +65,19 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     scenario(0)
     code(3)
 
-    assertEquals(List(EngineDescription[R, RFn](code = resultCodeHolder(1), nodes = List(
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder(1), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder(2), nodes = List(
-        scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(3))))))),
+        scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(3)))))))),
       currentBuilder.modifyChildrenForBuild)
   }
 
   it should "sort children by initially order they were defined in, but by priority if specified" in {
     update(_.useCase("UC1").priority(1).useCase("UC2").priority(2).useCase("UC3").useCase("UC4"))
-    assertEquals(List(EngineDescription[R, RFn]( nodes = List(
-      UseCase(title = "UC2",priority=2),
-      UseCase(title = "UC1",priority=1),
+    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](nodes = List(
+      UseCase(title = "UC2", priority = 2),
+      UseCase(title = "UC1", priority = 1),
       UseCase(title = "UC3"),
-      UseCase(title = "UC4")))),
+      UseCase(title = "UC4"))))),
       currentBuilder.modifyChildrenForBuild)
   }
 

@@ -27,8 +27,12 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
     currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))).asInstanceOf[B]
 }
 
+case class ModifedChildrenEngineNodeHolder[R, RFn](nodes: List[EngineNode[R, RFn]] = List()) extends EngineNodeHolder[R, RFn] {
+  def copyNodes(nodes: List[EngineNode[R, RFn]]) = throw new IllegalStateException
+}
+
 trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {
-  def modifyChildrenForBuild: List[EngineNode[R, RFn]] = {
+  def modifyChildrenForBuild: ModifedChildrenEngineNodeHolder[R, RFn] = {
     def modifyChildAsNode(path: List[Reportable], child: EngineNode[R, RFn]) = {
       child
     }
@@ -52,6 +56,6 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn]
     }
     def modifyChildren(path: List[Reportable], holder: EngineNodeHolder[R, RFn]): List[EngineNode[R, RFn]] =
       holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: EngineNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
-    modifyChildren(List(), this)
+   new ModifedChildrenEngineNodeHolder( modifyChildren(List(), this))
   }
 }

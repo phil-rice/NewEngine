@@ -62,7 +62,9 @@ trait EvaluateTree2[P1, P2, R] extends EvaluateTree[(P1, P2), (P1, P2) => Boolea
   def makeResultClosure(params: (P1, P2)): ResultClosure = ((rfn) => rfn(params._1, params._2))
 }
 
-case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) extends DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
-  val lens = new DecisionTreeLens2[P1, P2, R]((r) => new Engine2(root))
+case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], rootIsDefault: Boolean = false) extends DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
+  val lens = new DecisionTreeLens2[P1, P2, R]((r) => new Engine2(r))
   def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
+  val expectedToCode: Either[Class[_ <: Exception], R] => CodeHolder[(P1, P2) => R] =
+    (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
 }

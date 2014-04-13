@@ -104,6 +104,7 @@ case class Scenario[Params, BFn, R, RFn](
   def copyScenario(because: Option[CodeHolder[BFn]]) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
 
+  def actualCode(expectedToCode: (Either[Class[_ <: Exception], R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.get))
 }
 
 case class Document(

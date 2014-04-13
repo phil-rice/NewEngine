@@ -6,8 +6,8 @@ import scala.language.experimental.macros
 
 class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens[R, (P) => R, B] {
   val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]](
-    (b) => b match { case s: Scenario[P, (P) => Boolean, R, (P) => R] => s.because },
-    (b, bCodeHolder) => b match { case s: Scenario[P, (P) => Boolean, R, (P) => R] => s.copyScenario(because = bCodeHolder) })
+    (b) => b match { case s: Scenario[_, (P) => Boolean, _, _] => s.because },
+    (b, bCodeHolder) => b match { case s: Scenario[_, (P) => Boolean, _, _] => s.copyScenario(because = bCodeHolder) })
 }
 
 object Builder1 {
@@ -48,7 +48,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
 
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
-  def becauseHolder(becauseHolder: CodeHolder[(P)=> Boolean]) = currentNodeL.andThen(becauseL).set(this, Some(becauseHolder))
+  def becauseHolder(becauseHolder: CodeHolder[(P) => Boolean]) = currentNodeL.andThen(becauseL).set(this, Some(becauseHolder))
   def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title)) :: nodes)
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
@@ -62,9 +62,11 @@ trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] w
   def makeResultClosure(p: P): ResultClosure = (rfn) => rfn(p)
 }
 
-case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) extends DecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
-  val lens = new DecisionTreeLens1[P, R]((r) => new Engine1(root))
+case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R], rootIsDefault: Boolean = false) extends DecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
+  val lens = new DecisionTreeLens1[P, R]((r) =>     new Engine1(r))
   def apply(p: P) = evaluate(root, p)
+  val expectedToCode: Either[Class[_ <: Exception], R] => CodeHolder[(P) => R] =
+    (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
 }
 
 
