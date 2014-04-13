@@ -101,6 +101,8 @@ case class Scenario[Params, BFn, R, RFn](
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
   def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
+  def copyScenario(because: Option[CodeHolder[BFn]]) =
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
 
 }
 

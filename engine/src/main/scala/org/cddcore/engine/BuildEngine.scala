@@ -8,11 +8,11 @@ object BuildEngine {
     root
   }
   def defaultRootCode1[P, R]: CodeHolder[(P) => R] =
-    (p: P) => throw new UndecidedException
+    new CodeHolder((p: P) => throw new UndecidedException, "throws Undecided Exception")
   def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] =
-    (p1: P1, p2: P2) => throw new UndecidedException
+    new CodeHolder((p1: P1, p2: P2) => throw new UndecidedException, "throws Undecided Exception")
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] =
-    (p1: P1, p2: P2, p3: P3) => throw new UndecidedException
+    new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
 
   private def build[Params, BFn, R, RFn, B <: Builder[R, RFn, B]](builder: Builder[R, RFn, B], dt: DecisionTree[Params, BFn, R, RFn]) = dt
   def build1[P, R](builder: Builder1[P, R]) =

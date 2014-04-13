@@ -67,6 +67,7 @@ case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], inputs:
 }
 
 trait EvaluateTree[Params, BFn, R, RFn] {
+  def root: DecisionTreeNode[Params, BFn, R, RFn]
   type DTN = DecisionTreeNode[Params, BFn, R, RFn]
   type BecauseClosure = (BFn) => Boolean
   type ResultClosure = (RFn) => R
@@ -78,6 +79,7 @@ trait EvaluateTree[Params, BFn, R, RFn] {
   def evaluteBecause(b: BFn, params: Params): Boolean = makeBecauseClosure(params)(b)
   def evaluteResult(rfn: RFn, params: Params) = makeResultClosure(params)(rfn)
 
+  def evaluate(params: Params): R = evaluate(root, params)
   def evaluate(root: DTN, params: Params): R = {
     val bc = makeBecauseClosure(params)
     val c = findConclusion(root, bc).code

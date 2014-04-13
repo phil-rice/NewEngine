@@ -5,7 +5,9 @@ import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
 class BuilderLens2[P1, P2, R, B <: EngineNodeHolder[R, (P1, P2) => R]] extends BuilderLens[R, (P1, P2) => R, B] {
-  val becauseL = Lens[EngineNode[R, (P1, P2) => R], Option[CodeHolder[(P1, P2) => Boolean]]]((b) => None, (b, bCodeHolder) => b)
+  val becauseL = Lens[EngineNode[R, (P1, P2) => R], Option[CodeHolder[(P1, P2) => Boolean]]](
+    (b) => b match { case s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] => s.because },
+    (b, bCodeHolder) => b match { case s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] => s.copyScenario(because = bCodeHolder) })
 }
 
 object Builder2 {
@@ -48,6 +50,7 @@ case class Builder2[P1, P2, R](nodes: List[EngineNode[R, (P1, P2) => R]] = List(
 
   def code(code: (P1, P2) => R): Builder2[P1, P2, R] = macro Builder2.codeImpl[P1, P2, R]
   def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R] = macro Builder2.becauseImpl[P1, P2, R]
+  def becauseHolder(becauseHolder: CodeHolder[(P1, P2) => Boolean]) = currentNodeL.andThen(becauseL).set(this, Some(becauseHolder))
   def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R]
   def scenario(p1: P1, p2: P2, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title)) :: nodes)
   def copyNodes(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)

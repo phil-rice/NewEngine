@@ -5,7 +5,9 @@ import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
 class BuilderLens3[P1, P2, P3, R, B <: EngineNodeHolder[R, (P1, P2, P3) => R]] extends BuilderLens[R, (P1, P2, P3) => R, B] {
-  val becauseL = Lens[EngineNode[R, (P1, P2, P3) => R], Option[CodeHolder[(P1, P2, P3) => Boolean]]]((b) => None, (b, bCodeHolder) => b)
+  val becauseL = Lens[EngineNode[R, (P1, P2, P3) => R], Option[CodeHolder[(P1, P2, P3) => Boolean]]](
+    (b) => b match { case s: Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] => s.because },
+    (b, bCodeHolder) => b match { case s: Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] => s.copyScenario(because = bCodeHolder) })
 }
 
 object Builder3 {
@@ -49,6 +51,7 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
 
   def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title)) :: nodes)
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R]
+  def becauseHolder(becauseHolder: CodeHolder[(P1, P2, P3) => Boolean]) = currentNodeL.andThen(becauseL).set(this, Some(becauseHolder))
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R]
   def matchWith(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchWithImpl[P1, P2, P3, R]
   def copyNodes(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)

@@ -95,6 +95,18 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
         scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(3))))))),
       currentBuilder.nodes)
   }
+
+  it should "allow because to be added" in {
+    update(_.useCase("UC"))
+    scenario(0)
+    because(3)
+
+    assertEquals(List(EngineDescription[R, RFn](nodes = List(
+      UseCase(title = "UC", nodes = List(
+        scenarioObject(params(0)).copyScenario(because = becauseCodeHolder(3))))))),
+      currentBuilder.nodes)
+  }
+
 }
 
 abstract class EngineNodeConstruction1Test[P, R] extends EngineNodeConstructionTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
