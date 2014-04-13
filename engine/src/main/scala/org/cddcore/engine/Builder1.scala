@@ -51,7 +51,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
     currentNodeL.andThen(codeL).set(withBecause, None)
   }
-  def copy(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
+  def copyNodes(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
 }
 
 trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {

@@ -15,9 +15,9 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     (enh: EngineNodeHolder[R, RFn], n: EngineNode[R, RFn]) => {
       val result = enh.nodes match {
         case (eh: EngineNodeAndHolder[R, RFn]) :: tail if (!eh.nodes.isEmpty) =>
-          enh.copy(nodes = (currentNodeForHoldersL.set(eh, n).asInstanceOf[EngineNode[R, RFn]] :: tail))
+          enh.copyNodes(nodes = (currentNodeForHoldersL.set(eh, n).asInstanceOf[EngineNode[R, RFn]] :: tail))
         case (_: EngineNode[R, RFn]) :: tail =>
-          enh.copy(n :: enh.nodes.tail)
+          enh.copyNodes(n :: enh.nodes.tail)
       }
       result
     })
@@ -36,7 +36,7 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     (enh: EngineNodeHolder[R, RFn], n: EngineNodeHolder[R, RFn]) => {
       (enh, enh.nodes) match {
         case (ed: EngineDescription[R, RFn], _) => n
-        case (_, (h: EngineNodeHolder[R, RFn]) :: tail) => enh.copy(nextUseCaseHolderForHoldersL.set(h, n).asInstanceOf[EngineNode[R, RFn]] :: tail)
+        case (_, (h: EngineNodeHolder[R, RFn]) :: tail) => enh.copyNodes(nextUseCaseHolderForHoldersL.set(h, n).asInstanceOf[EngineNode[R, RFn]] :: tail)
       }
     })
 
@@ -51,34 +51,39 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
       case _ => b
     },
     (b, n) => {
-      println(s"setting $b     to $n")
       val result = b.nodes match {
-        case (eh: EngineNodeHolder[R, RFn]) :: tail => b.copy(nodes = nextScenarioHolderForHolderL.set(eh, n).asInstanceOf[EngineNode[R, RFn]] :: tail);
+        case (eh: EngineNodeHolder[R, RFn]) :: tail => b.copyNodes(nodes = nextScenarioHolderForHolderL.set(eh, n).asInstanceOf[EngineNode[R, RFn]] :: tail);
         case _ :: tail => n
         case Nil => n
       }
-      println(s" result $result")
       result
     })
 
-  val titleL = Lens[EngineNode[R, RFn], Option[String]](
-    (en: EngineNode[R, RFn]) => en.title,
-    (en: EngineNode[R, RFn], t: Option[String]) => en.copy(title = t))
-  val descriptionL = Lens[EngineNode[R, RFn], Option[String]](
-    (en: EngineNode[R, RFn]) => en.description,
-    (en: EngineNode[R, RFn], d: Option[String]) => en.copy(description = d))
-  val priorityL = Lens[EngineNode[R, RFn], Option[Int]](
-    (en: EngineNode[R, RFn]) => en.priority,
-    (en: EngineNode[R, RFn], p: Option[Int]) => en.copy(priority = p))
+  val asRequirementL = Lens[EngineNode[R, RFn], Requirement](
+    (en: EngineNode[R, RFn]) => en,
+    (en: EngineNode[R, RFn], t: Requirement) => t.asInstanceOf[EngineNode[R, RFn]])
+
+  val titleL = Lens[Requirement, Option[String]](
+    (en) => en.title,
+    (en, t: Option[String]) => en.copyRequirement(title = t))
+  val descriptionL = Lens[Requirement, Option[String]](
+    (en) => en.description,
+    (en, d: Option[String]) => en.copyRequirement(description = d))
+  val priorityL = Lens[Requirement, Option[Int]](
+    (en) => en.priority,
+    (en, p: Option[Int]) => en.copyRequirement(priority = p))
+  val referencesL = Lens[Requirement, Set[Reference]](
+    (en) => en.references,
+    (en, references: Set[Reference]) => en.copyRequirement(references = references))
   val nodesL = Lens[EngineNodeHolder[R, RFn], List[EngineNode[R, RFn]]](
     (en: EngineNodeHolder[R, RFn]) => en.nodes,
-    (en: EngineNodeHolder[R, RFn], nodes: List[EngineNode[R, RFn]]) => en.copy(nodes))
+    (en: EngineNodeHolder[R, RFn], nodes: List[EngineNode[R, RFn]]) => en.copyNodes(nodes))
   def expectedL = Lens[EngineNode[R, RFn], Option[Either[Class[_ <: Exception], R]]](
     (en: EngineNode[R, RFn]) => en.expected,
-    (en: EngineNode[R, RFn], ex: Option[Either[Class[_ <: Exception], R]]) => en.copy(expected = ex))
+    (en: EngineNode[R, RFn], ex: Option[Either[Class[_ <: Exception], R]]) => en.copyEngineNode(expected = ex))
 
   val codeL = Lens[EngineNode[R, RFn], Option[CodeHolder[RFn]]](
     (b) => b.code,
-    (b, cCodeHolder) => b.copy(code = cCodeHolder))
+    (b, cCodeHolder) => b.copyEngineNode(code = cCodeHolder))
 
 }

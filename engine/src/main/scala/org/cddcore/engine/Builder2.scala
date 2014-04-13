@@ -50,7 +50,7 @@ case class Builder2[P1, P2, R](nodes: List[EngineNode[R, (P1, P2) => R]] = List(
   def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R] = macro Builder2.becauseImpl[P1, P2, R]
   def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R]
   def scenario(p1: P1, p2: P2, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title)) :: nodes)
-  def copy(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
+  def copyNodes(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
 
 }
 

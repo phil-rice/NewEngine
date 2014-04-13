@@ -6,6 +6,13 @@ import org.scalatest.junit.JUnitRunner
 
 abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] {
   implicit def toSome[X](x: X) = Some(x)
+  val doc = Document()
+  val ref1 = Reference("1", doc)
+  val ref2 = Reference("2", doc)
+  val ref3 = Reference("3", doc)
+  val ref1None = Reference("1", None)
+  val ref2None = Reference("2", None)
+  val ref3None = Reference("3", None)
 
   builderName should "allow an empty engine to be made" in {
     val b = currentBuilder
@@ -47,7 +54,33 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
     scenario(1)
     scenario(2)
     assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(
-      scenarioObject(params(2)), scenarioObject(params(1 )), scenarioObject(params(0))))))), currentBuilder.nodes)
+      scenarioObject(params(2)), scenarioObject(params(1)), scenarioObject(params(0))))))), currentBuilder.nodes)
+  }
+
+  it should "allow references to be added" in {
+
+    update((b) => b.title("EngineTitle").reference("1", doc).useCase("useCase1").reference("2", doc))
+    scenario(0)
+    update((b) => b.reference("3", doc))
+    assertEquals(List(
+      EngineDescription[R, RFn](title = "EngineTitle", references = Set(ref1), nodes = List(
+        UseCase(title = "useCase1", references = Set(ref2), nodes = List(
+          scenarioObject(params(0)).copyRequirement(references = Set(ref3))))))), currentBuilder.nodes)
+  }
+  it should "allow references to be added when doc is not specified" in {
+
+    update((b) => b.title("EngineTitle").reference("1").useCase("useCase1").reference("2"))
+    scenario(0)
+    update((b) => b.reference("3"))
+    assertEquals(List(
+      EngineDescription[R, RFn](title = "EngineTitle", references = Set(ref1None), nodes = List(
+        UseCase(title = "useCase1", references = Set(ref2None), nodes = List(
+          scenarioObject(params(0)).copyRequirement(references = Set(ref3None))))))), currentBuilder.nodes)
+  }
+
+  it should "allow multiple references to be added" in {
+    update((b) => b.title("EngineTitle").reference("1", doc).reference("2", doc).reference("3", doc))
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", references = Set(ref1, ref2, ref3))), currentBuilder.nodes)
   }
 }
 

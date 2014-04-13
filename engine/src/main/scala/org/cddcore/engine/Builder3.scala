@@ -51,7 +51,7 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R]
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R]
   def matchWith(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchWithImpl[P1, P2, P3, R]
-  def copy(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
+  def copyNodes(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
 
 }
 trait EvaluateTree3[P1, P2, P3, R] extends EvaluateTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
