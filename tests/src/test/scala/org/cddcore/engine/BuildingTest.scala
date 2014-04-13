@@ -15,7 +15,8 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
   it should "allow the engine descriptions  to be set" in {
     update((b) => b.title("EngineTitle").description("EngineDescription").priority(1).expected(result(0)))
     code(4)
-    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", description = "EngineDescription", priority = 1, expected=Right(result(0)))), currentBuilder.nodes)
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", description = "EngineDescription", code = resultCodeHolder(4), priority = 1, expected = Right(result(0)))),
+      currentBuilder.nodes)
   }
 
   it should "allow a use case to be added" in {

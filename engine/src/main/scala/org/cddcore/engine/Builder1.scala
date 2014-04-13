@@ -4,13 +4,12 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens1[P, R, RFn, B <: EngineNodeHolder[R, RFn]] extends BuilderLens[R, RFn, B] {
-  val becauseL = Lens[EngineNode[R, RFn], Option[CodeHolder[(P) => Boolean]]]((b) => None, (b, bCodeHolder) => b)
-  val codeL = Lens[EngineNode[R, RFn], Option[CodeHolder[(P) => R]]]((b) => None, (b, bCodeHolder) => b)
+class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens[R, (P) => R, B] {
+  val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]]((b) => None, (b, bCodeHolder) => b)
 }
 
 object Builder1 {
-  def bl[P, R]() = new BuilderLens1[P, R, (P) => R, Builder1[P, R]]
+  def bl[P, R]() = new BuilderLens1[P, R, Builder1[P, R]]
 
   def becauseImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P) => Boolean]): c.Expr[Builder1[P, R]] = {
     import c.universe._
@@ -45,6 +44,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   import bl1._
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
+ 
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
   def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => nodes :+ new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Some(title)))
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {

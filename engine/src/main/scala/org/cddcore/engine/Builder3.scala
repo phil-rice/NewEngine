@@ -6,7 +6,6 @@ import scala.language.experimental.macros
 
 class BuilderLens3[P1, P2, P3, R, B <: EngineNodeHolder[R, (P1, P2, P3) => R]] extends BuilderLens[R, (P1, P2, P3) => R, B] {
   val becauseL = Lens[EngineNode[R, (P1, P2, P3) => R], Option[CodeHolder[(P1, P2, P3) => Boolean]]]((b) => None, (b, bCodeHolder) => b)
-  val codeL = Lens[EngineNode[R, (P1, P2, P3) => R], Option[CodeHolder[(P1, P2, P3) => R]]]((b) => None, (b, bCodeHolder) => b)
 }
 
 object Builder3 {

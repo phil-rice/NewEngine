@@ -75,6 +75,8 @@ abstract class LensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engin
 
     assertEquals(builderEd1, lens.nextUseCaseHolderL.set(builderEdUc1UcS1, ed1))
   }
+  
+  
 
 }
 
