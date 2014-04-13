@@ -3,6 +3,7 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
+import scala.util.Sorting
 
 trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] {
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
@@ -26,3 +27,31 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
     currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))).asInstanceOf[B]
 }
 
+trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {
+  def modifyChildrenForBuild: List[EngineNode[R, RFn]] = {
+    def modifyChildAsNode(path: List[Reportable], child: EngineNode[R, RFn]) = {
+      child
+    }
+    def firstOption[X](path: List[Reportable], fn: (EngineNode[R, RFn]) => Option[X]): Option[X] = {
+      path.collect { case e: EngineNode[R, RFn] => fn(e) }.find((r) => r.isDefined).getOrElse(None)
+    }
+    def modifyChild(path: List[Reportable]): EngineNode[R, RFn] = {
+      val nodeModified = path.head match {
+        case node: EngineNode[R, RFn] => node.copyEngineNode(
+          expected = firstOption(path, _.expected),
+          code = firstOption(path, _.code)).
+          copyRequirement(
+            priority = firstOption(path, _.priority))
+        case x => x
+      }
+      val withChildren = nodeModified match {
+        case holder: EngineNodeHolder[R, RFn] => holder.copyNodes(nodes = modifyChildren(path, holder))
+        case x: EngineNode[R, RFn] => x
+      }
+      withChildren.asInstanceOf[EngineNode[R, RFn]]
+    }
+    def modifyChildren(path: List[Reportable], holder: EngineNodeHolder[R, RFn]): List[EngineNode[R, RFn]] =
+      holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: EngineNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
+    modifyChildren(List(), this)
+  }
+}

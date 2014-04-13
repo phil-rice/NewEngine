@@ -39,7 +39,7 @@ object Builder1 {
   }
 }
 
-case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R])) extends Builder[R, (P) => R, Builder1[P, R]] {
+case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R])) extends Builder[R, (P) => R, Builder1[P, R]] with BuilderWithModifyChildrenForBuild[R, (P)=>R]{
   val bl1 = Builder1.bl[P, R]()
   import bl1._
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]

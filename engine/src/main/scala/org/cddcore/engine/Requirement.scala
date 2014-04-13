@@ -1,6 +1,14 @@
 package org.cddcore.engine
 
-trait Requirement {
+import java.util.concurrent.atomic.AtomicInteger
+trait Reportable {
+  val textOrder = Reportable.count.getAndIncrement()
+}
+
+object Reportable {
+  val count = new AtomicInteger(0)
+}
+trait Requirement extends Reportable {
   def title: Option[String]
   def description: Option[String]
   def priority: Option[Int]
@@ -16,12 +24,32 @@ trait EngineNode[R, RFn] extends Requirement {
   def code: Option[CodeHolder[RFn]]
   def copyEngineNode(
     expected: Option[Either[Class[_ <: Exception], R]] = expected,
-    code: Option[CodeHolder[RFn]] = code,
-    references: Set[Reference] = references): EngineNode[R, RFn]
+    code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn]
 }
-trait EngineNodeHolder[R, RFn] {
+trait EngineNodeHolder[R, RFn] extends Traversable[EngineNode[R, RFn]] with Reportable {
   def nodes: List[EngineNode[R, RFn]]
   def copyNodes(nodes: List[EngineNode[R, RFn]]): EngineNodeHolder[R, RFn]
+  def foreach[U](f: EngineNode[R, RFn] => U): Unit = {
+    for (c <- nodes) c match {
+      case holder: EngineNodeHolder[R, RFn] =>
+        f(c); holder.foreach(f)
+      case c => f(c)
+    }
+  }
+
+  def all[C <: EngineNode[R, RFn]](clazz: Class[C]) = this.collect { case c: C if (clazz.isAssignableFrom(c.getClass())) => c }
+
+  val paths = new Traversable[List[Reportable]] {
+    def foreach[U](f: List[Reportable] => U): Unit = foreachPrim(f, List[Reportable](EngineNodeHolder.this))
+
+    def foreachPrim[U](f: List[Reportable] => U, path: List[Reportable]): Unit = path.head match {
+      case holder: EngineNodeHolder[R, RFn] =>
+        f(path)
+        for (c <- holder.nodes)
+          foreachPrim(f, c :: path)
+      case _ => f(path)
+    }
+  }
 }
 trait EngineNodeAndHolder[R, RFn] extends EngineNode[R, RFn] with EngineNodeHolder[R, RFn]
 
@@ -36,7 +64,7 @@ case class EngineDescription[R, RFn](
   extends EngineNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
-  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code, references: Set[Reference] = references): EngineNode[R, RFn] =
+  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
   def copyNodes(nodes: List[EngineNode[R, RFn]]): EngineNodeHolder[R, RFn] =
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
@@ -44,19 +72,20 @@ case class EngineDescription[R, RFn](
 }
 
 case class UseCase[R, RFn](
-  val title: Option[String] = None,
-  val description: Option[String] = None,
-  val code: Option[CodeHolder[RFn]] = None,
-  val priority: Option[Int] = None,
-  val nodes: List[EngineNode[R, RFn]] = List(),
-  val expected: Option[Either[Class[_ <: Exception], R]] = None,
+  title: Option[String] = None,
+  description: Option[String] = None,
+  code: Option[CodeHolder[RFn]] = None,
+  priority: Option[Int] = None,
+  nodes: List[EngineNode[R, RFn]] = List(),
+  expected: Option[Either[Class[_ <: Exception], R]] = None,
   references: Set[Reference] = Set()) extends EngineNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
-  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code, references: Set[Reference] = references): EngineNode[R, RFn] =
+  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
   def copyNodes(nodes: List[EngineNode[R, RFn]]): EngineNodeHolder[R, RFn] =
     new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
+  override def toString = s"UseCase(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
 }
 
 case class Scenario[Params, BFn, R, RFn](
@@ -70,7 +99,7 @@ case class Scenario[Params, BFn, R, RFn](
   val references: Set[Reference] = Set()) extends EngineNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
-  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code, references: Set[Reference] = references): EngineNode[R, RFn] =
+  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
 
 }

@@ -43,7 +43,7 @@ object Builder3 {
   }
 }
 
-case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R])) extends Builder[R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R]] {
+case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R])) extends Builder[R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R]] with BuilderWithModifyChildrenForBuild[R, (P1, P2, P3) => R] {
   val bl3 = new BuilderLens3[P1, P2, P3, R, Builder3[P1, P2, P3, R]]
   import bl3._
 
