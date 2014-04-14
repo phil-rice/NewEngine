@@ -2,10 +2,20 @@ package org.cddcore.engine
 
 object BuildEngine {
 
+   def checkAllScenarios[Params, BFn, R, RFn]( tree: DecisionTree[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*){
+    for (s <- scenarios){
+      val actual = tree.safeEvaluate(s.params)
+      s.expected match {
+        case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex,actual, s)
+        case _ => throw NoExpectedException(s)
+      } 
+    }
+  }
+  
+  
   implicit val ldp = SimpleLoggerDisplayProcessor()
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) =
     Conclusion[Params, BFn, R, RFn](code, List())
-  //  def rootFor[Params, BFn, R, RFn](ed: EngineDescription[R, RFn]) = defaultRoot[Params, BFn, R, RFn]
   def defaultRootCode1[P, R]: CodeHolder[(P) => R] =
     new CodeHolder((p: P) => throw new UndecidedException, "throws Undecided Exception")
   def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] =
@@ -18,6 +28,7 @@ object BuildEngine {
     val scenarios = modifiedChildren.all(classOf[Scenario[Params, BFn, R, RFn]])
     scenarios.foreach((x) => validator.validateScenario(x))
     val newDecisionTree = scenarios.foldLeft(dt)((dt, s) => addScenario(dt, s))
+    checkAllScenarios( newDecisionTree, scenarios.toSeq:_*)
     newDecisionTree
   }
 
@@ -58,7 +69,7 @@ object BuildEngine {
         else
           rootL.set(tree, newConclusion)
       else {
-        val concL = rootL
+        val concL =tree.findLensToConclusion(tree.makeBecauseClosure(s.params))
         s.because match {
           case Some(b) => addTo(concL)
           case _ =>

@@ -6,23 +6,25 @@ trait DecisionTreeLens[Params, BFn, R, RFn] {
   def creator: (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn];
   def rootL = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (tree) => tree.root,
-    (tree, root) => creator(root))
+    (tree, root) => creator(root),
+    Some("rootL"))
   def toDecisionL = Lens[DecisionTreeNode[Params, BFn, R, RFn], Decision[Params, BFn, R, RFn]](
     (d) => d.asInstanceOf[Decision[Params, BFn, R, RFn]],
-    (d, x) => x)
+    (d, x) => x,
+    Some("toDecisionL"))
   def toConclusionL = Lens[DecisionTreeNode[Params, BFn, R, RFn], Conclusion[Params, BFn, R, RFn]](
     (d) => d.asInstanceOf[Conclusion[Params, BFn, R, RFn]],
-    (d, x) => x)
+    (d, x) => x,
+    Some("toConclusionL"))
   def yesL = Lens[Decision[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (d) => d.yes,
-    (d, x) => d.copy(yes = x))
+    (d, x) => d.copy(yes = x),
+    Some("yesL"))
   def noL = Lens[Decision[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (d) => d.no,
-    (d, x) => d.copy(no = x))
+    (d, x) => d.copy(no = x),
+    Some("noL"))
 }
-class DecisionTreeLens1[P, R](val creator: (DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) => DecisionTree[P, (P) => Boolean, R, (P) => R]) extends DecisionTreeLens[P, (P) => Boolean, R, (P) => R]
-class DecisionTreeLens2[P1, P2, R](val creator: (DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) => DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) extends DecisionTreeLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]
-class DecisionTreeLens3[P1, P2, P3, R](val creator: (DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) => DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) extends DecisionTreeLens[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
 
 trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn]
   with Engine[Params, BFn, R, RFn] {
@@ -57,6 +59,16 @@ trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn
         }
     }
   }
+  def findLensToConclusion(bc: BecauseClosure): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL)
+
+  protected def findLensToConclusion(root: DTN, bc: BecauseClosure, soFar: LensToNode): Lens[DT, DTN] =
+    root match {
+      case c: Conclusion[Params, BFn, R, RFn] => soFar
+      case d: Decision[Params, BFn, R, RFn] => d.isTrue(bc) match {
+        case true => findLensToConclusion(d.yes, bc, soFar.andThen(toDecisionL).andThen(yesL))
+        case false => findLensToConclusion(d.no, bc, soFar.andThen(toDecisionL).andThen(noL))
+      }
+    }
 }
 
 sealed trait DecisionTreeNode[Params, BFn, R, RFn] {
@@ -84,17 +96,19 @@ trait MakeClosures[Params, BFn, R, RFn] {
 
 trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
   def root: DecisionTreeNode[Params, BFn, R, RFn]
+  type DT = DecisionTree[Params, BFn, R, RFn]
   type DTN = DecisionTreeNode[Params, BFn, R, RFn]
   type Result = Either[Exception, R]
 
   def evaluate(params: Params): R = evaluate(root, params)
-  def evaluate(root: DTN, params: Params): R = {
+  protected def evaluate(root: DTN, params: Params): R = {
     val bc = makeBecauseClosure(params)
     val c = findConclusion(root, bc).code
     makeResultClosure(params).apply(c.fn)
   }
 
-  def safeEvaluate(root: DTN, params: Params) = safe(evaluate(root, params))
+
+  def safeEvaluate(params: Params) = safe(evaluate(params))
 
   def findConclusion(root: DTN, bc: BecauseClosure): Conclusion[Params, BFn, R, RFn] = {
     root match {

@@ -55,9 +55,9 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
   def checkHasExpected(s: S) = {
     if (s.expected.isEmpty) throw NoExpectedException(s)
     s
-
   }
 
+ 
 }
 
 trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {

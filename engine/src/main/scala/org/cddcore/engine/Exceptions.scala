@@ -43,3 +43,10 @@ object ScenarioBecauseException {
     new ScenarioBecauseException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
 }
 class ScenarioBecauseException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
+
+object CameToWrongConclusionScenarioException {
+  def apply(expected: Any, actual: Any, s: Scenario[_, _, _, _])(implicit ldp: LoggerDisplayProcessor) =
+    new CameToWrongConclusionScenarioException(s"CDD Error: Scenario came to wrong result\nExpected\n$expected\nActual\n$actual\nScenario\n${ExceptionScenarioPrinter.full(s)}", expected, actual, s)
+
+}
+class CameToWrongConclusionScenarioException(msg: String, val expected: Any, val actual: Any, s: Scenario[_, _, _, _]) extends ScenarioException(msg, s)

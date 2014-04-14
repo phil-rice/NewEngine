@@ -53,6 +53,7 @@ trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B <: Builder
     references: Set[Reference] = Set()) =
     new Scenario[Params, BFn, R, RFn](params(seed), title, description, because.collect { case seed: Seed => becauseCodeHolder(seed) },
       code, priority, expected.collect { case r: ResultSeed => Right(result(r)) }, references)
+  def decisionTreeLens: DecisionTreeLens[Params, BFn, R, RFn]
 }
 
 trait AbstractTest extends FlatSpecLike with Matchers with AssertEquals
@@ -117,7 +118,7 @@ trait StringStringStringStringTest extends BuilderConcretizer {
   def becauseBfn(seed: Seed) = (p1: String, p2: String, p3: String) => contains(p1, seed) && contains(p2, seed) && contains(p3, seed)
 }
 
-trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] {
+trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with MakeClosures1[P, R] {
   def initializeBuilder(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p: P) => result(seed), s"(p)=>result$seed")
@@ -127,9 +128,10 @@ trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder1.expectedToCode[P, R]
+  def decisionTreeLens = new DecisionTreeLens1(Builder1.creator[P, R])
 }
 
-trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] {
+trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with MakeClosures2[P1, P2, R] {
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2) => result(seed), s"(p1,p2)=>result$seed")
@@ -139,9 +141,10 @@ trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder2.expectedToCode[P1, P2, R]
+  def decisionTreeLens = new DecisionTreeLens2(Builder2.creator[P1, P2, R])
 }
 
-trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] {
+trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with MakeClosures3[P1, P2, P3, R] {
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2, p3: P3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
@@ -150,4 +153,5 @@ trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTest
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder3.expectedToCode[P1, P2, P3, R]
+  def decisionTreeLens = new DecisionTreeLens3(Builder3.creator[P1, P2, P3, R])
 }

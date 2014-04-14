@@ -7,6 +7,13 @@ trait Reportable {
 
 object Reportable {
   val count = new AtomicInteger(0)
+  def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
+	  (left, right) match {
+	  case (Left(le), Left(re)) => le.getClass() == re.getClass()
+	  case (Right(lr), Right(rr)) => lr == rr
+	  case _ => false
+	  }
+  }
 }
 trait Requirement extends Reportable {
   def title: Option[String]
@@ -105,7 +112,7 @@ case class Scenario[Params, BFn, R, RFn](
   def copyScenario(because: Option[CodeHolder[BFn]]) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
 
-  def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.get))
+  def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
 }
 
 case class Document(

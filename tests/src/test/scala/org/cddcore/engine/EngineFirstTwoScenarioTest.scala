@@ -9,15 +9,15 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
   implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
   implicit def toSome[X](x: X) = Some(x)
 
-  //  "An empty engine" should "allow the first use not to have a because, and become the default value" in {
-  //    scenario("A")
-  //    update(_.expected(result("X")))
-  //    val e = build
-  //    assertEquals(conc(s("A", expected = "X")), e.root)
-  //
-  //    assertEquals(result("X"), e.evaluate(params("A")))
-  //    assertEquals(result("X"), e.evaluate(params("B")))
-  //  }
+  "An empty engine" should "allow the first use not to have a because, and become the default value" in {
+    scenario("A")
+    update(_.expected(result("X")))
+    val e = build
+    assertEquals(conc(s("A", expected = "X")), e.root)
+
+    assertEquals(result("X"), e.evaluate(params("A")))
+    assertEquals(result("X"), e.evaluate(params("B")))
+  }
 
   it should " allow the first use not to have a because, and become the default value when we add a second scenario " in {
     scenario("A"); update(_.expected(result("X")))
