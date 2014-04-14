@@ -128,7 +128,7 @@ trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder1.expectedToCode[P, R]
-  def decisionTreeLens = new DecisionTreeLens1(Builder1.creator[P, R])
+  def decisionTreeLens = new DecisionTreeLens1
 }
 
 trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with MakeClosures2[P1, P2, R] {
@@ -141,7 +141,7 @@ trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder2.expectedToCode[P1, P2, R]
-  def decisionTreeLens = new DecisionTreeLens2(Builder2.creator[P1, P2, R])
+  def decisionTreeLens = new DecisionTreeLens2
 }
 
 trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with MakeClosures3[P1, P2, P3, R] {
@@ -153,5 +153,5 @@ trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTest
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def expectedToCode = Builder3.expectedToCode[P1, P2, P3, R]
-  def decisionTreeLens = new DecisionTreeLens3(Builder3.creator[P1, P2, P3, R])
+  def decisionTreeLens = new DecisionTreeLens3
 }

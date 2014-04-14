@@ -3,10 +3,10 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 
 trait DecisionTreeLens[Params, BFn, R, RFn] {
-  def creator: (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn];
-  def rootL = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
+  def creator(requirements: EngineNodeHolder[R, RFn]): (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn];
+  def rootL(requirements: EngineNodeHolder[R, RFn]) = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (tree) => tree.root,
-    (tree, root) => creator(root),
+    (tree, root) => creator(requirements)(root),
     Some("rootL"))
   def toDecisionL = Lens[DecisionTreeNode[Params, BFn, R, RFn], Decision[Params, BFn, R, RFn]](
     (d) => d.asInstanceOf[Decision[Params, BFn, R, RFn]],
@@ -26,8 +26,7 @@ trait DecisionTreeLens[Params, BFn, R, RFn] {
     Some("noL"))
 }
 
-trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn]
-  with Engine[Params, BFn, R, RFn] {
+trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn] {
   def root: DTN
   def rootIsDefault: Boolean
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
@@ -37,29 +36,12 @@ trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn
 
   type LensToNode = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
 
-  def findParentLens(bc: BecauseClosure) = findParentLensPrim(root, bc, rootL, None)
-
   protected def addStep(node: Decision[Params, BFn, R, RFn], bc: BecauseClosure, lensToNode: LensToNode) = node.isTrue(bc) match {
     case true => lensToNode.andThen(toDecisionL).andThen(yesL)
     case false => lensToNode.andThen(toDecisionL).andThen(noL)
   }
 
-  protected def findParentLensPrim(root: DTN, bc: BecauseClosure, parentSoFar: LensToNode, parentWasTrue: Option[Boolean]): Option[(LensToNode, Boolean)] = {
-    (parentWasTrue, root) match {
-      case (None, c: Conclusion[Params, BFn, R, RFn]) => None //There is no parent
-      case (Some(pWasTrue), c: Conclusion[Params, BFn, R, RFn]) => Some((parentSoFar, pWasTrue))
-      case (Some(pWasTrue), d: Decision[Params, BFn, R, RFn]) =>
-        val toHere = pWasTrue match {
-          case true => parentSoFar.andThen(toDecisionL).andThen(yesL)
-          case false => parentSoFar.andThen(toDecisionL).andThen(noL)
-        }
-        d.isTrue(bc) match {
-          case true => findParentLensPrim(d.yes, bc, toHere, Some(true))
-          case false => findParentLensPrim(d.yes, bc, toHere, Some(false))
-        }
-    }
-  }
-  def findLensToConclusion(bc: BecauseClosure): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL)
+  def findLensToConclusion(requirements: EngineNodeHolder[R, RFn], bc: BecauseClosure): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL(requirements))
 
   protected def findLensToConclusion(root: DTN, bc: BecauseClosure, soFar: LensToNode): Lens[DT, DTN] =
     root match {
@@ -106,7 +88,6 @@ trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn
     val c = findConclusion(root, bc).code
     makeResultClosure(params).apply(c.fn)
   }
-
 
   def safeEvaluate(params: Params) = safe(evaluate(params))
 
