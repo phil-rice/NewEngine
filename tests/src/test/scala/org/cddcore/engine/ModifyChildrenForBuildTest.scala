@@ -26,8 +26,9 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
         scenarioObject(params(0)).copyRequirement(priority = 3))))))),
       currentBuilder.modifyChildrenForBuild)
   }
-
+   type x = ResultSeed
   it should "inherit expected from parent if not defined" in {
+ 
     update(_.expected(result(2)).useCase("UC").expected(result(1)))
     scenario(0)
 
