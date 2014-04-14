@@ -6,12 +6,13 @@ import scala.language.experimental.macros
 
 class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens[R, (P) => R, B] {
   type S = Scenario[P, (P) => Boolean, R, (P) => R]
-  val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]](
-    (b) => b match { case s: S => s.because },
-    (b, bCodeHolder) => b match { case s: S => s.copyScenario(because = bCodeHolder) })
+
   val toScenarioL = Lens[EngineNode[R, (P) => R], S](
     (b) => b match { case s: S => s },
     (b, s) => b match { case _: S => s })
+  val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]](
+    (b) => b match { case s: S => s.because },
+    (b, bCodeHolder) => b match { case s: S => s.copy(because = bCodeHolder) })
 }
 
 object Builder1 {
@@ -59,11 +60,13 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toSet
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
-
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
-  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) =
-    currentNodeL.andThen(toScenarioL).mod(this, (s) => checkBecause(s.copyScenario(because = Some(becauseHolder))))
-  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
+
+  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) = currentNodeL.andThen(toScenarioL).mod(this, (s) => checkBecause(s.copy(because = Some(becauseHolder))))
+  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
+    checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
+  def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception,R]) => Boolean]) =
+    currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
     currentNodeL.andThen(codeL).set(withBecause, None)

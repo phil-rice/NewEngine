@@ -8,11 +8,11 @@ trait Reportable {
 object Reportable {
   val count = new AtomicInteger(0)
   def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
-	  (left, right) match {
-	  case (Left(le), Left(re)) => le.getClass() == re.getClass()
-	  case (Right(lr), Right(rr)) => lr == rr
-	  case _ => false
-	  }
+    (left, right) match {
+      case (Left(le), Left(re)) => le.getClass() == re.getClass()
+      case (Right(lr), Right(rr)) => lr == rr
+      case _ => false
+    }
   }
 }
 trait Requirement extends Reportable {
@@ -34,6 +34,7 @@ trait EngineNode[R, RFn] extends Requirement {
     expected: Option[Either[Exception, R]] = expected,
     code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn]
 }
+
 trait EngineNodeHolder[R, RFn] extends Traversable[EngineNode[R, RFn]] with Reportable {
   def nodes: List[EngineNode[R, RFn]]
   def copyNodes(nodes: List[EngineNode[R, RFn]]): EngineNodeHolder[R, RFn]
@@ -96,6 +97,7 @@ case class UseCase[R, RFn](
   override def toString = s"UseCase(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
 }
 
+
 case class Scenario[Params, BFn, R, RFn](
   val params: Params,
   val title: Option[String] = None,
@@ -104,13 +106,12 @@ case class Scenario[Params, BFn, R, RFn](
   val code: Option[CodeHolder[RFn]] = None,
   val priority: Option[Int] = None,
   val expected: Option[Either[Exception, R]] = None,
-  val references: Set[Reference] = Set()) extends EngineNode[R, RFn] {
+  val references: Set[Reference] = Set(),
+  val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List()) extends EngineNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions)
   def copyEngineNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
-  def copyScenario(because: Option[CodeHolder[BFn]]) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions)
 
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
 }

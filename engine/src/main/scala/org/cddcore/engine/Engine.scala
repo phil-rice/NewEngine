@@ -1,6 +1,7 @@
 package org.cddcore.engine
 
 trait Engine[Params, BFn, R, RFn] {
+  def safeEvaluate(params: Params): Either[Exception, R]
   def evaluate(params: Params): R
   def requirements: EngineNodeHolder[R, RFn]
   def tree: DecisionTree[Params, BFn, R, RFn]
@@ -27,5 +28,18 @@ object Engine {
       }
     }
   }
+
+  def testing = _testing.get
+  private var _testing = new ThreadLocal[Boolean] {
+    override def initialValue = false;
+  }
+  def test[X](x: => X) = {
+    _testing.set(true)
+    try {
+      x
+    } finally
+      _testing.set(false)
+  }
+
 }
 

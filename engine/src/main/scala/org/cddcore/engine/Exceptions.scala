@@ -50,3 +50,11 @@ object CameToWrongConclusionScenarioException {
 
 }
 class CameToWrongConclusionScenarioException(msg: String, val expected: Any, val actual: Any, s: Scenario[_, _, _, _]) extends ScenarioException(msg, s)
+
+object AssertionException {
+  def apply(a: CodeHolder[_], s: Scenario[_, _, _, _])(implicit ldp: LoggerDisplayProcessor) =
+    new AssertionException(s"Assertion failed\n${a.description}\n${ExceptionScenarioPrinter.full(s)}", a.fn, s)
+}
+
+class AssertionException(msg: String, val assertion: Any, scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
+

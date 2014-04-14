@@ -2,16 +2,6 @@ package org.cddcore.engine
 
 object BuildEngine {
 
-  def checkAllScenarios[Params, BFn, R, RFn](tree: DecisionTree[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*) {
-    for (s <- scenarios) {
-      val actual = tree.safeEvaluate(s.params)
-      s.expected match {
-        case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
-        case _ => throw NoExpectedException(s)
-      }
-    }
-  }
-
   implicit val ldp = SimpleLoggerDisplayProcessor()
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) =
     Conclusion[Params, BFn, R, RFn](code, List())
@@ -25,9 +15,14 @@ object BuildEngine {
   private def build[Params, BFn, R, RFn, B <: Builder[R, RFn, B]](builder: Builder[R, RFn, B], dt: DecisionTree[Params, BFn, R, RFn], validator: ValidateScenario[Params, BFn, R, RFn]) = {
     val modifiedChildren = builder.asInstanceOf[BuilderWithModifyChildrenForBuild[R, RFn]].modifyChildrenForBuild
     val scenarios = modifiedChildren.all(classOf[Scenario[Params, BFn, R, RFn]])
-    scenarios.foreach((x) => validator.validateScenario(x))
-    val newDecisionTree = scenarios.foldLeft(dt)((dt, s) => addScenario(builder, dt, s))
-    checkAllScenarios(newDecisionTree, scenarios.toSeq: _*)
+    scenarios.foreach((x) => validator.preValidateScenario(x))
+    val newDecisionTree = scenarios.foldLeft(dt)((dt, s) => {
+      val newTree = addScenario(builder, dt, s)
+      validator.checkAssertions(newTree, s)
+      newTree
+    })
+    if (!Engine.testing)
+      scenarios.foreach((x) => validator.postValidateScenario(newDecisionTree, x))
     newDecisionTree
   }
 

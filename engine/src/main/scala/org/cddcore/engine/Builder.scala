@@ -22,6 +22,7 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
   def expectException(e: Exception, title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Left(e))).asInstanceOf[B]
   def copyNodes(nodes: List[EngineNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = currentNodeL.andThen(codeL).set(this, Some(codeHolder)).asInstanceOf[B]
+
   def reference(ref: String): B =
     currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)).asInstanceOf[B]
   def reference(ref: String, document: Document): B =
@@ -35,11 +36,15 @@ case class ModifedChildrenEngineNodeHolder[R, RFn](nodes: List[EngineNode[R, RFn
 trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
   private type S = Scenario[Params, BFn, R, RFn]
   def scenarios: Set[S]
-  def validateScenario(s: S)(implicit ldp: LoggerDisplayProcessor) = {
+  def preValidateScenario(s: S)(implicit ldp: LoggerDisplayProcessor) = {
     if (!s.expected.isDefined)
       throw NoExpectedException(s)
     checkBecause(s)
     checkHasExpected(s)
+  }
+  def postValidateScenario(tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    checkAssertions(tree, s)
+    checkCorrectValue(tree, s)
   }
   def checkDuplicateScenario(s: S) = {
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
@@ -56,8 +61,22 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
     if (s.expected.isEmpty) throw NoExpectedException(s)
     s
   }
+  def checkAssertions(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
+    s.assertions.foreach((a) => {
+      val p = s.params
+      val result = tree.safeEvaluate(p)
+      val assertionResult = a.fn(p, result)
+      if (!assertionResult) throw AssertionException(a, s)
+    })
+  }
+  def checkCorrectValue(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
+    val actual = tree.safeEvaluate(s.params)
+    s.expected match {
+      case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
+      case _ => throw NoExpectedException(s)
+    }
+  }
 
- 
 }
 
 trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {
