@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class LensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] {
+abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] {
   implicit def toSome[X](x: X) = Some(x)
 
   val s0 = Scenario[Params, BFn, R, RFn](params(0))
@@ -96,9 +96,9 @@ abstract class LensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engin
 
 }
 
-abstract class Lens1Test[P, R] extends LensTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
-abstract class Lens2Test[P1, P2, R] extends LensTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
-abstract class Lens3Test[P1, P2, P3, R] extends LensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
+abstract class Lens1Test[P, R] extends BuilderLensTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
+abstract class Lens2Test[P1, P2, R] extends BuilderLensTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
+abstract class Lens3Test[P1, P2, P3, R] extends BuilderLensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
 
 @RunWith(classOf[JUnitRunner])
 class LensStringIntTest extends Lens1Test[String, Int] with StringIntTest
@@ -112,7 +112,7 @@ class LensStringStringStringTest extends Lens2Test[String, String, String] with 
 @RunWith(classOf[JUnitRunner])
 class LensStringStringStringStringTest extends Lens3Test[String, String, String, String] with StringStringStringStringTest
 
-object LensTest {
+object BuilderLensTest {
   def main(args: Array[String]) {
   }
 }

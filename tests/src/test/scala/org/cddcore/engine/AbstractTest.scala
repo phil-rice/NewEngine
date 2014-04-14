@@ -35,6 +35,26 @@ trait AssertEquals {
   }
 }
 
+trait DecisionTreeBuilder[Params, BFn, R, RFn] {
+  def expectedToCode: (Either[Class[_ <: Exception], R]) => CodeHolder[RFn]
+  def scen(params: Params, title: Option[String] = None, description: Option[String] = None, because: Option[CodeHolder[BFn]] = None,
+    code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Either[Class[_ <: Exception], R]] = None,
+    references: Set[Reference] = Set()) =
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
+  def conc(scenario: Scenario[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*) =
+    new Conclusion[Params, BFn, R, RFn](scenario.actualCode(expectedToCode), List(scenario) ++ scenarios)
+  def dec(scenarioThatCausedNode: Scenario[Params, BFn, R, RFn], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn]) =
+    new Decision(List(scenarioThatCausedNode.because.get), yes, no, scenarioThatCausedNode)
+}
+
+trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] with BuilderBeingTested[Params, BFn, R, RFn, B, E] with DecisionTreeBuilder[Params, BFn, R, RFn] {
+  def s(seed: Int, title: Option[String] = None, description: Option[String] = None, because: Option[Int] = None,
+    code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Int] = None,
+    references: Set[Reference] = Set()) =
+    new Scenario[Params, BFn, R, RFn](params(seed), title, description, because.collect { case seed: Int => becauseCodeHolder(seed) },
+      code, priority, expected.collect { case r: Int => Right(result(r)) }, references)
+}
+
 trait AbstractTest extends FlatSpecLike with Matchers with AssertEquals
 
 trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] {
@@ -94,7 +114,7 @@ trait StringIntTest {
   def becauseBfn(seed: Int) = (p: String) => (p == params(seed))
 }
 
-trait Builder1Test[P, R] extends BuilderTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] {
+trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] {
   def initializeBuilder(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p) => result(seed), s"(p)=>result$seed")
@@ -103,9 +123,10 @@ trait Builder1Test[P, R] extends BuilderTest[P, (P) => Boolean, R, (P) => R, Bui
   protected def buildImpl(b: Builder1[P, R]) = BuildEngine.build1[P, R](currentBuilder)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Int) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  def expectedToCode = Builder1.expectedToCode[P, R]
 }
 
-trait Builder2Test[P1, P2, R] extends BuilderTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] {
+trait Builder2Test[P1, P2, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] {
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2) => result(seed), s"(p1,p2)=>result$seed")
@@ -114,9 +135,10 @@ trait Builder2Test[P1, P2, R] extends BuilderTest[(P1, P2), (P1, P2) => Boolean,
   protected def buildImpl(b: Builder2[P1, P2, R]) = BuildEngine.build2[P1, P2, R](currentBuilder)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def becauseImpl(seed: Int) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  def expectedToCode = Builder2.expectedToCode[P1, P2, R]
 }
 
-trait Builder3Test[P1, P2, P3, R] extends BuilderTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] {
+trait Builder3Test[P1, P2, P3, R] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] {
   def initializeBuilder(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: Int) = new CodeHolder((p1, p2, p3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
@@ -124,4 +146,5 @@ trait Builder3Test[P1, P2, P3, R] extends BuilderTest[(P1, P2, P3), (P1, P2, P3)
   protected def buildImpl(b: Builder3[P1, P2, P3, R]) = BuildEngine.build3[P1, P2, P3, R](currentBuilder)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Int) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  def expectedToCode = Builder3.expectedToCode[P1, P2, P3, R]
 }

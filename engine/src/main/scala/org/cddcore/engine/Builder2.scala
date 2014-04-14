@@ -12,7 +12,8 @@ class BuilderLens2[P1, P2, R, B <: EngineNodeHolder[R, (P1, P2) => R]] extends B
 
 object Builder2 {
   def bl[P1, P2, R]() = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
-
+  def expectedToCode[P1, P2, R]: Either[Class[_ <: Exception], R] => CodeHolder[(P1, P2) => R] =
+    (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
   def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2) => Boolean]): c.Expr[Builder2[P1, P2, R]] = {
     import c.universe._
     reify {
@@ -65,6 +66,5 @@ trait EvaluateTree2[P1, P2, R] extends EvaluateTree[(P1, P2), (P1, P2) => Boolea
 case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], rootIsDefault: Boolean = false) extends DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
   val lens = new DecisionTreeLens2[P1, P2, R]((r) => new Engine2(r))
   def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
-  val expectedToCode: Either[Class[_ <: Exception], R] => CodeHolder[(P1, P2) => R] =
-    (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
+  val expectedToCode: Either[Class[_ <: Exception], R] => CodeHolder[(P1, P2) => R] = Builder2.expectedToCode
 }

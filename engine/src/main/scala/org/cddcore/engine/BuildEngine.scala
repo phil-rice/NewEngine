@@ -2,7 +2,7 @@ package org.cddcore.engine
 
 object BuildEngine {
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) =
-    Conclusion[Params, BFn, R, RFn](List(), code)
+    Conclusion[Params, BFn, R, RFn](code, List())
   //  def rootFor[Params, BFn, R, RFn](ed: EngineDescription[R, RFn]) = defaultRoot[Params, BFn, R, RFn]
   def defaultRootCode1[P, R]: CodeHolder[(P) => R] =
     new CodeHolder((p: P) => throw new UndecidedException, "throws Undecided Exception")
@@ -27,7 +27,7 @@ object BuildEngine {
 
   def addScenario[Params, BFn, R, RFn](tree: DecisionTree[Params, BFn, R, RFn], s: Scenario[Params, BFn, R, RFn]): DecisionTree[Params, BFn, R, RFn] = {
     val bc = tree.makeBecauseClosure(s.params)
-    val newConclusion = Conclusion(List(s), code = s.actualCode(tree.expectedToCode))
+    val newConclusion = Conclusion( code = s.actualCode(tree.expectedToCode), List(s))
     val newRoot = (tree.rootIsDefault, tree.findParentLens(bc)) match {
       case (true, None) =>
         newConclusion
