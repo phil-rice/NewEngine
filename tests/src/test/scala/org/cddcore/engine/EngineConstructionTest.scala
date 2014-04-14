@@ -21,8 +21,6 @@ abstract class EngineConstruction1Test[P, R] extends EngineConstructionTest[P, (
 abstract class EngineConstruction2Test[P1, P2, R] extends EngineConstructionTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
 abstract class EngineConstruction3Test[P1, P2, P3, R] extends EngineConstructionTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
 
-@RunWith(classOf[JUnitRunner])
-class EngineConstructionStringIntTest extends EngineConstruction1Test[String, Int] with StringIntTest
 
 @RunWith(classOf[JUnitRunner])
 class EngineConstructionStringStringTest extends EngineConstruction1Test[String, String] with StringStringTest

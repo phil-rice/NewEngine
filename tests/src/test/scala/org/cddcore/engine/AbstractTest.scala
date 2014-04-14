@@ -70,7 +70,6 @@ trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engi
   protected def scenarioImpl(params: Params, title: String): B
   protected def becauseImpl(seed: Seed): B
   protected def scenarioObject(params: Params): Scenario[Params, BFn, R, RFn]
-  protected def s(seed: Seed) = scenarioObject(params(seed))
   protected def resultCodeHolder(seed: ResultSeed): CodeHolder[RFn]
   protected def becauseCodeHolder(seed: Seed) = CodeHolder[BFn](becauseBfn(seed), s"because$seed")
   protected def buildImpl(b: B): E;
@@ -83,8 +82,8 @@ trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engi
 }
 
 trait BuilderTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends AbstractTest with BeforeAndAfter with BuilderBeingTested[Params, BFn, R, RFn, B, E] {
-  type Seed= Int
-  type ResultSeed= Int
+  type Seed = String
+  type ResultSeed = String
   before {
     resetBuilder
   }
@@ -92,36 +91,30 @@ trait BuilderTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Para
 }
 
 trait BuilderConcretizer {
-  type Seed 
-  type ResultSeed 
+  type Seed
+  type ResultSeed
 
+  def contains(params: String, because: Seed) = because.toString.forall(params.contains(_))
 }
 
 trait StringStringTest extends BuilderConcretizer {
   def builderName: String = "Builder1[String,String]"
-  def params(seed: Seed): String = s"A$seed"
+  def params(seed: Seed): String = s"$seed"
   def result(seed: ResultSeed): String = s"Result($seed)"
-  def becauseBfn(seed: Seed) = (p: String) => (p == params(seed))
+  def becauseBfn(seed: Seed) = (p: String) => contains(p, seed)
 }
 
 trait StringStringStringTest extends BuilderConcretizer {
   def builderName: String = "Builder2[String,String, String]"
   def params(seed: Seed) = (s"A$seed", s"B$seed")
   def result(seed: Seed) = seed.toString
-  def becauseBfn(seed: Seed) = (p1: String, p2: String) => (p1 == params(seed)._1 && p2 == params(seed)._2)
+  def becauseBfn(seed: Seed) = (p1: String, p2: String) => contains(p1, seed) && contains(p2, seed)
 }
 trait StringStringStringStringTest extends BuilderConcretizer {
   def builderName: String = "Builder3[String,String,String,String]"
   def params(seed: Seed) = (s"A$seed", s"B$seed", s"c$seed")
   def result(seed: Seed) = seed.toString
-  def becauseBfn(seed: Seed) = (p1: String, p2: String, p3: String) => (p1 == params(seed)._1 && p2 == params(seed)._2) && p3 == params(seed)._3
-}
-
-trait StringIntTest extends BuilderConcretizer {
-  def builderName: String = "Builder[String,Int]"
-  def params(seed: Seed): String = seed.toString
-  def result(seed: Seed): Int = seed.toString.toInt
-  def becauseBfn(seed: Seed) = (p: String) => (p == params(seed))
+  def becauseBfn(seed: Seed) = (p1: String, p2: String, p3: String) => contains(p1, seed) && contains(p2, seed) && contains(p3, seed)
 }
 
 trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] {

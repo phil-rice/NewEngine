@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, B, E] {
+abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
   implicit def toSome[X](x: X) = Some(x)
   val doc = Document()
   val ref1 = Reference("1", doc)
@@ -19,18 +19,18 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(List(EngineDescription[R, RFn]()), currentBuilder.nodes)
   }
 
-  it should "allow the engine descriptions  to be set" in {
-    update((b) => b.title("EngineTitle").description("EngineDescription").priority(1).expected(result(0)))
-    code(4)
-    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", description = "EngineDescription", code = resultCodeHolder(4), priority = 1, expected = Right(result(0)))),
+  it should "allow the engine descriptions properties to be set" in {
+    update((b) => b.title("EngineTitle").description("EngineDescription").priority(1).expected(result("X")))
+    code("X")
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", description = "EngineDescription", code = resultCodeHolder("X"), priority = 1, expected = Right(result("X")))),
       currentBuilder.nodes)
   }
 
   it should "allow a use case to be added" in {
-    update((b) => b.title("EngineTitle").useCase("useCase1").expected(result(0)))
+    update((b) => b.title("EngineTitle").useCase("useCase1").expected(result("X")))
     assertEquals(List(EngineDescription[R, RFn](
       title = "EngineTitle",
-      nodes = List(UseCase(title = "useCase1", expected = Right(result(0)))))), currentBuilder.nodes)
+      nodes = List(UseCase(title = "useCase1", expected = Right(result("X")))))), currentBuilder.nodes)
   }
   it should "allow a second use case to be added" in {
     update((b) => b.title("EngineTitle").useCase("useCase1").useCase("useCase2"))
@@ -39,43 +39,43 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
 
   it should "allow a scenario to added under an engine" in {
     update((b) => b.title("EngineTitle"))
-    scenario(0)
-    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(scenarioObject(params(0))))), currentBuilder.nodes)
+    scenario("A")
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(s("A")))), currentBuilder.nodes)
 
   }
   it should "allow a scenario to added under a usecase" in {
     update((b) => b.title("EngineTitle").useCase("useCase1"))
-    scenario(0)
-    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(scenarioObject(params(0))))))), currentBuilder.nodes)
+    scenario("A")
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(s("A")))))), currentBuilder.nodes)
   }
   it should "allow a multiple scenarios to added under a usecase" in {
     update((b) => b.title("EngineTitle").useCase("useCase1"))
-    scenario(0)
-    scenario(1)
-    scenario(2)
-    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes = List(
-      scenarioObject(params(2)), scenarioObject(params(1)), scenarioObject(params(0))))))), currentBuilder.nodes)
+    scenario("A")
+    scenario("B")
+    scenario("C")
+    assertEquals(List(EngineDescription[R, RFn](title = "EngineTitle", nodes = List(UseCase(title = "useCase1", nodes =
+      List(s("C"), s("B"), s("A")))))), currentBuilder.nodes)
   }
 
   it should "allow references to be added" in {
 
     update((b) => b.title("EngineTitle").reference("1", doc).useCase("useCase1").reference("2", doc))
-    scenario(0)
+    scenario("A")
     update((b) => b.reference("3", doc))
     assertEquals(List(
       EngineDescription[R, RFn](title = "EngineTitle", references = Set(ref1), nodes = List(
         UseCase(title = "useCase1", references = Set(ref2), nodes = List(
-          scenarioObject(params(0)).copyRequirement(references = Set(ref3))))))), currentBuilder.nodes)
+          s("A", references = Set(ref3))))))), currentBuilder.nodes)
   }
   it should "allow references to be added when doc is not specified" in {
 
     update((b) => b.title("EngineTitle").reference("1").useCase("useCase1").reference("2"))
-    scenario(0)
+    scenario("A")
     update((b) => b.reference("3"))
     assertEquals(List(
       EngineDescription[R, RFn](title = "EngineTitle", references = Set(ref1None), nodes = List(
         UseCase(title = "useCase1", references = Set(ref2None), nodes = List(
-          scenarioObject(params(0)).copyRequirement(references = Set(ref3None))))))), currentBuilder.nodes)
+          s("A", references = Set(ref3None))))))), currentBuilder.nodes)
   }
 
   it should "allow multiple references to be added" in {
@@ -84,26 +84,26 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
   }
 
   it should "allow code to be added" in {
-    code(1)
+    code("X")
     update(_.useCase("UC"))
-    code(2)
-    scenario(0)
-    code(3)
+    code("Y")
+    scenario("A")
+    code("Z")
 
-    assertEquals(List(EngineDescription[R, RFn](code = resultCodeHolder(1), nodes = List(
-      UseCase(title = "UC", code = resultCodeHolder(2), nodes = List(
-        scenarioObject(params(0)).copyEngineNode(code = resultCodeHolder(3))))))),
+    assertEquals(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
+      UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
+        s("A", code = resultCodeHolder("Z"))))))),
       currentBuilder.nodes)
   }
 
   it should "allow because to be added" in {
     update(_.useCase("UC"))
-    scenario(0)
-    because(3)
+    scenario("A")
+    because("A")
 
     assertEquals(List(EngineDescription[R, RFn](nodes = List(
       UseCase(title = "UC", nodes = List(
-        scenarioObject(params(0)).copyScenario(because = becauseCodeHolder(3))))))),
+        s("A", because = "A")))))),
       currentBuilder.nodes)
   }
 
@@ -112,9 +112,6 @@ abstract class EngineNodeConstructionTest[Params, BFn, R, RFn, B <: Builder[R, R
 abstract class EngineNodeConstruction1Test[P, R] extends EngineNodeConstructionTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
 abstract class EngineNodeConstruction2Test[P1, P2, R] extends EngineNodeConstructionTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
 abstract class EngineNodeConstruction3Test[P1, P2, P3, R] extends EngineNodeConstructionTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
-
-@RunWith(classOf[JUnitRunner])
-class EngineNodeConstructionStringIntTest extends EngineNodeConstruction1Test[String, Int] with StringIntTest
 
 @RunWith(classOf[JUnitRunner])
 class EngineNodeConstructionStringStringTest extends EngineNodeConstruction1Test[String, String] with StringStringTest

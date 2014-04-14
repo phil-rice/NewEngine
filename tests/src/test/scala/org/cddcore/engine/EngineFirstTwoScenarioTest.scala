@@ -8,30 +8,32 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
   implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
   implicit def toSome[X](x: X) = Some(x)
-  "An empty engine" should "allow the first use not to have a because, and become the default value" in {
-    scenario(0)
-    update(_.expected(result(1)))
-    val e = build
-    assertEquals(conc(s(0, expected = 1)), e.root)
 
-    assertEquals(result(1), e.evaluate(params(0)))
-    assertEquals(result(1), e.evaluate(params(1)))
+  "An empty engine" should "allow the first use not to have a because, and become the default value" in {
+    scenario("A")
+    update(_.expected(result("X")))
+    val e = build
+    assertEquals(conc(s("A", expected = "X")), e.root)
+
+    assertEquals(result("X"), e.evaluate(params("A")))
+    assertEquals(result("X"), e.evaluate(params("B")))
   }
 
   it should " allow the first use not to have a because, and become the default value when we add a second scenario " in {
-    scenario(1)
-    update(_.expected(result(0)))
-    scenario(2)
-    update(_.expected(result(1)))
-    because(1)
+    scenario("A")
+    update(_.expected(result("X")))
+    scenario("B")
+    update(_.expected(result("Y")))
+    because("B")
     val e = build
 
-    val s1 = s(1, expected = 0)
-    val s2 = s(2, expected = 1, because = 1)
+    val s1 = s("A", expected = "X")
+    val s2 = s("B", expected = "Y", because = "B")
     assertEquals(dec(s2, conc(s2), conc(s1)), e.root)
-    assertEquals(result(0), e.evaluate(params(1)))
-    assertEquals(result(1), e.evaluate(params(2)))
-    assertEquals(result(0), e.evaluate(params(333)))
+    assertEquals(result("X"), e.evaluate(params("A")))
+    assertEquals(result("Y"), e.evaluate(params("B")))
+    assertEquals(result("Y"), e.evaluate(params("AB")))
+    assertEquals(result("X"), e.evaluate(params("ACD")))
   }
 
   //  it should "still throw an exception if a because clause is given by the first scenario when parameters don't match the because clause" in {
@@ -104,9 +106,6 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
 abstract class EngineFirstTwoScenario1Test[P, R] extends EngineFirstTwoScenarioTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]
 abstract class EngineFirstTwoScenario2Test[P1, P2, R] extends EngineFirstTwoScenarioTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
 abstract class EngineFirstTwoScenario3Test[P1, P2, P3, R] extends EngineFirstTwoScenarioTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
-
-@RunWith(classOf[JUnitRunner])
-class EngineFirstTwoScenarioStringIntTest extends EngineFirstTwoScenario1Test[String, Int] with StringIntTest
 
 @RunWith(classOf[JUnitRunner])
 class EngineFirstTwoScenarioStringStringTest extends EngineFirstTwoScenario1Test[String, String] with StringStringTest

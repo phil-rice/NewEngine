@@ -16,9 +16,6 @@ abstract class DecisionTreeLens2Test[P1, P2, R] extends DecisionTreeLensTest[(P1
 abstract class DecisionTreeLens3Test[P1, P2, P3, R] extends DecisionTreeLensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
 
 @RunWith(classOf[JUnitRunner])
-class DecisionTreeLensStringIntTest extends DecisionTreeLens1Test[String, Int] with StringIntTest
-
-@RunWith(classOf[JUnitRunner])
 class DecisionTreeLensStringStringTest extends DecisionTreeLens1Test[String, String] with StringStringTest
 
 @RunWith(classOf[JUnitRunner])
