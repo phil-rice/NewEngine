@@ -36,9 +36,9 @@ trait AssertEquals {
 }
 
 trait DecisionTreeBuilder[Params, BFn, R, RFn] {
-  def expectedToCode: (Either[Class[_ <: Exception], R]) => CodeHolder[RFn]
+  def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
   def scen(params: Params, title: Option[String] = None, description: Option[String] = None, because: Option[CodeHolder[BFn]] = None,
-    code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Either[Class[_ <: Exception], R]] = None,
+    code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Either[Exception, R]] = None,
     references: Set[Reference] = Set()) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references)
   def conc(scenario: Scenario[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*) =

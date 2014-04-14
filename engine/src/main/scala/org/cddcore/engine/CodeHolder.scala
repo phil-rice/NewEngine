@@ -41,5 +41,3 @@ trait AbstractCodeHolder {
   override def toString = getClass.getSimpleName() + "(" + description + ")"
 }
 
-
-

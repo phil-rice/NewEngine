@@ -77,6 +77,8 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
       currentBuilder.modifyChildrenForBuild)
   }
 
+
+
 }
 
 abstract class ModifyChildrenForBuild1Test[P, R] extends ModifyChildrenForBuildTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with Builder1Test[P, R]

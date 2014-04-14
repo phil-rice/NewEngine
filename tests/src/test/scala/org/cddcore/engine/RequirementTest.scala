@@ -18,11 +18,11 @@ case class EngineNodeForTest[R, RFn](
   val description: Option[String] = None,
   val priority: Option[Int] = None,
   val references: Set[Reference] = Set(),
-  val expected: Option[Either[Class[_ <: Exception], R]] = None,
+  val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None) extends EngineNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineNodeForTest(title, description, priority, references, expected, code)
-  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
+  def copyEngineNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new EngineNodeForTest[R, RFn](title, description, priority, references, expected, code)
 }
 
@@ -34,12 +34,12 @@ case class EngineNodeAndHolderForTest[R, RFn](
   val description: Option[String] = None,
   val priority: Option[Int] = None,
   val references: Set[Reference] = Set(),
-  val expected: Option[Either[Class[_ <: Exception], R]] = None,
+  val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None,
   val nodes: List[EngineNode[R, RFn]]) extends EngineNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineNodeAndHolderForTest(title, description, priority, references, expected, code, nodes)
-  def copyEngineNode(expected: Option[Either[Class[_ <: Exception], R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
+  def copyEngineNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
     new EngineNodeAndHolderForTest[R, RFn](title, description, priority, references, expected, code, nodes)
   def copyNodes(nodes: List[EngineNode[R, RFn]]) =
     new EngineNodeAndHolderForTest[R, RFn](title, description, priority, references, expected, code, nodes)

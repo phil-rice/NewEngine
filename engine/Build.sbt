@@ -18,3 +18,4 @@ libraryDependencies += "com.novocode" % "junit-interface" % "0.9" % "test"
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4"
 
+libraryDependencies +=  "log4j" % "log4j" % "1.2.17"

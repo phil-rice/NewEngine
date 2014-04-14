@@ -5,14 +5,18 @@ import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
 class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens[R, (P) => R, B] {
+  type S = Scenario[P, (P) => Boolean, R, (P) => R]
   val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]](
-    (b) => b match { case s: Scenario[_, (P) => Boolean, _, _] => s.because },
-    (b, bCodeHolder) => b match { case s: Scenario[_, (P) => Boolean, _, _] => s.copyScenario(because = bCodeHolder) })
+    (b) => b match { case s: S => s.because },
+    (b, bCodeHolder) => b match { case s: S => s.copyScenario(because = bCodeHolder) })
+  val toScenarioL = Lens[EngineNode[R, (P) => R], S](
+    (b) => b match { case s: S => s },
+    (b, s) => b match { case _: S => s })
 }
 
 object Builder1 {
   def bl[P, R]() = new BuilderLens1[P, R, Builder1[P, R]]
-  def expectedToCode[P, R]: Either[Class[_ <: Exception], R] => CodeHolder[(P) => R] =
+  def expectedToCode[P, R]: Either[Exception, R] => CodeHolder[(P) => R] =
     (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
   def becauseImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P) => Boolean]): c.Expr[Builder1[P, R]] = {
     import c.universe._
@@ -21,6 +25,7 @@ object Builder1 {
       val ch = CodeHolder[(P) => Boolean](because.splice, c.literal(show(because.tree)).splice)
       val thisObject: Builder1[P, R] = (c.Expr[Builder1[P, R]](c.prefix.tree)).splice
       l.currentNodeL.andThen(l.becauseL).set(thisObject, Some(ch))
+      thisObject.becauseHolder(ch)
     }
   }
   def codeImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(code: c.Expr[(P) => R]): c.Expr[Builder1[P, R]] = {
@@ -29,7 +34,7 @@ object Builder1 {
       val l = bl[P, R]()
       val ch = CodeHolder[(P) => R](code.splice, c.literal(show(code.tree)).splice)
       val thisObject: Builder1[P, R] = (c.Expr[Builder1[P, R]](c.prefix.tree)).splice
-      l.currentNodeL.andThen(l.codeL).set(thisObject, Some(ch))
+      thisObject.codeHolder(ch)
     }
   }
   def matchWithImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[P, R]]): c.Expr[Builder1[P, R]] = {
@@ -42,15 +47,21 @@ object Builder1 {
   }
 }
 
-case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R])) extends Builder[R, (P) => R, Builder1[P, R]] with BuilderWithModifyChildrenForBuild[R, (P) => R] {
+case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]))(implicit val ldp: LoggerDisplayProcessor)
+  extends Builder[R, (P) => R, Builder1[P, R]]
+  with BuilderWithModifyChildrenForBuild[R, (P) => R]
+  with ValidateScenario[P, (P) => Boolean, R, (P) => R]
+  with MakeClosures1[P, R] {
   val bl1 = Builder1.bl[P, R]()
   import bl1._
+  lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toSet
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
 
   def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
-  def becauseHolder(becauseHolder: CodeHolder[(P) => Boolean]) = currentNodeL.andThen(becauseL).set(this, Some(becauseHolder))
-  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title)) :: nodes)
+  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) =
+    currentNodeL.andThen(toScenarioL).mod(this, (s) => checkBecause(s.copyScenario(because = Some(becauseHolder))))
+  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
   def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
     val withBecause = currentNodeL.andThen(becauseL).set(this, None)
     currentNodeL.andThen(codeL).set(withBecause, None)
@@ -58,15 +69,16 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   def copyNodes(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
 }
 
-trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
+trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
   def makeBecauseClosure(p: P): BecauseClosure = (bfn) => bfn(p)
   def makeResultClosure(p: P): ResultClosure = (rfn) => rfn(p)
 }
+trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] with MakeClosures1[P, R]
 
 case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R], rootIsDefault: Boolean = false) extends DecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
   val lens = new DecisionTreeLens1[P, R]((r) => new Engine1(r))
   def apply(p: P) = evaluate(root, p)
-  val expectedToCode: Either[Class[_ <: Exception], R] => CodeHolder[(P) => R] = Builder1.expectedToCode[P, R]
-}
+  val expectedToCode: Either[Exception, R] => CodeHolder[(P) => R] = Builder1.expectedToCode[P, R]
 
+}
 

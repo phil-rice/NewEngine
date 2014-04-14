@@ -6,6 +6,7 @@ import scala.language.experimental.macros
 import scala.util.Sorting
 
 trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] {
+  implicit def ldp: LoggerDisplayProcessor
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
   import bl._
 
@@ -18,7 +19,7 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
 
   def useCase(title: String): B = nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[EngineNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes).asInstanceOf[B]
   def expected(r: R, title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Right(r))).asInstanceOf[B]
-  def expectException(e: Class[_ <: Exception], title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Left(e))).asInstanceOf[B]
+  def expectException(e: Exception, title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Left(e))).asInstanceOf[B]
   def copyNodes(nodes: List[EngineNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = currentNodeL.andThen(codeL).set(this, Some(codeHolder)).asInstanceOf[B]
   def reference(ref: String): B =
@@ -29,6 +30,34 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
 
 case class ModifedChildrenEngineNodeHolder[R, RFn](nodes: List[EngineNode[R, RFn]] = List()) extends EngineNodeHolder[R, RFn] {
   def copyNodes(nodes: List[EngineNode[R, RFn]]) = throw new IllegalStateException
+}
+
+trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
+  private type S = Scenario[Params, BFn, R, RFn]
+  def scenarios: Set[S]
+  def validateScenario(s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    if (!s.expected.isDefined)
+      throw NoExpectedException(s)
+    checkBecause(s)
+    checkHasExpected(s)
+  }
+  def checkDuplicateScenario(s: S) = {
+    if (scenarios.contains(s)) throw DuplicateScenarioException(s)
+    s
+  }
+  def checkBecause(s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    s.because match {
+      case Some(CodeHolder(bfn, _, _)) => if (!evaluteBecause(bfn, s.params)) throw ScenarioBecauseException(s);
+      case _ =>
+    }
+    s
+  }
+  def checkHasExpected(s: S) = {
+    if (s.expected.isEmpty) throw NoExpectedException(s)
+    s
+
+  }
+
 }
 
 trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {
@@ -56,6 +85,6 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn]
     }
     def modifyChildren(path: List[Reportable], holder: EngineNodeHolder[R, RFn]): List[EngineNode[R, RFn]] =
       holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: EngineNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
-   new ModifedChildrenEngineNodeHolder( modifyChildren(List(), this))
+    new ModifedChildrenEngineNodeHolder(modifyChildren(List(), this))
   }
 }

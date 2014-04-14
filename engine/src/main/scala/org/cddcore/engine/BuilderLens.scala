@@ -78,9 +78,9 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
   val nodesL = Lens[EngineNodeHolder[R, RFn], List[EngineNode[R, RFn]]](
     (en: EngineNodeHolder[R, RFn]) => en.nodes,
     (en: EngineNodeHolder[R, RFn], nodes: List[EngineNode[R, RFn]]) => en.copyNodes(nodes))
-  def expectedL = Lens[EngineNode[R, RFn], Option[Either[Class[_ <: Exception], R]]](
+  def expectedL = Lens[EngineNode[R, RFn], Option[Either[Exception, R]]](
     (en: EngineNode[R, RFn]) => en.expected,
-    (en: EngineNode[R, RFn], ex: Option[Either[Class[_ <: Exception], R]]) => en.copyEngineNode(expected = ex))
+    (en: EngineNode[R, RFn], ex: Option[Either[Exception, R]]) => en.copyEngineNode(expected = ex))
 
   val codeL = Lens[EngineNode[R, RFn], Option[CodeHolder[RFn]]](
     (b) => b.code,
