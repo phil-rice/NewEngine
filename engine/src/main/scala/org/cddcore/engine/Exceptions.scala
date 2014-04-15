@@ -62,7 +62,8 @@ class ScenarioConflictAndBecauseNotAdequateException(msg: String, val expected: 
   extends ScenarioConflictException(msg, existing, beingAdded, cause)
 
 object NoExpectedException {
-  def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) = new NoExpectedException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
+  def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =
+    new NoExpectedException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
 }
 class NoExpectedException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
 

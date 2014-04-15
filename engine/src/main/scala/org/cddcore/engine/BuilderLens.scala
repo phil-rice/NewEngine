@@ -4,7 +4,7 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
 
   def builderToCanCopyWithNewExceptionMapL = Lens[B, CanCopyWithNewExceptionMap[R, RFn]](
     (b) => b.asInstanceOf[CanCopyWithNewExceptionMap[R, RFn]],
-    (b, n) => b.asInstanceOf[B],
+    (b, n) => n.asInstanceOf[B],
     Some("toCanCopyExMapL"))
 
   val currentNodeL: Lens[B, EngineNode[R, RFn]] = Lens[B, EngineNode[R, RFn]](
@@ -13,7 +13,8 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
 
   val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn], Map[EngineNode[R, RFn], List[Exception]]](
     (c) => c.buildExceptions,
-    (c, e) => c.copyWithNewExceptions(e),
+    (c, e) => 
+      c.copyWithNewExceptions(e),
     Some("exceptionMap"))
 
   protected val currentNodeForHoldersL: Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]] = Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]](

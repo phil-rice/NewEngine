@@ -4,6 +4,7 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.util.Sorting
+import org.cddcore.utilities.Maps
 trait HasExceptionMap[R, RFn] {
   def buildExceptions: Map[EngineNode[R, RFn], List[Exception]]
 }
@@ -15,8 +16,20 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
   import bl._
 
-  protected def wrap(stuff: => Builder[R, RFn, B]): B = {
+  protected def wrap(stuff: => Builder[R, RFn, B]): B = try {
     stuff.asInstanceOf[B]
+  } catch {
+    case e: Exception => {
+      Engine.testing match {
+        case true => {
+          val current = currentNodeL.get(this)
+          val result = builderToCanCopyWithNewExceptionMapL.andThen(exceptionMap).mod(this, (map) =>
+            Maps.addToList(map, current, e)).asInstanceOf[B]
+          result
+        }
+        case false => throw e
+      }
+    }
   }
 
   def title(title: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(titleL).set(this, Some(title)))

@@ -63,7 +63,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   def configurator(cfg: (P) => Unit) =  wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[EngineNode[R, (P) => R]]) =  wrap(new Builder1[P, R](nodes, buildExceptions))
   def build: Engine1[P, R] = BuildEngine.build1(this)
-  def copyWithNewExceptions(e: Map[EngineNode[R, (P) => R], List[Exception]]) = new Builder1[P, R](nodes, buildExceptions)
+  def copyWithNewExceptions(buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]]) = new Builder1[P, R](nodes, buildExceptions)
 }
 
 trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
@@ -80,7 +80,7 @@ class DecisionTreeLens1[P, R] extends DecisionTreeLens[P, (P) => Boolean, R, (P)
 
 case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R],
   requirements: EngineNodeHolder[R, (P) => R],
-  buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]] = Map[EngineNode[R, (P) => R], List[Exception]](),
+  buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]],
   rootIsDefault: Boolean = false) extends EngineAndDecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
   val lens = new DecisionTreeLens1[P, R]
   def apply(p: P) = evaluate(root, p)

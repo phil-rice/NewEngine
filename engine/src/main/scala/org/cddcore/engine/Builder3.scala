@@ -67,7 +67,7 @@ case class Builder3[P1, P2, P3, R](
 
   def copyNodes(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes, buildExceptions)
   def build: Engine3[P1, P2, P3, R] = BuildEngine.build3(this)
-  def copyWithNewExceptions(e: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]]) = new Builder3[P1, P2, P3, R](nodes, buildExceptions)
+  def copyWithNewExceptions(buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]]) = new Builder3[P1, P2, P3, R](nodes, buildExceptions)
 
 }
 
@@ -93,7 +93,7 @@ class DecisionTreeLens3[P1, P2, P3, R] extends DecisionTreeLens[(P1, P2, P3), (P
 case class Engine3[P1, P2, P3, R](
   root: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   requirements: EngineNodeHolder[R, (P1, P2, P3) => R],
-  buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]] = Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]](),
+  buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]],
   rootIsDefault: Boolean = false)
   extends EngineAndDecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
   with EvaluateTree3[P1, P2, P3, R]

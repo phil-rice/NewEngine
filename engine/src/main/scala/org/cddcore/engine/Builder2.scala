@@ -65,7 +65,7 @@ case class Builder2[P1, P2, R](
   def configurator(cfg: (P1, P2) => Unit) =  wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, (l) => l :+ ((params: (P1, P2)) => cfg(params._1, params._2))))
   def copyNodes(nodes: List[EngineNode[R, (P1, P2) => R]]) =  wrap(new Builder2[P1, P2, R](nodes, buildExceptions))
   def build: Engine2[P1, P2, R] = BuildEngine.build2(this)
-  def copyWithNewExceptions(e: Map[EngineNode[R, (P1, P2) => R], List[Exception]]) = new Builder2[P1, P2, R](nodes, buildExceptions)
+  def copyWithNewExceptions(buildExceptions: Map[EngineNode[R, (P1, P2) => R], List[Exception]]) = new Builder2[P1, P2, R](nodes, buildExceptions)
 
 }
 
@@ -84,7 +84,7 @@ class DecisionTreeLens2[P1, P2, R] extends DecisionTreeLens[(P1, P2), (P1, P2) =
 
 case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   requirements: EngineNodeHolder[R, (P1, P2) => R],
-  buildExceptions: Map[EngineNode[R, (P1, P2) => R], List[Exception]] = Map[EngineNode[R, (P1, P2) => R], List[Exception]](),
+  buildExceptions: Map[EngineNode[R, (P1, P2) => R], List[Exception]] ,
   rootIsDefault: Boolean = false) extends EngineAndDecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
   val lens = new DecisionTreeLens2[P1, P2, R]
   def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
