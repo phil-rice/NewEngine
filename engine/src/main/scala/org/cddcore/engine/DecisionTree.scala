@@ -71,9 +71,9 @@ trait MakeClosures[Params, BFn, R, RFn] {
   def safe[T](block: => T): Either[Exception, T] = try Right(block) catch { case e: Exception => Left(e) }
   def makeBecauseClosure(params: Params): BecauseClosure
   def makeResultClosure(params: Params): ResultClosure
-  def evaluteBecause(b: BFn, params: Params): Boolean = makeBecauseClosure(params)(b)
-  def evaluteResult(rfn: RFn, params: Params) = makeResultClosure(params)(rfn)
-  def safeEvaluteResult(rfn: RFn, params: Params) = safe(makeResultClosure(params)(rfn))
+  def evaluateBecause(b: BFn, params: Params): Boolean = makeBecauseClosure(params)(b)
+  def evaluateResult(rfn: RFn, params: Params) = makeResultClosure(params)(rfn)
+  def safeEvaluateResult(rfn: RFn, params: Params) = safe(makeResultClosure(params)(rfn))
 }
 
 trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {

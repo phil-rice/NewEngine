@@ -53,7 +53,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
   }
   def checkBecause(s: S)(implicit ldp: LoggerDisplayProcessor) = {
     s.because match {
-      case Some(CodeHolder(bfn, _, _)) => if (!evaluteBecause(bfn, s.params)) throw ScenarioBecauseException(s);
+      case Some(CodeHolder(bfn, _, _)) => if (!evaluateBecause(bfn, s.params)) throw ScenarioBecauseException(s);
       case _ =>
     }
     s

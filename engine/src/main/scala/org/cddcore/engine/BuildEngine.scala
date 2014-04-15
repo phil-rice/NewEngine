@@ -1,7 +1,5 @@
 package org.cddcore.engine
 
-import org.cddcore.engine.ScenarioConflictingWithoutBecauseException
-
 object BuildEngine {
 
   implicit val ldp = SimpleLoggerDisplayProcessor()
@@ -41,42 +39,38 @@ object BuildEngine {
     type DN = DecisionTreeNode[Params, BFn, R, RFn]
     type Dec = Decision[Params, BFn, R, RFn]
     type Conc = Conclusion[Params, BFn, R, RFn]
+    def actualFromNewScenario(c: Conc) = tree.safeEvaluateResult(c.code.fn, s.params)
 
-    def actualFromNewScenario(c: Conc) = tree.safeEvaluteResult(c.code.fn, s.params)
+    val concL = tree.findLensToConclusion(requirements, tree.makeBecauseClosure(s.params))
+    val concLToConclusionL = concL.andThen(toConclusionL)
+    val oldConclusion = concLToConclusionL.get(tree)
+    val actual = actualFromNewScenario(oldConclusion)
+    val expected = s.expected.get
+    val comesToSameConclusion = Reportable.compare(actual, expected)
+
     def newConclusion = Conclusion(code = s.actualCode(tree.expectedToCode), List(s))
-    def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => {
-      val actual = actualFromNewScenario(c)
-      val expected = s.expected.get
-      if (actual != expected)
-        c.scenarios match {
-          case Nil =>
-            throw ScenarioConflictingWithDefaultAndNoBecauseException(lensToNode, actual,expected, s)
-          case existing =>
-            throw ScenarioConflictingWithoutBecauseException(lensToNode, actual, expected, existing, s)
-        }
-      c.copy(scenarios = c.scenarios :+ s)
-    })
-    def addTo(lensToNode: Lens[DT, DN]) = {
-      lensToNode.mod(tree, (c) => c match {
+    def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => c.copy(scenarios = c.scenarios :+ s))
+    def addDecisionNodeTo(b: CodeHolder[BFn]) = {
+      concL.mod(tree, (c) => c match {
         case c: Conc =>
-          def dnAsNo = Decision(List(s.because.get), yes = newConclusion, no = c, scenarioThatCausedNode = s)
-          dnAsNo
+          c.scenarios.filter((s) => tree.evaluateBecause(b.fn, s.params)) match {
+            case Nil => Decision(List(s.because.get), yes = newConclusion, no = c, scenarioThatCausedNode = s)
+            case brokenScenarios => throw ScenarioConflictAndBecauseNotAdequateException(concL, expected, actual, brokenScenarios, s)
+          }
+        case _ => throw new IllegalStateException
       })
     }
 
     val result =
-      if (tree.rootIsDefault)
-        if (s.because.isDefined)
-          addTo(rootL(requirements))
-        else
-          rootL(requirements).set(tree, newConclusion)
-      else {
-        val concL = tree.findLensToConclusion(requirements, tree.makeBecauseClosure(s.params))
-        s.because match {
-          case Some(b) => addTo(concL)
-          case _ =>
-            addAssertion(concL.andThen(toConclusionL))
-        }
+      (comesToSameConclusion, s.because, tree.rootIsDefault) match {
+        case (false, None, true) => concLToConclusionL.set(tree, newConclusion)
+        case (true, _, _) => addAssertion(concL.andThen(toConclusionL)) //latter on this will be the "or rule" place 
+        case (false, None, _) =>
+          oldConclusion.scenarios match {
+            case Nil => throw ScenarioConflictingWithDefaultAndNoBecauseException(concL, actual, expected, s)
+            case existing => throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, s)
+          }
+        case (false, Some(b), _) => addDecisionNodeTo(b)
       }
     result
   }

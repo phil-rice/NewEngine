@@ -28,7 +28,7 @@ object DuplicateScenarioException {
 class DuplicateScenarioException(msg: String, scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
 
 object ScenarioConflictingWithDefaultAndNoBecauseException {
-  def apply[R](lens: Lens[_, _], actual: Either[Exception, R],expected: Either[Exception, R], s: Scenario[_, _, R, _])(implicit ldp: LoggerDisplayProcessor) =
+  def apply[R](lens: Lens[_, _], actual: Either[Exception, R], expected: Either[Exception, R], s: Scenario[_, _, R, _])(implicit ldp: LoggerDisplayProcessor) =
     new ScenarioConflictingWithDefaultAndNoBecauseException(s"\n$lens\nActual Result:\n${actual}\nExpected\n${expected}\n${ExceptionScenarioPrinter.full(s)}", lens, actual, s)
 }
 class ScenarioConflictingWithDefaultAndNoBecauseException(msg: String, val lens: Lens[_, _], val actual: Either[Exception, _], scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
@@ -41,12 +41,25 @@ class ScenarioConflictingWithDefaultAndNoBecauseException(msg: String, val lens:
 class ScenarioConflictException(msg: String, val existing: List[Scenario[_, _, _, _]], val beingAdded: Scenario[_, _, _, _], cause: Throwable = null) extends ScenarioException(msg, beingAdded, cause)
 //
 object ScenarioConflictingWithoutBecauseException {
-  def apply[Params, BFn, R, RFn](lens: Lens[_, _], expected:  Either[Exception, R], actual:  Either[Exception, R], existing: List[Scenario[Params, BFn, R, RFn]], beingAdded: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = {
-    new ScenarioConflictingWithoutBecauseException(s"\nCame to wrong conclusion: ${actual}\nInstead of ${expected}\n$lens\n${ExceptionScenarioPrinter.existingAndBeingAdded(existing, beingAdded)}", existing, beingAdded)
+  def apply[Params, BFn, R, RFn](lens: Lens[_, _], expected: Either[Exception, R], actual: Either[Exception, R], existing: List[Scenario[Params, BFn, R, RFn]], beingAdded: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = {
+    new ScenarioConflictingWithoutBecauseException(s"\nCame to wrong conclusion: ${actual}\nInstead of ${expected}\n$lens\n${ExceptionScenarioPrinter.existingAndBeingAdded(existing, beingAdded)}", expected, actual, existing, beingAdded)
   }
 }
+class ScenarioConflictingWithoutBecauseException(msg: String, val expected: Either[Exception, _], val actual: Either[Exception, _], existing: List[Scenario[_, _, _, _]], beingAdded: Scenario[_, _, _, _], cause: Throwable = null) extends ScenarioConflictException(msg, existing, beingAdded, cause)
 
-class ScenarioConflictingWithoutBecauseException(msg: String, existing: List[Scenario[_, _, _, _]], beingAdded: Scenario[_, _, _, _], cause: Throwable = null) extends ScenarioConflictException(msg, existing, beingAdded, cause)
+object ScenarioConflictAndBecauseNotAdequateException {
+  def apply[Params, BFn, R, RFn](lens: Lens[_, _], expected: Either[Exception, R], actual: Either[Exception, R], existing: List[Scenario[Params, BFn, R, RFn]], beingAdded: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = {
+    val becauseString = "\n" +
+      "The because is valid in these other scenarios, which the engine thinks are similar.\n" +
+      "The Engine doesn't have enough information to decide what to do\n" +
+      "To resolve this you could improve the because clause in this scenario to differentiate it from the listed scenarios\n" +
+      "If you understand how the engine is constructed, you could change scenario priorities, but often it is better to refine the because clause\n" +
+      "The because clause is " + beingAdded.because.getOrElse(throw new IllegalStateException).description
+    new ScenarioConflictAndBecauseNotAdequateException(s"$becauseString\nCame to wrong conclusion: ${actual}\nInstead of ${expected}\n$lens\n${ExceptionScenarioPrinter.existingAndBeingAdded(existing, beingAdded)}", expected, actual, existing, beingAdded)
+  }
+}
+class ScenarioConflictAndBecauseNotAdequateException(msg: String, val expected: Either[Exception, _], val actual: Either[Exception, _], existing: List[Scenario[_, _, _, _]], beingAdded: Scenario[_, _, _, _], cause: Throwable = null)
+  extends ScenarioConflictException(msg, existing, beingAdded, cause)
 
 object NoExpectedException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) = new NoExpectedException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
