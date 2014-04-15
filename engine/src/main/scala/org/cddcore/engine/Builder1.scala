@@ -13,7 +13,7 @@ object Builder1 {
 
   def creator[P, R](requirements: EngineNodeHolder[R, (P) => R]) =
     (r: DecisionTreeNode[P, (P) => Boolean, R, (P) => R],
-      buildExceptions: Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]]) => new Engine1(r, requirements, buildExceptions)
+      buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]]) => new Engine1(r, requirements, buildExceptions)
   def becauseImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P) => Boolean]): c.Expr[Builder1[P, R]] = {
     import c.universe._
     reify {
@@ -42,7 +42,9 @@ object Builder1 {
   //  }
 }
 
-case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]))(implicit val ldp: LoggerDisplayProcessor)
+case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]), 
+    buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]] = Map[EngineNode[R, (P) => R], List[Exception]]())
+    (implicit val ldp: LoggerDisplayProcessor)
   extends Builder[R, (P) => R, Builder1[P, R]]
   with BuilderWithModifyChildrenForBuild[R, (P) => R]
   with ValidateScenario[P, (P) => Boolean, R, (P) => R]
@@ -73,13 +75,13 @@ trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
 }
 trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] with MakeClosures1[P, R]
 class DecisionTreeLens1[P, R] extends DecisionTreeLens[P, (P) => Boolean, R, (P) => R] {
-  def creator(requirements: EngineNodeHolder[R, (P) => R]): (DecisionTreeNode[P, (P) => Boolean, R, (P) => R], Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]]) => DecisionTreeAndExceptions[P, (P) => Boolean, R, (P) => R] =
+  def creator(requirements: EngineNodeHolder[R, (P) => R]): (DecisionTreeNode[P, (P) => Boolean, R, (P) => R], Map[EngineNode[R, (P) => R], List[Exception]]) => DecisionTreeAndExceptions[P, (P) => Boolean, R, (P) => R] =
     Builder1.creator(requirements)
 }
 
 case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R],
   requirements: EngineNodeHolder[R, (P) => R],
-  buildExceptions: Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]] = Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]](),
+  buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]] = Map[EngineNode[R, (P) => R], List[Exception]](),
   rootIsDefault: Boolean = false) extends EngineAndDecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
   val lens = new DecisionTreeLens1[P, R]
   def apply(p: P) = evaluate(root, p)

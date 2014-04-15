@@ -4,8 +4,10 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.util.Sorting
-
-trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] {
+trait HasExceptionMap[ R, RFn] {
+   def buildExceptions: Map[EngineNode[R, RFn], List[Exception]]
+}
+trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] with HasExceptionMap[R, RFn]{
   implicit def ldp: LoggerDisplayProcessor
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
   import bl._

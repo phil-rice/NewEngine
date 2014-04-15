@@ -1,9 +1,8 @@
 package org.cddcore.engine
 
-trait Engine[Params, BFn, R, RFn] {
+trait Engine[Params, BFn, R, RFn] extends HasExceptionMap[R, RFn] {
   def requirements: EngineNodeHolder[R, RFn]
   def tree: DecisionTree[Params, BFn, R, RFn]
-  def buildExceptions: Map[Scenario[Params, BFn, R, RFn], List[Exception]]
 }
 
 trait EngineAndDecisionTree[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] with DecisionTree[Params, BFn, R, RFn] with DecisionTreeAndExceptions[Params, BFn, R, RFn] {

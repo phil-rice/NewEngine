@@ -13,7 +13,7 @@ abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
   implicit def toSome[X](x: X) = Some(x)
 
   val noRequirements = currentBuilder
-  val noExceptions = Map[Scenario[Params, BFn, R, RFn], List[Exception]]()
+  val noExceptions = Map[EngineNode[R, RFn], List[Exception]]()
 
   val sa = s("A", because = "A", expected = "X")
   val sb = s("B", because = "B", expected = "Y")

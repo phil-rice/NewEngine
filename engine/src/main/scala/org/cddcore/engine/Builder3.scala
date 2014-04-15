@@ -11,7 +11,7 @@ object Builder3 {
     (x) => new CodeHolder((p1, p2, p3) => x match { case Right(r) => r }, x.toString())
   def creator[P1, P2, P3, R](requirements: EngineNodeHolder[R, (P1, P2, P3) => R]) =
     (r: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
-      buildExceptions: Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]]) => new Engine3(r, requirements, buildExceptions)
+      buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]]) => new Engine3(r, requirements, buildExceptions)
   def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2, P3) => Boolean]): c.Expr[Builder3[P1, P2, P3, R]] = {
     import c.universe._
     reify {
@@ -43,11 +43,14 @@ object Builder3 {
   }
 }
 
-case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R]))(implicit val ldp: LoggerDisplayProcessor)
+case class Builder3[P1, P2, P3, R](
+  nodes: List[EngineNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R]),
+  buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]] = Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R]]
   with BuilderWithModifyChildrenForBuild[R, (P1, P2, P3) => R]
   with ValidateScenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
   with MakeClosures3[P1, P2, P3, R] {
+  
   val bl3 = new BuilderLens3[P1, P2, P3, R, Builder3[P1, P2, P3, R]]
   import bl3._
   lazy val scenarios = all(classOf[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]]).toSet
@@ -88,7 +91,7 @@ class DecisionTreeLens3[P1, P2, P3, R] extends DecisionTreeLens[(P1, P2, P3), (P
 case class Engine3[P1, P2, P3, R](
   root: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   requirements: EngineNodeHolder[R, (P1, P2, P3) => R],
-  buildExceptions: Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]] = Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]](),
+  buildExceptions: Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]] = Map[EngineNode[R, (P1, P2, P3) => R], List[Exception]](),
   rootIsDefault: Boolean = false)
   extends EngineAndDecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
   with EvaluateTree3[P1, P2, P3, R]

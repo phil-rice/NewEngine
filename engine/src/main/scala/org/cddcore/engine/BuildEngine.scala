@@ -35,11 +35,17 @@ object BuildEngine {
   }
 
   def build1[P, R](builder: Builder1[P, R]) =
-    build(builder, new Engine1(defaultRoot[P, (P) => Boolean, R, (P) => R](defaultRootCode1[P, R]), builder, rootIsDefault = true), builder).asInstanceOf[Engine1[P, R]]
+    build(builder, 
+        new Engine1(defaultRoot[P, (P) => Boolean, R, (P) => R](defaultRootCode1[P, R]), builder, rootIsDefault = true), 
+        builder).asInstanceOf[Engine1[P, R]]
   def build2[P1, P2, R](builder: Builder2[P1, P2, R]) =
-    build(builder, new Engine2(defaultRoot[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](defaultRootCode2[P1, P2, R]), builder, rootIsDefault = true), builder).asInstanceOf[Engine2[P1, P2, R]]
+    build(builder,
+      new Engine2(defaultRoot[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](defaultRootCode2[P1, P2, R]), builder, rootIsDefault = true),
+      builder).asInstanceOf[Engine2[P1, P2, R]]
   def build3[P1, P2, P3, R](builder: Builder3[P1, P2, P3, R]) =
-    build(builder, new Engine3(defaultRoot[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](defaultRootCode3[P1, P2, P3, R]), builder, rootIsDefault = true), builder).asInstanceOf[Engine3[P1, P2, P3, R]]
+    build(builder,
+      new Engine3(defaultRoot[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](defaultRootCode3[P1, P2, P3, R]), builder, rootIsDefault = true),
+      builder).asInstanceOf[Engine3[P1, P2, P3, R]]
 
   def addScenario[Params, BFn, R, RFn](requirements: EngineNodeHolder[R, RFn], tree: DecisionTreeAndExceptions[Params, BFn, R, RFn], scenario: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor): DecisionTreeAndExceptions[Params, BFn, R, RFn] = {
     import tree.lens._
