@@ -6,12 +6,12 @@ import scala.language.experimental.macros
 import scala.util.Sorting
 import org.cddcore.utilities.Maps
 trait HasExceptionMap[R, RFn] {
-  def buildExceptions: Map[EngineNode[R, RFn], List[Exception]]
+  def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
 }
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
-  def copyWithNewExceptions(buildExceptions: Map[EngineNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
+  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
 }
-trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
+trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends BuilderNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
   import bl._
@@ -36,20 +36,20 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
   def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
   def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
 
-  def useCase(title: String): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[EngineNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes))
+  def useCase(title: String): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes))
   def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
 
   def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
   def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))
 
-  def copyNodes(nodes: List[EngineNode[R, RFn]]): B
+  def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
 
 }
 
-case class ModifedChildrenEngineNodeHolder[R, RFn](nodes: List[EngineNode[R, RFn]] = List()) extends EngineNodeHolder[R, RFn] {
-  def copyNodes(nodes: List[EngineNode[R, RFn]]) = throw new IllegalStateException
+case class ModifedChildrenBuilderNodeHolder[R, RFn](nodes: List[BuilderNode[R, RFn]] = List()) extends BuilderNodeHolder[R, RFn] {
+  def copyNodes(nodes: List[BuilderNode[R, RFn]]) = throw new IllegalStateException
 }
 
 trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
@@ -97,17 +97,17 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
 
 }
 
-trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn] {
-  def modifyChildrenForBuild: ModifedChildrenEngineNodeHolder[R, RFn] = {
-    def modifyChildAsNode(path: List[Reportable], child: EngineNode[R, RFn]) = {
+trait BuilderWithModifyChildrenForBuild[R, RFn] extends BuilderNodeHolder[R, RFn] {
+  def modifyChildrenForBuild: ModifedChildrenBuilderNodeHolder[R, RFn] = {
+    def modifyChildAsNode(path: List[Reportable], child: BuilderNode[R, RFn]) = {
       child
     }
-    def firstOption[X](path: List[Reportable], fn: (EngineNode[R, RFn]) => Option[X]): Option[X] = {
-      path.collect { case e: EngineNode[R, RFn] => fn(e) }.find((r) => r.isDefined).getOrElse(None)
+    def firstOption[X](path: List[Reportable], fn: (BuilderNode[R, RFn]) => Option[X]): Option[X] = {
+      path.collect { case e: BuilderNode[R, RFn] => fn(e) }.find((r) => r.isDefined).getOrElse(None)
     }
-    def modifyChild(path: List[Reportable]): EngineNode[R, RFn] = {
+    def modifyChild(path: List[Reportable]): BuilderNode[R, RFn] = {
       val nodeModified = path.head match {
-        case node: EngineNode[R, RFn] => node.copyEngineNode(
+        case node: BuilderNode[R, RFn] => node.copyBuilderNode(
           expected = firstOption(path, _.expected),
           code = firstOption(path, _.code)).
           copyRequirement(
@@ -115,13 +115,13 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] extends EngineNodeHolder[R, RFn]
         case x => x
       }
       val withChildren = nodeModified match {
-        case holder: EngineNodeHolder[R, RFn] => holder.copyNodes(nodes = modifyChildren(path, holder))
-        case x: EngineNode[R, RFn] => x
+        case holder: BuilderNodeHolder[R, RFn] => holder.copyNodes(nodes = modifyChildren(path, holder))
+        case x: BuilderNode[R, RFn] => x
       }
-      withChildren.asInstanceOf[EngineNode[R, RFn]]
+      withChildren.asInstanceOf[BuilderNode[R, RFn]]
     }
-    def modifyChildren(path: List[Reportable], holder: EngineNodeHolder[R, RFn]): List[EngineNode[R, RFn]] =
-      holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: EngineNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
-    new ModifedChildrenEngineNodeHolder(modifyChildren(List(), this))
+    def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
+      holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: BuilderNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
+    new ModifedChildrenBuilderNodeHolder(modifyChildren(List(), this))
   }
 }

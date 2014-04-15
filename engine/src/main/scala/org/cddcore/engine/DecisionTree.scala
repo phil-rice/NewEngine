@@ -3,14 +3,14 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 
 trait DecisionTreeLens[Params, BFn, R, RFn] {
-  def creator(requirements: EngineNodeHolder[R, RFn]): (DecisionTreeNode[Params, BFn, R, RFn], Map[EngineNode[R, RFn], List[Exception]]) => DecisionTreeAndExceptions[Params, BFn, R, RFn];
-  def rootL(requirements: EngineNodeHolder[R, RFn], buildExceptions: Map[EngineNode[R, RFn], List[Exception]]) = Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
+  def creator(requirements: BuilderNodeHolder[R, RFn]): (DecisionTreeNode[Params, BFn, R, RFn], Map[BuilderNode[R, RFn], List[Exception]]) => DecisionTreeAndExceptions[Params, BFn, R, RFn];
+  def rootL(requirements: BuilderNodeHolder[R, RFn], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) = Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (tree) => tree.root,
     (tree, root) => creator(requirements)(root, buildExceptions),
     Some("rootL"))
 
-  def exceptionMapL(requirements: EngineNodeHolder[R, RFn]) =
-    Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], Map[EngineNode[R, RFn], List[Exception]]](
+  def exceptionMapL(requirements: BuilderNodeHolder[R, RFn]) =
+    Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], Map[BuilderNode[R, RFn], List[Exception]]](
       (tree) => tree.buildExceptions,
       (tree, buildExceptions) => creator(requirements)(tree.root, buildExceptions),
       Some("exceptionMapL"))
@@ -48,7 +48,7 @@ trait DecisionTreeAndExceptions[Params, BFn, R, RFn] extends DecisionTree[Params
  
   type LensToNode = Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
 
-  def findLensToConclusion(requirements: EngineNodeHolder[R, RFn], buildExceptions: Map[EngineNode[R, RFn], List[Exception]], bc: BecauseClosure): Lens[DT, DTN] =
+  def findLensToConclusion(requirements: BuilderNodeHolder[R, RFn], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]], bc: BecauseClosure): Lens[DT, DTN] =
     findLensToConclusion(root, bc, rootL(requirements, buildExceptions))
 
   protected def findLensToConclusion(root: DTN, bc: BecauseClosure, soFar: LensToNode): Lens[DT, DTN] =

@@ -12,7 +12,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
   "Scenarios when modifiedForBuild" should "inherit priority from parent if not defined" in {
     update(_.priority(2).useCase("UC").priority(1))
     scenario("A")
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(s("A", priority = 1))))))),
       currentBuilder.modifyChildrenForBuild)
   }
@@ -20,7 +20,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     update(_.priority(2).useCase("UC").priority(1))
     scenario("A")
     update(_.priority(3))
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(
         s("A", priority = 3))))))),
       currentBuilder.modifyChildrenForBuild)
@@ -28,7 +28,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
   it should "inherit expected from parent if not defined" in {
     update(_.expected(result("X")).useCase("UC").expected(result("Y")))
     scenario("A")
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(s("A", expected = "Y"))))))),
       currentBuilder.modifyChildrenForBuild)
   }
@@ -37,7 +37,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     update(_.expected(result("X")).useCase("UC").expected(result("Y")))
     scenario("A")
     update(_.expected(result("Z")))
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(
         s("A", expected = "Z"))))))),
       currentBuilder.modifyChildrenForBuild)
@@ -48,7 +48,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     code("Y")
     scenario("A")
 
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Y")))))))),
       currentBuilder.modifyChildrenForBuild)
@@ -61,7 +61,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     scenario("A")
     code("Z")
 
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Z")))))))),
       currentBuilder.modifyChildrenForBuild)
@@ -69,7 +69,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
 
   it should "sort children by initially order they were defined in, but by priority if specified" in {
     update(_.useCase("UC1").priority(1).useCase("UC2").priority(2).useCase("UC3").useCase("UC4"))
-    assertEquals(ModifedChildrenEngineNodeHolder(List(EngineDescription[R, RFn](nodes = List(
+    assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](nodes = List(
       UseCase(title = "UC2", priority = 2),
       UseCase(title = "UC1", priority = 1),
       UseCase(title = "UC3"),

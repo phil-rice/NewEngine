@@ -48,7 +48,7 @@ object BuildEngine {
       new Engine3(defaultRoot[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](defaultRootCode3[P1, P2, P3, R]), builder, builder.buildExceptions, rootIsDefault = true),
       builder).asInstanceOf[Engine3[P1, P2, P3, R]]
 
-  def addScenario[Params, BFn, R, RFn](requirements: EngineNodeHolder[R, RFn], tree: DecisionTreeAndExceptions[Params, BFn, R, RFn], scenario: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor): DecisionTreeAndExceptions[Params, BFn, R, RFn] = {
+  def addScenario[Params, BFn, R, RFn](requirements: BuilderNodeHolder[R, RFn], tree: DecisionTreeAndExceptions[Params, BFn, R, RFn], scenario: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor): DecisionTreeAndExceptions[Params, BFn, R, RFn] = {
     import tree.lens._
     type DT = DecisionTreeAndExceptions[Params, BFn, R, RFn]
     type DN = DecisionTreeNode[Params, BFn, R, RFn]
