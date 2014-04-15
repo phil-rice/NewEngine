@@ -65,8 +65,15 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
 }
 
 trait MakeClosures3[P1, P2, P3, R] extends MakeClosures[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
-  def makeBecauseClosure(params: (P1, P2, P3)): BecauseClosure = ((bfn) => bfn(params._1, params._2, params._3))
-  def makeResultClosure(params: (P1, P2, P3)): ResultClosure = ((rfn) => rfn(params._1, params._2, params._3))
+  def makeBecauseClosure(s: Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]): BecauseClosure =
+    ((bfn) => { s.executeConfigurators; bfn(s.params._1, s.params._2, s.params._3) })
+  def makeBecauseClosure(params: (P1, P2, P3)): BecauseClosure =
+    ((bfn) => bfn(params._1, params._2, params._3))
+
+  def makeResultClosure(s: Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]): ResultClosure =
+    ((rfn) => { s.executeConfigurators; rfn(s.params._1, s.params._2, s.params._3) })
+  def makeResultClosure(params: (P1, P2, P3)): ResultClosure =
+    ((rfn) => rfn(params._1, params._2, params._3))
 
 }
 

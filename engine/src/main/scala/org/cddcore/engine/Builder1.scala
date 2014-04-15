@@ -63,8 +63,10 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
 }
 
 trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
-  def makeBecauseClosure(p: P): BecauseClosure = (bfn) => bfn(p)
-  def makeResultClosure(p: P): ResultClosure = (rfn) => rfn(p)
+  def makeBecauseClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): BecauseClosure = (bfn) => { s.executeConfigurators; bfn(s.params) }
+  def makeBecauseClosure(params: P): BecauseClosure = (bfn) => bfn(params)
+  def makeResultClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): ResultClosure = (rfn) => { s.executeConfigurators; rfn(s.params) }
+  def makeResultClosure(params: P): ResultClosure = (rfn) => rfn(params)
 }
 trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] with MakeClosures1[P, R]
 class DecisionTreeLens1[P, R] extends DecisionTreeLens[P, (P) => Boolean, R, (P) => R] {

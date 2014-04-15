@@ -15,8 +15,8 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
     val e = build
     assertEquals(conc(s("A", expected = "X")), e.root)
 
-    assertEquals(result("X"), e.evaluate(params("A")))
-    assertEquals(result("X"), e.evaluate(params("B")))
+    assertEquals(result("X"), e.evaluate(s("A")))
+    assertEquals(result("X"), e.evaluate(s("B")))
   }
 
   it should " allow the first use not to have a because, and become the default value when we add a second scenario " in {
@@ -27,10 +27,10 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
     val s1 = s("A", expected = "X")
     val s2 = s("B", expected = "Y", because = "B")
     assertEquals(dec(s2, conc(s2), conc(s1)), e.root)
-    assertEquals(result("X"), e.evaluate(params("A")))
-    assertEquals(result("Y"), e.evaluate(params("B")))
-    assertEquals(result("Y"), e.evaluate(params("AB")))
-    assertEquals(result("X"), e.evaluate(params("ACD")))
+    assertEquals(result("X"), e.evaluate(s("A")))
+    assertEquals(result("Y"), e.evaluate(s("B")))
+    assertEquals(result("Y"), e.evaluate(s("AB")))
+    assertEquals(result("X"), e.evaluate(s("ACD")))
   }
 
   it should "still throw an UndecidedException if a because clause is given by the first scenario when parameters don't match the because clause" in {
@@ -42,9 +42,9 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
     val s1 = s("A", expected = "X", because = "A")
     assertEquals(dec(s1, conc(s1), defaultRoot), e.root)
 
-    assertEquals(result("X"), e.evaluate(params("A")))
-    assertEquals(result("X"), e.evaluate(params("AB")))
-    evaluating { e.evaluate(params("B")) } should produce[UndecidedException]
+    assertEquals(result("X"), e.evaluate(s("A")))
+    assertEquals(result("X"), e.evaluate(s("AB")))
+    evaluating { e.evaluate(s("B")) } should produce[UndecidedException]
   }
 
   it should "throw a DuplicateScenarioException if the same scenario is added" in {

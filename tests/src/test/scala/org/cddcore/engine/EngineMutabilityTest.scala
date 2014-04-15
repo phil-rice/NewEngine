@@ -37,7 +37,6 @@ abstract class EngineMutabilityTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
     check("A", "B")
     check("A", "B", "AB")
     check("A", "B", "AB", "ABC")
-    check("A", "B", "C", "AB", "AC", "BC", "ABC")
   }
 
 }

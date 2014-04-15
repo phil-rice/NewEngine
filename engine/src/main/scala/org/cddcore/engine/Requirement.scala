@@ -97,7 +97,6 @@ case class UseCase[R, RFn](
   override def toString = s"UseCase(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
 }
 
-
 case class Scenario[Params, BFn, R, RFn](
   val params: Params,
   val title: Option[String] = None,
@@ -110,11 +109,12 @@ case class Scenario[Params, BFn, R, RFn](
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
   val configurators: List[(Params) => Unit] = List()) extends EngineNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions,configurators)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
   def copyEngineNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions,configurators)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
 
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
+  def executeConfigurators = configurators.foreach((c) => c(params))
 }
 
 case class Document(

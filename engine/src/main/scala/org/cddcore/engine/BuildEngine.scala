@@ -33,44 +33,44 @@ object BuildEngine {
   def build3[P1, P2, P3, R](builder: Builder3[P1, P2, P3, R]) =
     build(builder, new Engine3(defaultRoot[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](defaultRootCode3[P1, P2, P3, R]), builder, rootIsDefault = true), builder).asInstanceOf[Engine3[P1, P2, P3, R]]
 
-  def addScenario[Params, BFn, R, RFn](requirements: EngineNodeHolder[R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor): DecisionTree[Params, BFn, R, RFn] = {
+  def addScenario[Params, BFn, R, RFn](requirements: EngineNodeHolder[R, RFn], tree: DecisionTree[Params, BFn, R, RFn], scenario: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor): DecisionTree[Params, BFn, R, RFn] = {
     import tree.lens._
     type DT = DecisionTree[Params, BFn, R, RFn]
     type DN = DecisionTreeNode[Params, BFn, R, RFn]
     type Dec = Decision[Params, BFn, R, RFn]
     type Conc = Conclusion[Params, BFn, R, RFn]
-    def actualFromNewScenario(c: Conc) = tree.safeEvaluateResult(c.code.fn, s.params)
+    def actualFromNewScenario(c: Conc) = tree.safeEvaluateResult(c.code.fn, scenario)
 
-    val concL = tree.findLensToConclusion(requirements, tree.makeBecauseClosure(s.params))
+    val concL = tree.findLensToConclusion(requirements, tree.makeBecauseClosure(scenario))
     val concLToConclusionL = concL.andThen(toConclusionL)
     val oldConclusion = concLToConclusionL.get(tree)
     val actual = actualFromNewScenario(oldConclusion)
-    val expected = s.expected.get
+    val expected = scenario.expected.get
     val comesToSameConclusion = Reportable.compare(actual, expected)
-
-    def newConclusion = Conclusion(code = s.actualCode(tree.expectedToCode), List(s))
-    def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => c.copy(scenarios = c.scenarios :+ s))
-    def addDecisionNodeTo(b: CodeHolder[BFn]) = {
+    def
+    newConclusion = Conclusion(code = scenario.actualCode(tree.expectedToCode), List(scenario))
+    def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => c.copy(scenarios = c.scenarios :+ scenario))
+    def addDecisionNodeTo = {
       concL.mod(tree, (c) => c match {
         case c: Conc =>
-          c.scenarios.filter((s) => tree.evaluateBecause(b.fn, s.params)) match {
-            case Nil => Decision(List(s.because.get), yes = newConclusion, no = c, scenarioThatCausedNode = s)
-            case brokenScenarios => throw ScenarioConflictAndBecauseNotAdequateException(concL, expected, actual, brokenScenarios, s)
+          c.scenarios.filter((s) => tree.evaluateBecause(scenario, s)) match {
+            case Nil => Decision(List(scenario.because.get), yes = newConclusion, no = c, scenarioThatCausedNode = scenario)
+            case brokenScenarios => throw ScenarioConflictAndBecauseNotAdequateException(concL, expected, actual, brokenScenarios, scenario)
           }
         case _ => throw new IllegalStateException
       })
     }
 
     val result =
-      (comesToSameConclusion, s.because, tree.rootIsDefault) match {
+      (comesToSameConclusion, scenario.because, tree.rootIsDefault) match {
         case (false, None, true) => concLToConclusionL.set(tree, newConclusion)
         case (true, _, _) => addAssertion(concL.andThen(toConclusionL)) //latter on this will be the "or rule" place 
         case (false, None, _) =>
           oldConclusion.scenarios match {
-            case Nil => throw ScenarioConflictingWithDefaultAndNoBecauseException(concL, actual, expected, s)
-            case existing => throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, s)
+            case Nil => throw ScenarioConflictingWithDefaultAndNoBecauseException(concL, actual, expected, scenario)
+            case existing => throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, scenario)
           }
-        case (false, Some(b), _) => addDecisionNodeTo(b)
+        case (false, Some(b), _) => addDecisionNodeTo
       }
     result
   }

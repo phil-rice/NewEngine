@@ -19,9 +19,9 @@ abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
   val sc = s("X", because = "X", expected = "Z")
   val sab = s("AB", because = "AB", expected = "XY")
 
-  val bc_a = makeBecauseClosure(sa.params)
-  val bc_b = makeBecauseClosure(sb.params)
-  val bc_ab = makeBecauseClosure(sab.params)
+  val bc_a = makeBecauseClosure(sa)
+  val bc_b = makeBecauseClosure(sb)
+  val bc_ab = makeBecauseClosure(sab)
 
   val rootA_AB_B = dec(sa, yes = dec(sab, conc(sab), conc(sa)), no = conc(sb))
   val treeA_AB_B = decisionTreeLens.creator(noRequirements)(rootA_AB_B)

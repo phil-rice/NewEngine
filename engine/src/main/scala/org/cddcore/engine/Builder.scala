@@ -52,7 +52,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
   }
   def checkBecause(s: S)(implicit ldp: LoggerDisplayProcessor) = {
     s.because match {
-      case Some(CodeHolder(bfn, _, _)) => if (!evaluateBecause(bfn, s.params)) throw ScenarioBecauseException(s);
+      case Some(_) => if (!evaluateBecause(s, s)) throw ScenarioBecauseException(s);
       case _ =>
     }
     s
@@ -63,14 +63,13 @@ trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R,
   }
   def checkAssertions(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
     s.assertions.foreach((a) => {
-      val p = s.params
-      val result = tree.safeEvaluate(p)
-      val assertionResult = a.fn(p, result)
+      val result = tree.safeEvaluate(s)
+      val assertionResult = a.fn(s.params, result)
       if (!assertionResult) throw AssertionException(a, s)
     })
   }
   def checkCorrectValue(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
-    val actual = tree.safeEvaluate(s.params)
+    val actual = tree.safeEvaluate(s)
     s.expected match {
       case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
       case _ => throw NoExpectedException(s)

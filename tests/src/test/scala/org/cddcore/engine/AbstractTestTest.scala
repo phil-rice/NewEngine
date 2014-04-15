@@ -13,6 +13,7 @@ abstract class AbstractTestTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E 
   def root: org.cddcore.engine.DecisionTreeNode[Params, BFn, R, RFn] = ???
 
   "The abstractTest class" should "allow becauses to be specified and the because means 'all these letters are in the result'" in {
+    
     def checkBecause(because: Seed, p: Seed, expected: Boolean) {
       val bfn = becauseBfn("ABC")
       val bc = makeBecauseClosure(params(p))

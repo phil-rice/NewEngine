@@ -1,8 +1,6 @@
 package org.cddcore.engine
 
 trait Engine[Params, BFn, R, RFn] {
-  def safeEvaluate(params: Params): Either[Exception, R]
-  def evaluate(params: Params): R
   def requirements: EngineNodeHolder[R, RFn]
   def tree: DecisionTree[Params, BFn, R, RFn]
 }
@@ -21,7 +19,7 @@ object Engine {
 
   def checkAllScenarios[Params, BFn, R, RFn](engine: Engine[Params, BFn, R, RFn]) {
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
-      val actual = engine.tree.safeEvaluate(s.params)
+      val actual = engine.tree.safeEvaluate(s)
       s.expected match {
         case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
         case _ => throw NoExpectedException(s)

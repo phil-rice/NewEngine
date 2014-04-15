@@ -69,11 +69,18 @@ trait MakeClosures[Params, BFn, R, RFn] {
   type ResultClosure = (RFn) => R
 
   def safe[T](block: => T): Either[Exception, T] = try Right(block) catch { case e: Exception => Left(e) }
+
   def makeBecauseClosure(params: Params): BecauseClosure
+  def makeBecauseClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): BecauseClosure
+
   def makeResultClosure(params: Params): ResultClosure
-  def evaluateBecause(b: BFn, params: Params): Boolean = makeBecauseClosure(params)(b)
-  def evaluateResult(rfn: RFn, params: Params) = makeResultClosure(params)(rfn)
-  def safeEvaluateResult(rfn: RFn, params: Params) = safe(makeResultClosure(params)(rfn))
+  def makeResultClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): ResultClosure
+
+  def evaluateBecause(scenarioWithbecause: Scenario[Params, BFn, R, RFn], scenarioWithParams: Scenario[Params, BFn, R, RFn]): Boolean =
+    makeBecauseClosure(scenarioWithParams)(scenarioWithbecause.
+      because.getOrElse(throw new IllegalArgumentException(s"Scenario doesn't have because\scenarioWithbecause")).fn)
+  def evaluateResult(rfn: RFn, scenarioWithParams: Scenario[Params, BFn, R, RFn]) = makeResultClosure(scenarioWithParams)(rfn)
+  def safeEvaluateResult(rfn: RFn, scenarioWithParams: Scenario[Params, BFn, R, RFn]) = safe(makeResultClosure(scenarioWithParams)(rfn))
 }
 
 trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
@@ -82,14 +89,20 @@ trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn
   type DTN = DecisionTreeNode[Params, BFn, R, RFn]
   type Result = Either[Exception, R]
 
-  def evaluate(params: Params): R = evaluate(root, params)
+  def evaluate(scenarioWithParams: Scenario[Params, BFn, R, RFn]): R = evaluate(root, scenarioWithParams)
+
+  protected def evaluate(root: DTN, scenarioWithParams: Scenario[Params, BFn, R, RFn]): R = {
+    val bc = makeBecauseClosure(scenarioWithParams)
+    val c = findConclusion(root, bc).code
+    makeResultClosure(scenarioWithParams).apply(c.fn)
+  }
   protected def evaluate(root: DTN, params: Params): R = {
     val bc = makeBecauseClosure(params)
     val c = findConclusion(root, bc).code
     makeResultClosure(params).apply(c.fn)
   }
 
-  def safeEvaluate(params: Params) = safe(evaluate(params))
+  def safeEvaluate(scenarioWithParams: Scenario[Params, BFn, R, RFn]) = safe(evaluate(scenarioWithParams))
 
   def findConclusion(root: DTN, bc: BecauseClosure): Conclusion[Params, BFn, R, RFn] = {
     root match {
