@@ -60,30 +60,39 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     })
 
   val asRequirementL = Lens[EngineNode[R, RFn], Requirement](
-    (en: EngineNode[R, RFn]) => en,
-    (en: EngineNode[R, RFn], t: Requirement) => t.asInstanceOf[EngineNode[R, RFn]])
-
-  val titleL = Lens[Requirement, Option[String]](
+    (en) => en,
+    (en, t) => t.asInstanceOf[EngineNode[R, RFn]])
+  val titleL = Lens.option[Requirement, String](
     (en) => en.title,
-    (en, t: Option[String]) => en.copyRequirement(title = t))
-  val descriptionL = Lens[Requirement, Option[String]](
+    (en, t) => en.copyRequirement(title = t),
+    (old, v) => CannotDefineTitleTwiceException(old, v),
+    Some("titleL"))
+  val descriptionL = Lens.option[Requirement, String](
     (en) => en.description,
-    (en, d: Option[String]) => en.copyRequirement(description = d))
-  val priorityL = Lens[Requirement, Option[Int]](
+    (en, d) => en.copyRequirement(description = d),
+    (old, v) => CannotDefineDescriptionTwiceException(old, v),
+    Some("descriptionL"))
+  val priorityL = Lens.option[Requirement, Int](
     (en) => en.priority,
-    (en, p: Option[Int]) => en.copyRequirement(priority = p))
+    (en, p) => en.copyRequirement(priority = p),
+    (old, v) => CannotDefinePriorityTwiceException(old, v),
+    Some("priorityL"))
   val referencesL = Lens[Requirement, Set[Reference]](
     (en) => en.references,
-    (en, references: Set[Reference]) => en.copyRequirement(references = references))
+    (en, references) => en.copyRequirement(references = references))
   val nodesL = Lens[EngineNodeHolder[R, RFn], List[EngineNode[R, RFn]]](
-    (en: EngineNodeHolder[R, RFn]) => en.nodes,
-    (en: EngineNodeHolder[R, RFn], nodes: List[EngineNode[R, RFn]]) => en.copyNodes(nodes))
-  def expectedL = Lens[EngineNode[R, RFn], Option[Either[Exception, R]]](
-    (en: EngineNode[R, RFn]) => en.expected,
-    (en: EngineNode[R, RFn], ex: Option[Either[Exception, R]]) => en.copyEngineNode(expected = ex))
-
-  val codeL = Lens[EngineNode[R, RFn], Option[CodeHolder[RFn]]](
+    (en) => en.nodes,
+    (en, nodes) => en.copyNodes(nodes))
+  val expectedL = Lens.option[EngineNode[R, RFn], Either[Exception, R]](
+    (en) => en.expected,
+    (en, ex) => en.copyEngineNode(expected = ex),
+    (old, v) => CannotDefineExpectedTwiceException(old, v),
+    Some("expectedL"))
+  def codeL(validate: (EngineNode[R, RFn], EngineNode[R, RFn], CodeHolder[RFn]) => Unit) = Lens.option[EngineNode[R, RFn], CodeHolder[RFn]](
     (b) => b.code,
-    (b, cCodeHolder) => b.copyEngineNode(code = cCodeHolder))
+    (b, cCodeHolder) => b.copyEngineNode(code = cCodeHolder),
+    (old, v) => CannotDefineCodeTwiceException(old, v),
+    Some("codeL"),
+    Some(validate))
 
 }

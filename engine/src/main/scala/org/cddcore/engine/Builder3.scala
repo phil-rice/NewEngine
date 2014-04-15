@@ -6,9 +6,12 @@ import scala.language.experimental.macros
 
 class BuilderLens3[P1, P2, P3, R, B <: EngineNodeHolder[R, (P1, P2, P3) => R]] extends BuilderLens[R, (P1, P2, P3) => R, B] {
   type S = Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
-  val becauseL = Lens[EngineNode[R, (P1, P2, P3) => R], Option[CodeHolder[(P1, P2, P3) => Boolean]]](
-    (b) => b match { case s: S => s.because },
-    (b, bCodeHolder) => b match { case s: S => s.copy(because = bCodeHolder) })
+  def becauseL(validate: (S, S, CodeHolder[(P1, P2, P3) => Boolean]) => Unit) = Lens.option[S, CodeHolder[(P1, P2, P3) => Boolean]](
+    (s) => s.because,
+    (s, bCodeHolder) => s.copy(because = bCodeHolder),
+    (old, v) => CannotDefineBecauseTwiceException(old, v),
+    Some("becauseL"),
+    Some(validate))
 
   val toScenarioL = Lens[EngineNode[R, (P1, P2, P3) => R], S](
     (b) => b match { case s: S => s },
@@ -63,7 +66,7 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
   def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title))) :: nodes)
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R]
   def becauseHolder(becauseHolder: CodeHolder[(P1, P2, P3) => Boolean]) =
-    currentNodeL.andThen(toScenarioL).mod(this, (s) => checkBecause(s.copy(because = Some(becauseHolder))))
+    currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder))
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2, P3), Either[Exception, R]) => Boolean]) =
     currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R]

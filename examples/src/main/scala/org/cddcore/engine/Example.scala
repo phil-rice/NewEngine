@@ -10,7 +10,7 @@ object Example {
     new Builder1[A, String](). 
       scenario(new A(0)).
       code((x) => "x").
-      matchWith { case x => "x" }.
+//      matchWith { case x => "x" }.
       scenario(new A(0))
       
     //      matchWith { case x: B => "x" }

@@ -10,9 +10,12 @@ class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens
   val toScenarioL = Lens[EngineNode[R, (P) => R], S](
     (b) => b match { case s: S => s },
     (b, s) => b match { case _: S => s })
-  val becauseL = Lens[EngineNode[R, (P) => R], Option[CodeHolder[(P) => Boolean]]](
-    (b) => b match { case s: S => s.because },
-    (b, bCodeHolder) => b match { case s: S => s.copy(because = bCodeHolder) })
+  def becauseL(validate: (S, S, CodeHolder[(P) => Boolean]) => Unit) = Lens.option[S, CodeHolder[(P) => Boolean]](
+    (s) => s.because,
+    (s, bCodeHolder) => s.copy(because = bCodeHolder),
+    (old, v) => CannotDefineBecauseTwiceException(old, v),
+    Some("becauseL"),
+    Some(validate))
 }
 
 object Builder1 {
@@ -27,7 +30,6 @@ object Builder1 {
       val l = bl[P, R]()
       val ch = CodeHolder[(P) => Boolean](because.splice, c.literal(show(because.tree)).splice)
       val thisObject: Builder1[P, R] = (c.Expr[Builder1[P, R]](c.prefix.tree)).splice
-      l.currentNodeL.andThen(l.becauseL).set(thisObject, Some(ch))
       thisObject.becauseHolder(ch)
     }
   }
@@ -40,14 +42,14 @@ object Builder1 {
       thisObject.codeHolder(ch)
     }
   }
-  def matchWithImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[P, R]]): c.Expr[Builder1[P, R]] = {
-    import c.universe._
-    val thisObject: c.Expr[Builder1[P, R]] = (c.Expr[Builder1[P, R]](c.prefix.tree))
-    reify {
-      val ch = CodeHolder(pf.splice, c.literal(show(pf.tree)).splice)
-      thisObject.splice.matchWithPrim(ch)
-    }
-  }
+  //  def matchWithImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[P, R]]): c.Expr[Builder1[P, R]] = {
+  //    import c.universe._
+  //    val thisObject: c.Expr[Builder1[P, R]] = (c.Expr[Builder1[P, R]](c.prefix.tree))
+  //    reify {
+  //      val ch = CodeHolder(pf.splice, c.literal(show(pf.tree)).splice)
+  //      thisObject.splice.matchWithPrim(ch)
+  //    }
+  //  }
 }
 
 case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]))(implicit val ldp: LoggerDisplayProcessor)
@@ -60,17 +62,18 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toSet
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
-  def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
+  //  def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
 
-  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) = currentNodeL.andThen(toScenarioL).mod(this, (s) => checkBecause(s.copy(because = Some(becauseHolder))))
+  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) =
+    currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder))
   def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
     checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
-  def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception,R]) => Boolean]) =
+  def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
     currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
-  def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
-    val withBecause = currentNodeL.andThen(becauseL).set(this, None)
-    currentNodeL.andThen(codeL).set(withBecause, None)
-  }
+  //  def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
+  //    val withBecause = currentNodeL.andThen(becauseL).set(this, None)
+  //    currentNodeL.andThen(codeL).set(withBecause, None)
+  //  }
   def copyNodes(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
   def build: Engine1[P, R] = BuildEngine.build1(this)
 }

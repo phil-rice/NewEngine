@@ -65,6 +65,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engi
   def update(fn: (B) => B): B = { val result = fn(builder); builder = result; result }
   def scenario(seed: Seed, title: String = null) = builder = scenarioImpl(params(seed), title)
   def because(seed: Seed) = builder = becauseImpl(seed)
+  def expected(seed: ResultSeed) = update(_.expected(result(seed)))
   def assertion(callback: => Boolean) = builder = assertionPrim(callback)
   def code(seed: ResultSeed) = update(_.codeHolder(resultCodeHolder(seed)))
   def currentBuilder: B = builder

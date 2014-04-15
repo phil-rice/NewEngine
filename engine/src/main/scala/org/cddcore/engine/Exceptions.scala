@@ -58,3 +58,39 @@ object AssertionException {
 
 class AssertionException(msg: String, val assertion: Any, scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
 
+object CannotDefineExpectedTwiceException {
+  def apply(original: Either[Exception, _], beingAdded: Either[Exception, _]) = new CannotDefineExpectedTwiceException(s"Original${original}\nBeing Added $beingAdded ", original, beingAdded);
+}
+class CannotDefineExpectedTwiceException(msg: String, val original: Either[Exception, _], val beingAdded: Either[Exception, _]) extends EngineException(msg, null)
+
+class CannotDefineBecauseTwiceException(msg: String, val original: CodeHolder[_], val beingAdded: CodeHolder[_]) extends EngineException(msg, null)
+object CannotDefineBecauseTwiceException {
+  def apply(original: CodeHolder[_], beingAdded: CodeHolder[_]) = new CannotDefineBecauseTwiceException(s"Original:\n${original}\nBeingAdded\n${beingAdded}", original, beingAdded);
+}
+object CannotDefineCodeTwiceException {
+  def apply(original: CodeHolder[_], beingAdded: CodeHolder[_]) = new CannotDefineCodeTwiceException(s"Original:\n${original}\nBeingAdded\n${beingAdded}", original, beingAdded);
+}
+class CannotDefineCodeTwiceException(msg: String, val original: CodeHolder[_], val beingAdded: CodeHolder[_]) extends EngineException(msg, null)
+
+object CannotDefineTitleTwiceException {
+  def apply(original: String, beingAdded: String) = new CannotDefineTitleTwiceException(s"Original ${original}\nBeing Added $beingAdded ", original, beingAdded);
+}
+class CannotDefineTitleTwiceException(msg: String, val original: String, val beingAdded: String) extends EngineException(msg, null)
+
+object CannotDefineDescriptionTwiceException {
+  def apply(original: String, beingAdded: String) = new CannotDefineDescriptionTwiceException(s"Original ${original}\nBeing Added $beingAdded ", original, beingAdded);
+}
+class CannotDefineDescriptionTwiceException(msg: String, val original: String, val beingAdded: String) extends EngineException(msg, null)
+
+object CannotDefinePriorityTwiceException {
+  def apply(original: Int, beingAdded: Int) = new CannotDefinePriorityTwiceException(s"Original ${original} Being Added $beingAdded ", original, beingAdded);
+}
+class CannotDefinePriorityTwiceException(msg: String, val original: Int, val beingAdded: Int) extends EngineException(msg, null)
+object CannotSendNoneToOptionLens {
+  def apply(lens: OptionLens[_, _]) =
+    lens.description match {
+      case Some(d) => new CannotSendNoneToOptionLens(s"Lens: $d, ${lens}")
+      case _ => new CannotSendNoneToOptionLens(s"Lens: ${lens}")
+    }
+}
+class CannotSendNoneToOptionLens(msg: String) extends EngineException(msg)
