@@ -42,9 +42,8 @@ object Builder1 {
   //  }
 }
 
-case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]), 
-    buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]] = Map[EngineNode[R, (P) => R], List[Exception]]())
-    (implicit val ldp: LoggerDisplayProcessor)
+case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]),
+  buildExceptions: Map[EngineNode[R, (P) => R], List[Exception]] = Map[EngineNode[R, (P) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[R, (P) => R, Builder1[P, R]]
   with BuilderWithModifyChildrenForBuild[R, (P) => R]
   with ValidateScenario[P, (P) => Boolean, R, (P) => R]
@@ -56,15 +55,15 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
 
-  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) =
-    currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder))
-  def scenario(p: P, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
-    checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
+  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) = wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder)))
+  def scenario(p: P, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
+    checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
-    currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
-  def configurator(cfg: (P) => Unit) = currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg)
-  def copyNodes(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
+    wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder)))
+  def configurator(cfg: (P) => Unit) =  wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
+  def copyNodes(nodes: List[EngineNode[R, (P) => R]]) =  wrap(new Builder1[P, R](nodes, buildExceptions))
   def build: Engine1[P, R] = BuildEngine.build1(this)
+  def copyWithNewExceptions(e: Map[EngineNode[R, (P) => R], List[Exception]]) = new Builder1[P, R](nodes, buildExceptions)
 }
 
 trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {

@@ -2,11 +2,20 @@ package org.cddcore.engine
 
 class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
 
+  def builderToCanCopyWithNewExceptionMapL = Lens[B, CanCopyWithNewExceptionMap[R, RFn]](
+    (b) => b.asInstanceOf[CanCopyWithNewExceptionMap[R, RFn]],
+    (b, n) => b.asInstanceOf[B],
+    Some("toCanCopyExMapL"))
+
   val currentNodeL: Lens[B, EngineNode[R, RFn]] = Lens[B, EngineNode[R, RFn]](
     (b: B) => currentNodeForHoldersL.get(b),
     (b: B, n: EngineNode[R, RFn]) => { val result = currentNodeForHoldersL.set(b, n).asInstanceOf[B]; result })
 
- 
+  val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn], Map[EngineNode[R, RFn], List[Exception]]](
+    (c) => c.buildExceptions,
+    (c, e) => c.copyWithNewExceptions(e),
+    Some("exceptionMap"))
+
   protected val currentNodeForHoldersL: Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]] = Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]](
     (b: EngineNodeHolder[R, RFn]) =>
       b.nodes match {

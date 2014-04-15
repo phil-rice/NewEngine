@@ -4,31 +4,35 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 import scala.util.Sorting
-trait HasExceptionMap[ R, RFn] {
-   def buildExceptions: Map[EngineNode[R, RFn], List[Exception]]
+trait HasExceptionMap[R, RFn] {
+  def buildExceptions: Map[EngineNode[R, RFn], List[Exception]]
 }
-trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] with HasExceptionMap[R, RFn]{
+trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
+  def copyWithNewExceptions(buildExceptions: Map[EngineNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
+}
+trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
   val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
   import bl._
 
-  def title(title: String): B = {
-    val result = currentNodeL.andThen(asRequirementL).andThen(titleL).set(this, Some(title)).asInstanceOf[B];
-    result
+  protected def wrap(stuff: => Builder[R, RFn, B]): B = {
+    stuff.asInstanceOf[B]
   }
-  def description(description: String): B = currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)).asInstanceOf[B]
-  def priority(priority: Int): B = currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)).asInstanceOf[B]
 
-  def useCase(title: String): B = nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[EngineNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes).asInstanceOf[B]
-  def expected(r: R, title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Right(r))).asInstanceOf[B]
-  def expectException(e: Exception, title: String = null): B = currentNodeL.andThen(expectedL).set(this, Some(Left(e))).asInstanceOf[B]
+  def title(title: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(titleL).set(this, Some(title)))
+  def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
+  def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
+
+  def useCase(title: String): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[EngineNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes))
+  def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
+  def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
+
+  def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
+  def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))
+
   def copyNodes(nodes: List[EngineNode[R, RFn]]): B
-  def codeHolder(codeHolder: CodeHolder[RFn]): B =
-    currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)).asInstanceOf[B]
-  def reference(ref: String): B =
-    currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)).asInstanceOf[B]
-  def reference(ref: String, document: Document): B =
-    currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))).asInstanceOf[B]
+  def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
+
 }
 
 case class ModifedChildrenEngineNodeHolder[R, RFn](nodes: List[EngineNode[R, RFn]] = List()) extends EngineNodeHolder[R, RFn] {
