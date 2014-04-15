@@ -111,13 +111,13 @@ trait StringStringTest extends BuilderConcretizer {
 
 trait StringStringStringTest extends BuilderConcretizer {
   def builderName: String = "Builder2[String,String, String]"
-  def params(seed: Seed) = (s"A$seed", s"B$seed")
+  def params(seed: Seed) = (seed, seed)
   def result(seed: Seed) = seed.toString
   def becauseBfn(seed: Seed) = (p1: String, p2: String) => contains(p1, seed) && contains(p2, seed)
 }
 trait StringStringStringStringTest extends BuilderConcretizer {
   def builderName: String = "Builder3[String,String,String,String]"
-  def params(seed: Seed) = (s"A$seed", s"B$seed", s"c$seed")
+  def params(seed: Seed) = (s"$seed", s"$seed", s"$seed")
   def result(seed: Seed) = seed.toString
   def becauseBfn(seed: Seed) = (p1: String, p2: String, p3: String) => contains(p1, seed) && contains(p2, seed) && contains(p3, seed)
 }

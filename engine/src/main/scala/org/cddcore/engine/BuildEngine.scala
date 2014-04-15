@@ -1,5 +1,7 @@
 package org.cddcore.engine
 
+import org.cddcore.engine.ScenarioConflictingWithoutBecauseException
+
 object BuildEngine {
 
   implicit val ldp = SimpleLoggerDisplayProcessor()
@@ -44,8 +46,14 @@ object BuildEngine {
     def newConclusion = Conclusion(code = s.actualCode(tree.expectedToCode), List(s))
     def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => {
       val actual = actualFromNewScenario(c)
-      if (actual != s.expected.get)
-        throw ScenarioConflictingWithDefaultException[R](actual, s)
+      val expected = s.expected.get
+      if (actual != expected)
+        c.scenarios match {
+          case Nil =>
+            throw ScenarioConflictingWithDefaultAndNoBecauseException(lensToNode, actual,expected, s)
+          case existing =>
+            throw ScenarioConflictingWithoutBecauseException(lensToNode, actual, expected, existing, s)
+        }
       c.copy(scenarios = c.scenarios :+ s)
     })
     def addTo(lensToNode: Lens[DT, DN]) = {

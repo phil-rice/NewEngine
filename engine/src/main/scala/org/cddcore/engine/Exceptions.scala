@@ -3,9 +3,9 @@ package org.cddcore.engine
 object ExceptionScenarioPrinter {
   val fullScenario = false
   def apply[Params, BFn, R, RFn](s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = scenario2Str(s)
-  def existingAndBeingAdded[Params, BFn, R, RFn](existing: Scenario[Params, BFn, R, RFn], s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) =
-    s"Existing: ${existing.titleString}\nBeing Added: ${s.titleString}\nDetailed existing:\n${ldp(existing)}\nDetailed of being Added:\n${ldp(s)}"
-  def full[Params, BFn, R, RFn](s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = s + "\nDetailed:\n  " + ldp(s.params)
+  def existingAndBeingAdded[Params, BFn, R, RFn](existing: List[Scenario[Params, BFn, R, RFn]], s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) =
+    s"Existing: ${existing.map(scenario2Str(_)).mkString(",")}\nBeing Added: ${scenario2Str(s)}\nDetailed existing:\n${existing.map((x) => ldp(x)).mkString("\n")}\nDetailed of being Added:\n${ldp(s)}"
+  def full[Params, BFn, R, RFn](s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = "Scenario:\n" + s + "\nParameters:\n" + ldp(s.params)
   def scenario2Str[Params, BFn, R, RFn](s: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) =
     if (fullScenario)
       s.titleString
@@ -27,11 +27,26 @@ object DuplicateScenarioException {
 }
 class DuplicateScenarioException(msg: String, scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
 
-object ScenarioConflictingWithDefaultException {
-  def apply[R](actual: Either[Exception, R], s: Scenario[_, _, R, _])(implicit ldp: LoggerDisplayProcessor) =
-    new ScenarioConflictingWithDefaultException(s"\nActual Result: ${actual}\nExpected ${s.expected.getOrElse("<N/A>")}\n ${ExceptionScenarioPrinter.full(s)}", actual, s)
+object ScenarioConflictingWithDefaultAndNoBecauseException {
+  def apply[R](lens: Lens[_, _], actual: Either[Exception, R],expected: Either[Exception, R], s: Scenario[_, _, R, _])(implicit ldp: LoggerDisplayProcessor) =
+    new ScenarioConflictingWithDefaultAndNoBecauseException(s"\n$lens\nActual Result:\n${actual}\nExpected\n${expected}\n${ExceptionScenarioPrinter.full(s)}", lens, actual, s)
 }
-class ScenarioConflictingWithDefaultException(msg: String, val actual: Either[Exception, _], scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
+class ScenarioConflictingWithDefaultAndNoBecauseException(msg: String, val lens: Lens[_, _], val actual: Either[Exception, _], scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
+
+//object ScenarioConflictException {
+//  def apply(loggerDisplayProcessor: LoggerDisplayProcessor, existing: Scenario, beingAdded: Scenario, cause: Throwable = null) =
+//    new ScenarioConflictException(s"Cannot differentiate based on:\n ${beingAdded.becauseString}" +
+//      s"\n${ExceptionScenarioPrinter.existingAndBeingAdded(loggerDisplayProcessor, existing, beingAdded)}", existing, beingAdded, cause)
+//}
+class ScenarioConflictException(msg: String, val existing: List[Scenario[_, _, _, _]], val beingAdded: Scenario[_, _, _, _], cause: Throwable = null) extends ScenarioException(msg, beingAdded, cause)
+//
+object ScenarioConflictingWithoutBecauseException {
+  def apply[Params, BFn, R, RFn](lens: Lens[_, _], expected:  Either[Exception, R], actual:  Either[Exception, R], existing: List[Scenario[Params, BFn, R, RFn]], beingAdded: Scenario[Params, BFn, R, RFn])(implicit ldp: LoggerDisplayProcessor) = {
+    new ScenarioConflictingWithoutBecauseException(s"\nCame to wrong conclusion: ${actual}\nInstead of ${expected}\n$lens\n${ExceptionScenarioPrinter.existingAndBeingAdded(existing, beingAdded)}", existing, beingAdded)
+  }
+}
+
+class ScenarioConflictingWithoutBecauseException(msg: String, existing: List[Scenario[_, _, _, _]], beingAdded: Scenario[_, _, _, _], cause: Throwable = null) extends ScenarioConflictException(msg, existing, beingAdded, cause)
 
 object NoExpectedException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) = new NoExpectedException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)

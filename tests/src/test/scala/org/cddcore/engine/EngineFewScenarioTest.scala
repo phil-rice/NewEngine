@@ -25,7 +25,7 @@ abstract class EngineFewScenarioTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B
     }
   }
 
-  "An engine" should "allow any combination of two scenarios to work" in {
+  builderName should "allow any combination of two scenarios to work" in {
     check("A", "AB")
     check("A", "B")
   }

@@ -9,7 +9,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
   implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
   implicit def toSome[X](x: X) = Some(x)
 
-  "An empty engine" should "allow the first use not to have a because, and become the default value" in {
+  builderName should "allow the first use not to have a because, and become the default value" in {
     scenario("A")
     update(_.expected(result("X")))
     val e = build
@@ -60,16 +60,11 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(conc(s("A", expected = "X"), s("B", expected = "X")), e.root)
   }
 
-  it should "Throw ScenarioConflictingWithDefaultException if first scenario replaces root and second scenario is assertion and comes to wrong result" in {
-    scenario("A"); update(_.expected(result("X")));
-    scenario("B"); update(_.expected(result("Y")))
-    evaluating { build } should produce[ScenarioConflictingWithDefaultException]
-  }
-
   it should "Throw NoExpectedException if scenario doesnt have expected" in {
     scenario("A")
     evaluating { build } should produce[NoExpectedException]
   }
+
   it should "Throw ScenarioBecauseException if because is not true in scenario" in {
     scenario("A")
     evaluating { because("X") } should produce[ScenarioBecauseException]
