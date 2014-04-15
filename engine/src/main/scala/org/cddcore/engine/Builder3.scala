@@ -9,7 +9,9 @@ object Builder3 {
   def bl[P1, P2, P3, R]() = new BuilderLens3[P1, P2, P3, R, Builder3[P1, P2, P3, R]]
   def expectedToCode[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] =
     (x) => new CodeHolder((p1, p2, p3) => x match { case Right(r) => r }, x.toString())
-  def creator[P1, P2, P3, R](requirements: EngineNodeHolder[R, (P1, P2, P3) => R]) = (r: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) => new Engine3(r, requirements)
+  def creator[P1, P2, P3, R](requirements: EngineNodeHolder[R, (P1, P2, P3) => R]) =
+    (r: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
+      buildExceptions: Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]]) => new Engine3(r, requirements, buildExceptions)
   def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2, P3) => Boolean]): c.Expr[Builder3[P1, P2, P3, R]] = {
     import c.universe._
     reify {
@@ -86,6 +88,7 @@ class DecisionTreeLens3[P1, P2, P3, R] extends DecisionTreeLens[(P1, P2, P3), (P
 case class Engine3[P1, P2, P3, R](
   root: DecisionTreeNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   requirements: EngineNodeHolder[R, (P1, P2, P3) => R],
+  buildExceptions: Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]] = Map[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], List[Exception]](),
   rootIsDefault: Boolean = false)
   extends EngineAndDecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
   with EvaluateTree3[P1, P2, P3, R]

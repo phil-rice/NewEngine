@@ -11,7 +11,9 @@ object Builder1 {
   def expectedToCode[P, R]: Either[Exception, R] => CodeHolder[(P) => R] =
     (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
 
-  def creator[P, R](requirements: EngineNodeHolder[R, (P) => R]) = (r: DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) => new Engine1(r, requirements)
+  def creator[P, R](requirements: EngineNodeHolder[R, (P) => R]) =
+    (r: DecisionTreeNode[P, (P) => Boolean, R, (P) => R],
+      buildExceptions: Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]]) => new Engine1(r, requirements, buildExceptions)
   def becauseImpl[P: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P) => Boolean]): c.Expr[Builder1[P, R]] = {
     import c.universe._
     reify {
@@ -45,6 +47,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   with BuilderWithModifyChildrenForBuild[R, (P) => R]
   with ValidateScenario[P, (P) => Boolean, R, (P) => R]
   with MakeClosures1[P, R] {
+
   val bl1 = Builder1.bl[P, R]()
   import bl1._
   lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toSet
@@ -70,10 +73,14 @@ trait MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
 }
 trait EvaluateTree1[P, R] extends EvaluateTree[P, (P) => Boolean, R, (P) => R] with Function1[P, R] with MakeClosures1[P, R]
 class DecisionTreeLens1[P, R] extends DecisionTreeLens[P, (P) => Boolean, R, (P) => R] {
-  def creator(requirements: EngineNodeHolder[R, (P) => R]): (DecisionTreeNode[P, (P) => Boolean, R, (P) => R]) => DecisionTree[P, (P) => Boolean, R, (P) => R] = Builder1.creator(requirements)
+  def creator(requirements: EngineNodeHolder[R, (P) => R]): (DecisionTreeNode[P, (P) => Boolean, R, (P) => R], Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]]) => DecisionTreeAndExceptions[P, (P) => Boolean, R, (P) => R] =
+    Builder1.creator(requirements)
 }
 
-case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R], requirements: EngineNodeHolder[R, (P) => R], rootIsDefault: Boolean = false) extends EngineAndDecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
+case class Engine1[P, R](root: DecisionTreeNode[P, (P) => Boolean, R, (P) => R],
+  requirements: EngineNodeHolder[R, (P) => R],
+  buildExceptions: Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]] = Map[Scenario[P, (P) => Boolean, R, (P) => R], List[Exception]](),
+  rootIsDefault: Boolean = false) extends EngineAndDecisionTree[P, (P) => Boolean, R, (P) => R] with EvaluateTree1[P, R] with Function1[P, R] {
   val lens = new DecisionTreeLens1[P, R]
   def apply(p: P) = evaluate(root, p)
   val expectedToCode: Either[Exception, R] => CodeHolder[(P) => R] = Builder1.expectedToCode[P, R]

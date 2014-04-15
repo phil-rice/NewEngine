@@ -10,7 +10,9 @@ object Builder2 {
   def bl[P1, P2, R]() = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
   def expectedToCode[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] =
     (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
-  def creator[P1, P2, R](requirements: EngineNodeHolder[R, (P1, P2) => R]) = (r: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) => new Engine2(r, requirements)
+  def creator[P1, P2, R](requirements: EngineNodeHolder[R, (P1, P2) => R]) =
+    (r: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
+      buildExceptions: Map[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], List[Exception]]) => new Engine2(r, requirements, buildExceptions)
   def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2) => Boolean]): c.Expr[Builder2[P1, P2, R]] = {
     import c.universe._
     reify {
@@ -77,7 +79,10 @@ class DecisionTreeLens2[P1, P2, R] extends DecisionTreeLens[(P1, P2), (P1, P2) =
   def creator(requirements: EngineNodeHolder[R, (P1, P2) => R]) = Builder2.creator(requirements)
 }
 
-case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], requirements: EngineNodeHolder[R, (P1, P2) => R], rootIsDefault: Boolean = false) extends EngineAndDecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
+case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
+  requirements: EngineNodeHolder[R, (P1, P2) => R],
+  buildExceptions: Map[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], List[Exception]] =  Map[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], List[Exception]](),
+  rootIsDefault: Boolean = false) extends EngineAndDecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
   val lens = new DecisionTreeLens2[P1, P2, R]
   def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
   val expectedToCode: Either[Exception, R] => CodeHolder[(P1, P2) => R] = Builder2.expectedToCode

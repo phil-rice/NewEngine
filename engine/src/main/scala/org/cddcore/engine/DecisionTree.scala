@@ -3,11 +3,18 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 
 trait DecisionTreeLens[Params, BFn, R, RFn] {
-  def creator(requirements: EngineNodeHolder[R, RFn]): (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn];
-  def rootL(requirements: EngineNodeHolder[R, RFn]) = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
+  def creator(requirements: EngineNodeHolder[R, RFn]): (DecisionTreeNode[Params, BFn, R, RFn], Map[Scenario[Params, BFn, R, RFn], List[Exception]]) => DecisionTreeAndExceptions[Params, BFn, R, RFn];
+  def rootL(requirements: EngineNodeHolder[R, RFn], buildExceptions: Map[Scenario[Params, BFn, R, RFn], List[Exception]]) = Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
     (tree) => tree.root,
-    (tree, root) => creator(requirements)(root),
+    (tree, root) => creator(requirements)(root, buildExceptions),
     Some("rootL"))
+
+  def exceptionMapL(requirements: EngineNodeHolder[R, RFn]) =
+    Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], Map[Scenario[Params, BFn, R, RFn], List[Exception]]](
+      (tree) => tree.buildExceptions,
+      (tree, buildExceptions) => creator(requirements)(tree.root, buildExceptions),
+      Some("exceptionMapL"))
+
   def toDecisionL = Lens[DecisionTreeNode[Params, BFn, R, RFn], Decision[Params, BFn, R, RFn]](
     (d) => d.asInstanceOf[Decision[Params, BFn, R, RFn]],
     (d, x) => x,
@@ -30,18 +37,17 @@ trait DecisionTree[Params, BFn, R, RFn] extends EvaluateTree[Params, BFn, R, RFn
   def root: DTN
   def rootIsDefault: Boolean
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
+
+}
+
+trait DecisionTreeAndExceptions[Params, BFn, R, RFn] extends DecisionTree[Params, BFn, R, RFn] {
   val lens: DecisionTreeLens[Params, BFn, R, RFn]
-
   import lens._
+  def buildExceptions: Map[Scenario[Params, BFn, R, RFn], List[Exception]]
+  type LensToNode = Lens[DecisionTreeAndExceptions[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
 
-  type LensToNode = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]]
-
-  protected def addStep(node: Decision[Params, BFn, R, RFn], bc: BecauseClosure, lensToNode: LensToNode) = node.isTrue(bc) match {
-    case true => lensToNode.andThen(toDecisionL).andThen(yesL)
-    case false => lensToNode.andThen(toDecisionL).andThen(noL)
-  }
-
-  def findLensToConclusion(requirements: EngineNodeHolder[R, RFn], bc: BecauseClosure): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL(requirements))
+  def findLensToConclusion(requirements: EngineNodeHolder[R, RFn], buildExceptions: Map[Scenario[Params, BFn, R, RFn], List[Exception]], bc: BecauseClosure): Lens[DT, DTN] =
+    findLensToConclusion(root, bc, rootL(requirements, buildExceptions))
 
   protected def findLensToConclusion(root: DTN, bc: BecauseClosure, soFar: LensToNode): Lens[DT, DTN] =
     root match {
@@ -85,7 +91,7 @@ trait MakeClosures[Params, BFn, R, RFn] {
 
 trait EvaluateTree[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
   def root: DecisionTreeNode[Params, BFn, R, RFn]
-  type DT = DecisionTree[Params, BFn, R, RFn]
+  type DT = DecisionTreeAndExceptions[Params, BFn, R, RFn]
   type DTN = DecisionTreeNode[Params, BFn, R, RFn]
   type Result = Either[Exception, R]
 

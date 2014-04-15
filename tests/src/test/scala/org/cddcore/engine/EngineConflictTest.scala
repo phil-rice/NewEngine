@@ -4,13 +4,9 @@ import org.junit.runner.RunWith
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class EngineConflictTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
+abstract class EngineConflictTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] with ConflictMessages {
   implicit def toSome[X](x: X) = Some(x)
   implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
-
-  protected def expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode: String
-  protected def expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode: String
-  protected def expectedMessageFoBecauseNotAdequate: String
 
   builderName should "throw ScenarioConflictingWithDefaultAndNoBecauseException if comes to different conclusion when there is decision node" in {
     scenario("A"); because("A"); expected("X")
@@ -39,8 +35,12 @@ abstract class EngineConflict1Test[P, R] extends EngineConflictTest[P, (P) => Bo
 abstract class EngineConflict2Test[P1, P2, R] extends EngineConflictTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
 abstract class EngineConflict3Test[P1, P2, P3, R] extends EngineConflictTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
 
-@RunWith(classOf[JUnitRunner])
-class EngineConflictStringStringTest extends EngineConflict1Test[String, String] with StringStringTest {
+trait ConflictMessages {
+  protected def expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode: String
+  protected def expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode: String
+  protected def expectedMessageFoBecauseNotAdequate: String
+}
+trait ConflictMessages1 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
@@ -76,11 +76,9 @@ class EngineConflictStringStringTest extends EngineConflict1Test[String, String]
     "Scenario(AB,None,None,None,None,None,Some(Right(Result(X))),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
     "Scenario(BC,None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Result(Y))),Set(),List(),List())"
-
 }
 
-@RunWith(classOf[JUnitRunner])
-class EngineConflictStringStringStringTest extends EngineConflict2Test[String, String, String] with StringStringStringTest {
+trait ConflictMessages2 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
@@ -116,11 +114,9 @@ class EngineConflictStringStringStringTest extends EngineConflict2Test[String, S
     "Scenario((AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
     "Scenario((BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List(),List())"
-
 }
 
-@RunWith(classOf[JUnitRunner])
-class EngineConflictStringStringStringStringTest extends EngineConflict3Test[String, String, String, String] with StringStringStringStringTest {
+trait ConflictMessages3 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
@@ -156,5 +152,19 @@ class EngineConflictStringStringStringStringTest extends EngineConflict3Test[Str
     "Scenario((AB,AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
     "Scenario((BC,BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List(),List())"
+}
+
+@RunWith(classOf[JUnitRunner])
+class EngineConflictStringStringTest extends EngineConflict1Test[String, String] with StringStringTest with ConflictMessages1 {
+
+}
+
+@RunWith(classOf[JUnitRunner])
+class EngineConflictStringStringStringTest extends EngineConflict2Test[String, String, String] with StringStringStringTest with ConflictMessages2 {
+
+}
+
+@RunWith(classOf[JUnitRunner])
+class EngineConflictStringStringStringStringTest extends EngineConflict3Test[String, String, String, String] with StringStringStringStringTest with ConflictMessages3 {
 
 }

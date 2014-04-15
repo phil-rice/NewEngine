@@ -13,6 +13,7 @@ abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
   implicit def toSome[X](x: X) = Some(x)
 
   val noRequirements = currentBuilder
+  val noExceptions = Map[Scenario[Params, BFn, R, RFn], List[Exception]]()
 
   val sa = s("A", because = "A", expected = "X")
   val sb = s("B", because = "B", expected = "Y")
@@ -24,40 +25,40 @@ abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
   val bc_ab = makeBecauseClosure(sab)
 
   val rootA_AB_B = dec(sa, yes = dec(sab, conc(sab), conc(sa)), no = conc(sb))
-  val treeA_AB_B = decisionTreeLens.creator(noRequirements)(rootA_AB_B)
+  val treeA_AB_B = decisionTreeLens.creator(noRequirements)(rootA_AB_B, Map())
 
   val dtLens = decisionTreeLens
   import dtLens._
-  
-  
-  "RootL" should "return the root" in {
-    val tree = decisionTreeLens.creator(noRequirements)(conc(sa))
-    assertEquals(conc(sa), rootL(noRequirements).get(tree))
 
-    val newTree = rootL(noRequirements).set(tree, conc(sb))
-    assertEquals(decisionTreeLens.creator(noRequirements)(conc(sb)), newTree)
+  "RootL" should "return the root" in {
+    val tree = decisionTreeLens.creator(noRequirements)(conc(sa), Map())
+    assertEquals(conc(sa), rootL(noRequirements, noExceptions).get(tree))
+
+    val newTree = rootL(noRequirements, noExceptions).set(tree, conc(sb))
+    assertEquals(decisionTreeLens.creator(noRequirements)(conc(sb), Map()), newTree)
 
   }
 
   "Find conclusion lens " should "focus on  the root, if the root is the only node in the tree" in {
-    val tree = decisionTreeLens.creator(noRequirements)(conc(sa))
-    val lens = tree.findLensToConclusion(noRequirements, bc_a)
+    val tree = decisionTreeLens.creator(noRequirements)(conc(sa), noExceptions)
+    val lens = tree.findLensToConclusion(noRequirements, noExceptions, bc_a)
     assertEquals(conc(sa), lens.get(tree))
 
     val newTree = lens.set(tree, conc(sb))
-    assertEquals(decisionTreeLens.creator(noRequirements)(conc(sb)), newTree)
+    assertEquals(decisionTreeLens.creator(noRequirements)(conc(sb), noExceptions), newTree)
   }
 
   it should "focus on the conclusion A" in {
-    val lens = treeA_AB_B.findLensToConclusion(noRequirements, bc_a)
+    val lens = treeA_AB_B.findLensToConclusion(noRequirements, noExceptions, bc_a)
     assertEquals(conc(sa), lens.get(treeA_AB_B))
 
     val newTree = lens.set(treeA_AB_B, conc(sb))
     val rootA_AB_B = dec(sa, yes = dec(sab, conc(sab), conc(sb)), no = conc(sb))
 
   }
+
   it should "focus on the conclusion AB" in {
-    val lens = treeA_AB_B.findLensToConclusion(noRequirements, bc_ab)
+    val lens = treeA_AB_B.findLensToConclusion(noRequirements, noExceptions, bc_ab)
     val actual = lens.get(treeA_AB_B)
     assertEquals(conc(sab), actual)
 
@@ -65,8 +66,9 @@ abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
     val rootA_AB_B = dec(sa, yes = dec(sab, conc(sc), conc(sa)), no = conc(sb))
 
   }
+
   it should "focus on the conclusion B" in {
-    val lens = treeA_AB_B.findLensToConclusion(noRequirements, bc_b)
+    val lens = treeA_AB_B.findLensToConclusion(noRequirements, noExceptions, bc_b)
     val actual = lens.get(treeA_AB_B)
     assertEquals(conc(sb), actual)
 

@@ -6,6 +6,7 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     (b: B) => currentNodeForHoldersL.get(b),
     (b: B, n: EngineNode[R, RFn]) => { val result = currentNodeForHoldersL.set(b, n).asInstanceOf[B]; result })
 
+ 
   protected val currentNodeForHoldersL: Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]] = Lens[EngineNodeHolder[R, RFn], EngineNode[R, RFn]](
     (b: EngineNodeHolder[R, RFn]) =>
       b.nodes match {
