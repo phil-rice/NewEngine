@@ -48,7 +48,7 @@ class EngineConflictStringStringTest extends EngineConflict1Test[String, String]
     "Expected\n" +
     "Right(Result(Z))\n" +
     "Scenario:\n" +
-    "Scenario(B,None,None,None,Some(CodeHolder((p)=>resultZ)),None,Some(Right(Result(Z))),Set(),List())\n" +
+    "Scenario(B,None,None,None,Some(CodeHolder((p)=>resultZ)),None,Some(Right(Result(Z))),Set(),List(),List())\n" +
     "Parameters:\n" +
     "B"
   val expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode = "\n" +
@@ -58,9 +58,9 @@ class EngineConflictStringStringTest extends EngineConflict1Test[String, String]
     "Existing: A\n" +
     "Being Added: AB\n" +
     "Detailed existing:\n" +
-    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(X))),Set(),List())\n" +
+    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(X))),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario(AB,None,None,None,None,None,Some(Right(Result(Y))),Set(),List())"
+    "Scenario(AB,None,None,None,None,None,Some(Right(Result(Y))),Set(),List(),List())"
   val expectedMessageFoBecauseNotAdequate = "\n" +
     "The because is valid in these other scenarios, which the engine thinks are similar.\n" +
     "The Engine doesn't have enough information to decide what to do\n" +
@@ -73,9 +73,9 @@ class EngineConflictStringStringTest extends EngineConflict1Test[String, String]
     "Existing: AB\n" +
     "Being Added: BC\n" +
     "Detailed existing:\n" +
-    "Scenario(AB,None,None,None,None,None,Some(Right(Result(X))),Set(),List())\n" +
+    "Scenario(AB,None,None,None,None,None,Some(Right(Result(X))),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario(BC,None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Result(Y))),Set(),List())"
+    "Scenario(BC,None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Result(Y))),Set(),List(),List())"
 
 }
 
@@ -88,7 +88,7 @@ class EngineConflictStringStringStringTest extends EngineConflict2Test[String, S
     "Expected\n" +
     "Right(Z)\n" +
     "Scenario:\n" +
-    "Scenario((B,B),None,None,None,Some(CodeHolder((p1,p2)=>resultZ)),None,Some(Right(Z)),Set(),List())\n" +
+    "Scenario((B,B),None,None,None,Some(CodeHolder((p1,p2)=>resultZ)),None,Some(Right(Z)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "(B,B)"
   val expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode = "\n" +
@@ -98,9 +98,9 @@ class EngineConflictStringStringStringTest extends EngineConflict2Test[String, S
     "Existing: (A,A)\n" +
     "Being Added: (AB,AB)\n" +
     "Detailed existing:\n" +
-    "Scenario((A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(X)),Set(),List())\n" +
+    "Scenario((A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario((AB,AB),None,None,None,None,None,Some(Right(Y)),Set(),List())"
+    "Scenario((AB,AB),None,None,None,None,None,Some(Right(Y)),Set(),List(),List())"
   val expectedMessageFoBecauseNotAdequate = "\n" +
     "The because is valid in these other scenarios, which the engine thinks are similar.\n" +
     "The Engine doesn't have enough information to decide what to do\n" +
@@ -113,9 +113,9 @@ class EngineConflictStringStringStringTest extends EngineConflict2Test[String, S
     "Existing: (AB,AB)\n" +
     "Being Added: (BC,BC)\n" +
     "Detailed existing:\n" +
-    "Scenario((AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List())\n" +
+    "Scenario((AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario((BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List())"
+    "Scenario((BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List(),List())"
 
 }
 
@@ -128,7 +128,7 @@ class EngineConflictStringStringStringStringTest extends EngineConflict3Test[Str
     "Expected\n" +
     "Right(Z)\n" +
     "Scenario:\n" +
-    "Scenario((B,B,B),None,None,None,Some(CodeHolder((p1: P1, p2: P2, p3: P3) => Builder3Test.this.result(Z))),None,Some(Right(Z)),Set(),List())\n" +
+    "Scenario((B,B,B),None,None,None,Some(CodeHolder((p1: P1, p2: P2, p3: P3) => Builder3Test.this.result(Z))),None,Some(Right(Z)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "(B,B,B)"
   val expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode = "\n" +
@@ -138,9 +138,9 @@ class EngineConflictStringStringStringStringTest extends EngineConflict3Test[Str
     "Existing: (A,A,A)\n" +
     "Being Added: (AB,AB,AB)\n" +
     "Detailed existing:\n" +
-    "Scenario((A,A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(X)),Set(),List())\n" +
+    "Scenario((A,A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario((AB,AB,AB),None,None,None,None,None,Some(Right(Y)),Set(),List())"
+    "Scenario((AB,AB,AB),None,None,None,None,None,Some(Right(Y)),Set(),List(),List())"
   val expectedMessageFoBecauseNotAdequate = "\n" +
     "The because is valid in these other scenarios, which the engine thinks are similar.\n" +
     "The Engine doesn't have enough information to decide what to do\n" +
@@ -153,8 +153,8 @@ class EngineConflictStringStringStringStringTest extends EngineConflict3Test[Str
     "Existing: (AB,AB,AB)\n" +
     "Being Added: (BC,BC,BC)\n" +
     "Detailed existing:\n" +
-    "Scenario((AB,AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List())\n" +
+    "Scenario((AB,AB,AB),None,None,None,None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario((BC,BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List())"
+    "Scenario((BC,BC,BC),None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List(),List())"
 
 }

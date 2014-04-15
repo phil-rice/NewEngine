@@ -4,20 +4,7 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens3[P1, P2, P3, R, B <: EngineNodeHolder[R, (P1, P2, P3) => R]] extends BuilderLens[R, (P1, P2, P3) => R, B] {
-  type S = Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]
-  def becauseL(validate: (S, S, CodeHolder[(P1, P2, P3) => Boolean]) => Unit) = Lens.option[S, CodeHolder[(P1, P2, P3) => Boolean]](
-    (s) => s.because,
-    (s, bCodeHolder) => s.copy(because = bCodeHolder),
-    (old, v) => CannotDefineBecauseTwiceException(old, v),
-    Some("becauseL"),
-    Some(validate))
-
-  val toScenarioL = Lens[EngineNode[R, (P1, P2, P3) => R], S](
-    (b) => b match { case s: S => s },
-    (b, s) => b match { case _: S => s })
-}
-
+class BuilderLens3[P1, P2, P3, R, B <: EngineNodeHolder[R, (P1, P2, P3) => R]] extends FullBuilderLens[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, B]
 object Builder3 {
   def bl[P1, P2, P3, R]() = new BuilderLens3[P1, P2, P3, R, Builder3[P1, P2, P3, R]]
   def expectedToCode[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] =
@@ -71,6 +58,8 @@ case class Builder3[P1, P2, P3, R](nodes: List[EngineNode[R, (P1, P2, P3) => R]]
     currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R]
   def matchWith(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchWithImpl[P1, P2, P3, R]
+  def configurator(cfg: (P1, P2, P3) => Unit) = currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ ((params: (P1, P2, P3)) => cfg(params._1, params._2, params._3)))
+
   def copyNodes(nodes: List[EngineNode[R, (P1, P2, P3) => R]]) = new Builder3[P1, P2, P3, R](nodes)
   def build: Engine3[P1, P2, P3, R] = BuildEngine.build3(this)
 }

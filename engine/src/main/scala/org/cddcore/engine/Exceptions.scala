@@ -68,7 +68,7 @@ class NoExpectedException(msg: String, scenario: Scenario[_, _, _, _], cause: Th
 
 object ScenarioBecauseException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =
-    new ScenarioBecauseException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
+    new ScenarioBecauseException(s"Because is not true. Because is\n${scenario.because.getOrElse(throw new IllegalStateException).description}\n${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
 }
 class ScenarioBecauseException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
 

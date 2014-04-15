@@ -4,20 +4,7 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens2[P1, P2, R, B <: EngineNodeHolder[R, (P1, P2) => R]] extends BuilderLens[R, (P1, P2) => R, B] {
-  type S = Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]
-  def becauseL(validate: (S, S, CodeHolder[(P1, P2) => Boolean]) => Unit) = Lens.option[S, CodeHolder[(P1, P2) => Boolean]](
-    (s) => s.because,
-    (s, bCodeHolder) => s.copy(because = bCodeHolder),
-    (old, v) => CannotDefineBecauseTwiceException(old, v),
-    Some("becauseL"),
-    Some(validate))
-
-  val toScenarioL = Lens[EngineNode[R, (P1, P2) => R], S](
-    (b) => b match { case s: S => s },
-    (b, s) => b match { case _: S => s })
-
-}
+class BuilderLens2[P1, P2, R, B <: EngineNodeHolder[R, (P1, P2) => R]] extends FullBuilderLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, B]
 
 object Builder2 {
   def bl[P1, P2, R]() = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
@@ -65,12 +52,13 @@ case class Builder2[P1, P2, R](nodes: List[EngineNode[R, (P1, P2) => R]] = List(
 
   def code(code: (P1, P2) => R): Builder2[P1, P2, R] = macro Builder2.codeImpl[P1, P2, R]
   def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R] = macro Builder2.becauseImpl[P1, P2, R]
-  def becauseHolder(becauseHolder: CodeHolder[(P1,P2) => Boolean]) =
+  def becauseHolder(becauseHolder: CodeHolder[(P1, P2) => Boolean]) =
     currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder))
- def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R]
+  def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R]
   def scenario(p1: P1, p2: P2, title: String = null) = nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title))) :: nodes)
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2), Either[Exception, R]) => Boolean]) =
     currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
+  def configurator(cfg: (P1, P2) => Unit) = currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ ((params: (P1, P2)) => cfg(params._1, params._2)))
   def copyNodes(nodes: List[EngineNode[R, (P1, P2) => R]]) = new Builder2[P1, P2, R](nodes)
   def build: Engine2[P1, P2, R] = BuildEngine.build2(this)
 

@@ -107,11 +107,12 @@ case class Scenario[Params, BFn, R, RFn](
   val priority: Option[Int] = None,
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
-  val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List()) extends EngineNode[R, RFn] {
+  val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
+  val configurators: List[(Params) => Unit] = List()) extends EngineNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions,configurators)
   def copyEngineNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): EngineNode[R, RFn] =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions,configurators)
 
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
 }

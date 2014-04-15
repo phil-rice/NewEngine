@@ -23,7 +23,6 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends EngineNodeHolder[R, RFn] 
   def copyNodes(nodes: List[EngineNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B =
     currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)).asInstanceOf[B]
-
   def reference(ref: String): B =
     currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)).asInstanceOf[B]
   def reference(ref: String, document: Document): B =

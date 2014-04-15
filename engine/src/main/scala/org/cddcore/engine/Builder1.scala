@@ -4,19 +4,7 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends BuilderLens[R, (P) => R, B] {
-  type S = Scenario[P, (P) => Boolean, R, (P) => R]
-
-  val toScenarioL = Lens[EngineNode[R, (P) => R], S](
-    (b) => b match { case s: S => s },
-    (b, s) => b match { case _: S => s })
-  def becauseL(validate: (S, S, CodeHolder[(P) => Boolean]) => Unit) = Lens.option[S, CodeHolder[(P) => Boolean]](
-    (s) => s.because,
-    (s, bCodeHolder) => s.copy(because = bCodeHolder),
-    (old, v) => CannotDefineBecauseTwiceException(old, v),
-    Some("becauseL"),
-    Some(validate))
-}
+class BuilderLens1[P, R, B <: EngineNodeHolder[R, (P) => R]] extends FullBuilderLens[P, (P) => Boolean, R, (P) => R, B]
 
 object Builder1 {
   def bl[P, R]() = new BuilderLens1[P, R, Builder1[P, R]]
@@ -62,7 +50,6 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
   lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toSet
   def because(because: (P) => Boolean): Builder1[P, R] = macro Builder1.becauseImpl[P, R]
   def code(code: (P) => R): Builder1[P, R] = macro Builder1.codeImpl[P, R]
-  //  def matchWith(pf: PartialFunction[P, R]) = macro Builder1.matchWithImpl[P, R]
 
   def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) =
     currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder))
@@ -70,10 +57,7 @@ case class Builder1[P, R](nodes: List[EngineNode[R, (P) => R]] = List(new Engine
     checkDuplicateScenario(new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes)
   def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
     currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder))
-  //  def matchWithPrim(codeHolder: CodeHolder[PartialFunction[P, R]]) = {
-  //    val withBecause = currentNodeL.andThen(becauseL).set(this, None)
-  //    currentNodeL.andThen(codeL).set(withBecause, None)
-  //  }
+  def configurator(cfg: (P) => Unit) = currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg)
   def copyNodes(nodes: List[EngineNode[R, (P) => R]]) = new Builder1[P, R](nodes)
   def build: Engine1[P, R] = BuildEngine.build1(this)
 }

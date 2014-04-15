@@ -94,5 +94,22 @@ class BuilderLens[R, RFn, B <: EngineNodeHolder[R, RFn]] {
     (old, v) => CannotDefineCodeTwiceException(old, v),
     Some("codeL"),
     Some(validate))
-
 }
+
+class FullBuilderLens[Params, BFn, R, RFn, B <: EngineNodeHolder[R, RFn]] extends BuilderLens[R, RFn, B] {
+  type S = Scenario[Params, BFn, R, RFn]
+  val toScenarioL = Lens[EngineNode[R, RFn], S](
+    (b) => b match { case s: S => s },
+    (b, s) => b match { case _: S => s })
+  def becauseL(validate: (S, S, CodeHolder[BFn]) => Unit) = Lens.option[S, CodeHolder[BFn]](
+    (s) => s.because,
+    (s, bCodeHolder) => s.copy(because = bCodeHolder),
+    (old, v) => CannotDefineBecauseTwiceException(old, v),
+    Some("becauseL"),
+    Some(validate))
+  def configuratorL = Lens[S, List[Params => Unit]](
+    (s) => s.configurators,
+    (s, c) => s.copy(configurators = c),
+    Some("configuratorL"))
+
+} 

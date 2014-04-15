@@ -15,36 +15,42 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, 
     assertEquals(defaultRoot, root)
   }
 
-  builderName  should "throw  CannotDefineTitleTwiceException if the title has already been set" in {
+  builderName should "throw  CannotDefineTitleTwiceException if the title has already been set" in {
     scenario("A")
     update(_.title("X"))
     evaluating { update(_.title("X")) } should produce[CannotDefineTitleTwiceException]
   }
-  it  should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
+  it should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
     scenario("A")
     update(_.description("X"))
     evaluating { update(_.description("X")) } should produce[CannotDefineDescriptionTwiceException]
   }
- it should "throw  CannotDefinePriorityTwiceException if the priority has already been set" in {
+  it should "throw  CannotDefinePriorityTwiceException if the priority has already been set" in {
     scenario("A")
     update(_.priority(1))
     evaluating { update(_.priority(1)) } should produce[CannotDefinePriorityTwiceException]
   }
- it should "throw  CannotDefineBecauseTwiceException if the because has already been set" in {
+  it should "throw  CannotDefineBecauseTwiceException if the because has already been set" in {
     scenario("A")
     because("A")
     evaluating { because("A") } should produce[CannotDefineBecauseTwiceException]
   }
 
- it should "throw  CannotDefineExpectedTwiceException if the expected has already been set" in {
+  it should "throw  CannotDefineExpectedTwiceException if the expected has already been set" in {
     scenario("A")
     expected("X")
     evaluating { expected("X") } should produce[CannotDefineExpectedTwiceException]
   }
- it should "throw  CannotDefineCodeTwiceException if the code has already been set" in {
+  it should "throw  CannotDefineCodeTwiceException if the code has already been set" in {
     scenario("A")
     code("X")
     evaluating { code("X") } should produce[CannotDefineCodeTwiceException]
+  }
+
+  it should "throw ScenarioBecauseException  if the because is not true in the scenario" in {
+    scenario("A")
+    evaluating { because("B") } should produce[ScenarioBecauseException]
+
   }
 }
 
