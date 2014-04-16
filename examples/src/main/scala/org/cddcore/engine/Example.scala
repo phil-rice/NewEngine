@@ -7,12 +7,14 @@ object Example {
 
   def main(args: Array[String]) {
 
-    Engine[A, String](). 
+    Engine[A, String]().
       scenario(new A(0)).
       code((x) => "x").
-//      matchWith { case x => "x" }.
+      //      matchWith { case x => "x" }.
       scenario(new A(0))
-      
+
+    Engine.folding[A, String, String]("", { _ + _ }).childEngine("someEngine")
+
     //      matchWith { case x: B => "x" }
     //      useCase("",
     //        Scenario(new A(0)),

@@ -9,7 +9,7 @@ object Holder {
 }
 case class Holder(var value: String);
 
-abstract class EngineMutabilityTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
+abstract class EngineMutabilityTest[Params, BFn, R, RFn,  B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)
   protected def resetMutableParams(holders: Params, s: String)
   def check(seeds: String*) {
@@ -42,8 +42,8 @@ abstract class EngineMutabilityTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B]
 }
 
 abstract class EngineMutability1Test[P, R] extends EngineMutabilityTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R]] with Builder1Test[P, R, R]
-abstract class EngineMutability2Test[P1, P2, R] extends EngineMutabilityTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
-abstract class EngineMutability3Test[P1, P2, P3, R] extends EngineMutabilityTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
+abstract class EngineMutability2Test[P1, P2, R] extends EngineMutabilityTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R, R]
+abstract class EngineMutability3Test[P1, P2, P3, R] extends EngineMutabilityTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, R]
 
 @RunWith(classOf[JUnitRunner])
 class EngineMutabilityHolderStringTest extends EngineMutability1Test[Holder, String] with HolderStringTest {

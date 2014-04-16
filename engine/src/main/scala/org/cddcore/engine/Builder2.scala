@@ -4,38 +4,38 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens2[P1, P2, R, B <: BuilderNodeHolder[R, (P1, P2) => R]] extends FullBuilderLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, B]
+class BuilderLens2[P1, P2, R, FullR, B <: BuilderNodeHolder[R, (P1, P2) => R]] extends FullBuilderLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, B]
 
 object Builder2 {
-  def bl[P1, P2, R]() = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
+  def bl[P1, P2, R, FullR]() = new BuilderLens2[P1, P2, R, FullR, Builder2[P1, P2, R, FullR]]
   def expectedToCode[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] =
     (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
   def creator[P1, P2, R](requirements: BuilderNodeHolder[R, (P1, P2) => R]) =
     (r: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
       buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) => new Engine2(r, requirements, buildExceptions)
-  def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2) => Boolean]): c.Expr[Builder2[P1, P2, R]] = {
+  def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2) => Boolean]): c.Expr[Builder2[P1, P2, R, FullR]] = {
     import c.universe._
     reify {
-      val l = bl[P1, P2, R]()
+      val l = bl[P1, P2, R, FullR]()
       val ch = CodeHolder[(P1, P2) => Boolean](because.splice, c.literal(show(because.tree)).splice)
-      val thisObject: Builder2[P1, P2, R] = (c.Expr[Builder2[P1, P2, R]](c.prefix.tree)).splice
+      val thisObject: Builder2[P1, P2, R, FullR] = (c.Expr[Builder2[P1, P2, R, FullR]](c.prefix.tree)).splice
       thisObject.becauseHolder(ch)
     }
   }
-  def codeImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(code: c.Expr[(P1, P2) => R]): c.Expr[Builder2[P1, P2, R]] = {
+  def codeImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(code: c.Expr[(P1, P2) => R]): c.Expr[Builder2[P1, P2, R, FullR]] = {
     import c.universe._
     reify {
-      val l = bl[P1, P2, R]()
+      val l = bl[P1, P2, R, FullR]()
       val ch = CodeHolder[(P1, P2) => R](code.splice, c.literal(show(code.tree)).splice)
-      val thisObject: Builder2[P1, P2, R] = (c.Expr[Builder2[P1, P2, R]](c.prefix.tree)).splice
+      val thisObject: Builder2[P1, P2, R, FullR] = (c.Expr[Builder2[P1, P2, R, FullR]](c.prefix.tree)).splice
       thisObject.codeHolder(ch)
     }
   }
-  def matchWithImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2), R]]): c.Expr[Builder2[P1, P2, R]] = {
+  def matchWithImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2), R]]): c.Expr[Builder2[P1, P2, R, FullR]] = {
     import c.universe._
-    val thisObject: Builder2[P1, P2, R] = (c.Expr[Builder2[P1, P2, R]](c.prefix.tree)).splice
+    val thisObject: Builder2[P1, P2, R, FullR] = (c.Expr[Builder2[P1, P2, R, FullR]](c.prefix.tree)).splice
     reify {
-      val l = bl[P1, P2, R]()
+      val l = bl[P1, P2, R, FullR]()
       val chBecause = CodeHolder[(P1, P2) => Boolean]((p1, p2) => pf.splice.isDefinedAt((p1, p2)), c.literal(show(pf.tree)).splice)
       val chResult = CodeHolder[(P1, P2) => R]((p1, p2) => pf.splice.apply((p1, p2)), c.literal(show(pf.tree)).splice)
 
@@ -43,32 +43,31 @@ object Builder2 {
     }
   }
 }
-trait Builder2[P1, P2, R] extends Builder[R, (P1, P2) => R, Builder2[P1, P2, R]]
+case class Builder2[P1, P2, R, FullR](
+  nodes: List[BuilderNode[R, (P1, P2) => R]] = List(new EngineDescription[R, (P1, P2) => R]),
+  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]] = Map[BuilderNode[R, (P1, P2) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
+  extends Builder[R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR]]
   with BuilderWithModifyChildrenForBuild[R, (P1, P2) => R]
   with ValidateScenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]
   with MakeClosures2[P1, P2, R] {
-  val bl2 = new BuilderLens2[P1, P2, R, Builder2[P1, P2, R]]
+
+  val bl2 = new BuilderLens2[P1, P2, R, FullR, Builder2[P1, P2, R, FullR]]
   import bl2._
   lazy val scenarios = all(classOf[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]]).toSet
 
-  def code(code: (P1, P2) => R): Builder2[P1, P2, R] = macro Builder2.codeImpl[P1, P2, R]
-  def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R] = macro Builder2.becauseImpl[P1, P2, R]
+  def code(code: (P1, P2) => R): Builder2[P1, P2, R, FullR] = macro Builder2.codeImpl[P1, P2, R, FullR]
+  def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R, FullR] = macro Builder2.becauseImpl[P1, P2, R, FullR]
   def becauseHolder(becauseHolder: CodeHolder[(P1, P2) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder)))
-  def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R]
+  def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R, FullR]
   def scenario(p1: P1, p2: P2, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2), Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P1, P2) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, (l) => l :+ ((params: (P1, P2)) => cfg(params._1, params._2))))
-  def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(new Builder2Class[P1, P2, R](nodes, buildExceptions))
+  def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(new Builder2[P1, P2, R, FullR](nodes, buildExceptions))
   def build: Engine2[P1, P2, R] = BuildEngine.build2(this)
-  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) = new Builder2Class[P1, P2, R](nodes, buildExceptions)
+  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) = new Builder2[P1, P2, R, FullR](nodes, buildExceptions)
 }
-
-case class Builder2Class[P1, P2, R](
-  nodes: List[BuilderNode[R, (P1, P2) => R]] = List(new EngineDescription[R, (P1, P2) => R]),
-  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]] = Map[BuilderNode[R, (P1, P2) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
-  extends Builder2[P1, P2, R]
 
 trait MakeClosures2[P1, P2, R] extends MakeClosures[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
   def makeBecauseClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): BecauseClosure = ((bfn) => { s.executeConfigurators; bfn(s.params._1, s.params._2) })

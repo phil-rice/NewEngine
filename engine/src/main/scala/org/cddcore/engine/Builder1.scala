@@ -4,10 +4,10 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens1[P, R, B <: BuilderNodeHolder[R, (P) => R]] extends FullBuilderLens[P, (P) => Boolean, R, (P) => R, B]
+class BuilderLens1[P, R, FullR, B <: BuilderNodeHolder[R, (P) => R]] extends FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, B]
 
 object Builder1 {
-  def bl[P, R, FullR]() = new BuilderLens1[P, R, Builder1[P, R, FullR]]
+  def bl[P, R, FullR]() = new BuilderLens1[P, R, FullR, Builder1[P, R, FullR]]
   def expectedToCode[P, R]: Either[Exception, R] => CodeHolder[(P) => R] =
     (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
 
@@ -43,7 +43,7 @@ object Builder1 {
 }
 case class Builder1[P, R, FullR](nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]),
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]] = Map[BuilderNode[R, (P) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
-  extends Builder[R, (P) => R, Builder1[P, R, FullR]]
+  extends Builder[R, (P) => R, FullR, Builder1[P, R, FullR]]
   with BuilderWithModifyChildrenForBuild[R, (P) => R]
   with ValidateScenario[P, (P) => Boolean, R, (P) => R]
   with MakeClosures1[P, R] {

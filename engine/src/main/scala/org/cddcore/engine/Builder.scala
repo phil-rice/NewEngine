@@ -11,12 +11,12 @@ trait HasExceptionMap[R, RFn] {
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
 }
-trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends BuilderNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
+trait Builder[R, RFn, FullR, B <: Builder[R, RFn, FullR, B]] extends BuilderNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
-  val bl = new BuilderLens[R, RFn, Builder[R, RFn, B]]
+  val bl = new BuilderLens[R, RFn, FullR, Builder[R, RFn, FullR, B]]
   import bl._
 
-  protected def wrap(stuff: => Builder[R, RFn, B]): B = try {
+  protected def wrap(stuff: => Builder[R, RFn, FullR, B]): B = try {
     stuff.asInstanceOf[B]
   } catch {
     case e: Exception => {
@@ -45,6 +45,9 @@ trait Builder[R, RFn, B <: Builder[R, RFn, B]] extends BuilderNodeHolder[R, RFn]
 
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
+  def childEngine(title: String): B =
+    wrap(
+      toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn] :: n)).asInstanceOf[Builder[R, RFn, FullR, B]])
 
 }
 

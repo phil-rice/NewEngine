@@ -4,11 +4,11 @@ import org.junit.runner.RunWith
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
+abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)
 
   val s0 = s("0")
-  val s1 = s("1") 
+  val s1 = s("1")
 
   val uc = UseCase[R, RFn]()
   val ucS0 = UseCase[R, RFn](nodes = List(s0))
@@ -97,8 +97,8 @@ abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <
 }
 
 abstract class Lens1Test[P, R] extends BuilderLensTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R]] with Builder1Test[P, R, R]
-abstract class Lens2Test[P1, P2, R] extends BuilderLensTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
-abstract class Lens3Test[P1, P2, P3, R] extends BuilderLensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
+abstract class Lens2Test[P1, P2, R] extends BuilderLensTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R, R]
+abstract class Lens3Test[P1, P2, P3, R] extends BuilderLensTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, R]
 
 @RunWith(classOf[JUnitRunner])
 class LensStringStringTest extends Lens1Test[String, String] with StringStringTest

@@ -23,22 +23,15 @@ case class FoldingEngineDescription[R, RFn, FullR](
 
 }
 
-class FoldingBuilderLens[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] {
-  val toFoldingEngineDescription = Lens[FoldingBuilder[R, RFn, FullR, B], FoldingEngineDescription[R, RFn, FullR]](
-    (b) => b.nodes.head.asInstanceOf[FoldingEngineDescription[R, RFn, FullR]],
-    (b, n) => b.copyNodes(nodes = List(n)).asInstanceOf[B],
-    Some("toFoldEngine"))
-  val foldEngineNodesL = Lens[FoldingEngineDescription[R, RFn, FullR], List[BuilderNode[R, RFn]]](
-    (b) => b.nodes,
-    (b, n) => b.copyNodes(nodes = n),
-    Some("nodesL"))
-
-}
-
-trait FoldingBuilder[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]]  extends FoldingBuilderNodeAndHolder[R, RFn, FullR]{
-  val foldingLens = new FoldingBuilderLens[R, RFn, FullR, B]
-  import foldingLens._
-  def childEngine(title: String) =
-    toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this, ((n) => new EngineDescription[R, RFn] :: n))
-}
+//class FoldingBuilderLens[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] {
+//
+//}
+//
+//trait FoldingBuilder[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] extends BuilderNodeHolder[R, RFn] {
+//  val bl: BuilderLens[R, RFn, FullR, B]
+//  import bl._
+//  val foldingLens = new FoldingBuilderLens[R, RFn, FullR, B]
+//  import foldingLens._
+//  protected def wrap(stuff: => Builder[R, RFn, FullR, B]): B
+//}
 

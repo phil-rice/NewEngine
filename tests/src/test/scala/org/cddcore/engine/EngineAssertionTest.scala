@@ -5,7 +5,7 @@ import org.scalatest.junit.JUnitRunner
 import org.cddcore.engine._
 
 @RunWith(classOf[JUnitRunner])
-abstract class EngineAssertionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, B, E] {
+abstract class EngineAssertionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
 
   def checkAssertionExecuted(times: Int) {
     var count = 0
@@ -37,8 +37,8 @@ abstract class EngineAssertionTest[Params, BFn, R, RFn, B <: Builder[R, RFn, B],
 }
 
 abstract class EngineAssertion1Test[P, R] extends EngineAssertionTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R]] with Builder1Test[P, R, R]
-abstract class EngineAssertion2Test[P1, P2, R] extends EngineAssertionTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R]
-abstract class EngineAssertion3Test[P1, P2, P3, R] extends EngineAssertionTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R]
+abstract class EngineAssertion2Test[P1, P2, R] extends EngineAssertionTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R, R]
+abstract class EngineAssertion3Test[P1, P2, P3, R] extends EngineAssertionTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, R]
 
 @RunWith(classOf[JUnitRunner])
 class EngineAssertionStringStringTest extends EngineAssertion1Test[String, String] with StringStringTest
