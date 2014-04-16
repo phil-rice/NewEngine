@@ -9,14 +9,14 @@ object AbstractTestTest {
   }
 }
 
-abstract class AbstractTestTest[Params, BFn, R, RFn, B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with EvaluateTree[Params, BFn, R, RFn] {
-  def root: org.cddcore.engine.DecisionTreeNode[Params, BFn, R, RFn] = ???
+abstract class AbstractTestTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]]
+  extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
 
   "The abstractTest class" should "allow becauses to be specified and the because means 'all these letters are in the result'" in {
 
     def checkBecause(because: Seed, p: Seed, expected: Boolean) {
       val bfn = becauseBfn("ABC")
-      val bc = makeBecauseClosure(params(p))
+      val bc = buildEngine.mc.makeBecauseClosure(params(p))
       assertEquals(expected, bc(bfn))
     }
     checkBecause("ABC", "A", false)
@@ -34,16 +34,16 @@ abstract class AbstractTest2Test[P1, P2, R] extends AbstractTestTest[(P1, P2), (
 abstract class AbstractTest3Test[P1, P2, P3, R] extends AbstractTestTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, R]
 
 @RunWith(classOf[JUnitRunner])
-class AbstractTestStringStringTest extends AbstractTest1Test[String, String] with StringStringTest with EvaluateTree1[String, String] {
+class AbstractTestStringStringTest extends AbstractTest1Test[String, String] with StringStringTest {
   def apply(p: String): String = ???
 }
 
 @RunWith(classOf[JUnitRunner])
-class AbstractTestStringStringStringTest extends AbstractTest2Test[String, String, String] with StringStringStringTest with EvaluateTree2[String, String, String] {
+class AbstractTestStringStringStringTest extends AbstractTest2Test[String, String, String] with StringStringStringTest {
   def apply(p1: String, p2: String): String = ???
 }
 
 @RunWith(classOf[JUnitRunner])
-class AbstractTestStringStringStringStringTest extends AbstractTest3Test[String, String, String, String] with StringStringStringStringTest with EvaluateTree3[String, String, String, String] {
+class AbstractTestStringStringStringStringTest extends AbstractTest3Test[String, String, String, String] with StringStringStringStringTest {
   def apply(p1: String, p2: String, p3: String): String = ???
 }

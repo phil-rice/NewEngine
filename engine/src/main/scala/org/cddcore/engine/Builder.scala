@@ -11,15 +11,16 @@ trait HasExceptionMap[R, RFn] {
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
 }
-trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B]]
+trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends BuilderNodeHolder[R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
   with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
-  val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B]]
+  val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
   import bl._
+  lazy val scenarios = all(classOf[Scenario[Params, BFn, R, RFn]]).toList
 
-  protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B]): B = try {
+  protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B, E]): B = try {
     stuff.asInstanceOf[B]
   } catch {
     case e: Exception => {
@@ -48,7 +49,8 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
 
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
-  def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B]])
+  def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
+    mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
 }
 
 case class ModifedChildrenBuilderNodeHolder[R, RFn](nodes: List[BuilderNode[R, RFn]] = List()) extends BuilderNodeHolder[R, RFn] {

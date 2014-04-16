@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class BuilderNodeConstructionTest[Params, BFn, R, RFn,  B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
+abstract class BuilderNodeConstructionTest[Params, BFn, R, RFn,  B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)
   val doc = Document()
   val ref1 = Reference("1", doc)

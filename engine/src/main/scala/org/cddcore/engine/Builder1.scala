@@ -29,15 +29,14 @@ object Builder1 {
 case class Builder1[P, R, FullR](
   nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]),
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]] = Map[BuilderNode[R, (P) => R], List[Exception]](),
-  makeClosures: MakeClosures[P, (P) => Boolean, R, (P) => R],
-  validateScenarioWhileBuilding: WhileBuildingValidateScenario[P, (P) => Boolean, R, (P) => R])(implicit val ldp: LoggerDisplayProcessor)
+  buildEngine: BuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R]])(implicit val ldp: LoggerDisplayProcessor)
 
-  extends Builder[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]] {
-  lazy val scenarios = all(classOf[Scenario[P, (P) => Boolean, R, (P) => R]]).toList
-
+  extends Builder[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R]] {
+  val makeClosures = buildEngine.mc
+  val validator = buildEngine.validator
   import bl._
   import makeClosures._
-  import validateScenarioWhileBuilding._
+  import validator._
 
   def because(because: (P) => Boolean): Builder1[P, R, FullR] = macro Builder1.becauseImpl[P, R, FullR]
   def code(code: (P) => R): Builder1[P, R, FullR] = macro Builder1.codeImpl[P, R, FullR]
@@ -49,7 +48,7 @@ case class Builder1[P, R, FullR](
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[BuilderNode[R, (P) => R]]) = wrap(copy(nodes = nodes))
-  def build: Engine1[P, R] = ??? //BuildEngine.build1(this)
+  def build: Engine1[P, R] = buildEngine.buildEngine(this, buildExceptions)
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]]) =
     wrap(copy(buildExceptions = buildExceptions))
 }
@@ -68,5 +67,10 @@ case class Engine1[P, R](
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]])
   extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
   def apply(p: P) = evaluator.evaluate(tree, p)
+  def applyParams(p: P) = {
+    val result = evaluator.evaluate(tree, p);
+    result
+  }
+
 }
 

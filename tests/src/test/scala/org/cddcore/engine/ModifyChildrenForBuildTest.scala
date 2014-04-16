@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 object ModifyChildrenForBuildTest
 
-abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, RFn, R, B], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
+abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toBuilderWithModifyChildrenForBuild[R, RFn](b: B) = b.asInstanceOf[BuilderWithModifyChildrenForBuild[R, RFn]]
   implicit def toSome[X](x: X) = Some(x)
   "Scenarios when modifiedForBuild" should "inherit priority from parent if not defined" in {
@@ -14,7 +14,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     scenario("A")
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(s("A", priority = 1))))))),
-      currentBuilder.modifyChildrenForBuild)
+      modifiedChildrenForBuild)
   }
   it should "use own priority if defined" in {
     update(_.priority(2).useCase("UC").priority(1))
@@ -23,14 +23,14 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(
         s("A", priority = 3))))))),
-      currentBuilder.modifyChildrenForBuild)
+      modifiedChildrenForBuild)
   }
   it should "inherit expected from parent if not defined" in {
     update(_.expected(result("X")).useCase("UC").expected(result("Y")))
     scenario("A")
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(s("A", expected = "Y"))))))),
-      currentBuilder.modifyChildrenForBuild)
+      modifiedChildrenForBuild)
   }
 
   it should "use own  expected if  defined" in {
@@ -40,7 +40,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(
         s("A", expected = "Z"))))))),
-      currentBuilder.modifyChildrenForBuild)
+      modifiedChildrenForBuild)
   }
   it should "inherit code from parent if not defined" in {
     code("X")
@@ -51,7 +51,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Y")))))))),
-      currentBuilder.modifyChildrenForBuild)
+     modifiedChildrenForBuild)
   }
 
   it should "use own  code if  defined" in {
@@ -64,7 +64,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
     assertEquals(ModifedChildrenBuilderNodeHolder(List(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Z")))))))),
-      currentBuilder.modifyChildrenForBuild)
+      modifiedChildrenForBuild)
   }
 
   it should "sort children by initially order they were defined in, but by priority if specified" in {
@@ -74,7 +74,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[R, R
       UseCase(title = "UC1", priority = 1),
       UseCase(title = "UC3"),
       UseCase(title = "UC4"))))),
-      currentBuilder.modifyChildrenForBuild)
+     modifiedChildrenForBuild)
   }
 
 }

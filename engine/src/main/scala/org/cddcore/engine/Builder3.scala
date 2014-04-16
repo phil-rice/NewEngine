@@ -41,14 +41,14 @@ object Builder3 {
 case class Builder3[P1, P2, P3, R, FullR](
   nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R]),
   buildExceptions: Map[BuilderNode[R, (P1, P2, P3) => R], List[Exception]] = Map[BuilderNode[R, (P1, P2, P3) => R], List[Exception]](),
-  makeClosures: MakeClosures[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
-  validateScenarioWhileBuilding: WhileBuildingValidateScenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R])(implicit val ldp: LoggerDisplayProcessor)
-  extends Builder[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR]] {
+  buildEngine: BuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R]])(implicit val ldp: LoggerDisplayProcessor)
+  extends Builder[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R]] {
 
+  val makeClosures = buildEngine.mc
+  val validator = buildEngine.validator
   import bl._
   import makeClosures._
-  import validateScenarioWhileBuilding._
-  lazy val scenarios = all(classOf[Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]]).toList
+  import validator._
 
   def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(scenarios, new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title))) :: nodes))
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R, FullR]
@@ -61,7 +61,7 @@ case class Builder3[P1, P2, P3, R, FullR](
   def configurator(cfg: (P1, P2, P3) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ ((params: (P1, P2, P3)) => cfg(params._1, params._2, params._3))))
 
   def copyNodes(nodes: List[BuilderNode[R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
-  def build: Engine3[P1, P2, P3, R] = ??? // BuildEngine.build3(this)
+  def build: Engine3[P1, P2, P3, R] = buildEngine.buildEngine(this, buildExceptions)
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P1, P2, P3) => R], List[Exception]]) = wrap(copy(buildExceptions = buildExceptions))
 }
 
@@ -84,5 +84,6 @@ case class Engine3[P1, P2, P3, R](
   buildExceptions: Map[BuilderNode[R, (P1, P2, P3) => R], List[Exception]])
   extends Engine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
   def apply(p1: P1, p2: P2, p3: P3) = evaluator.evaluate(tree, (p1, p2, p3))
+  def applyParams(params: (P1, P2, P3)) = evaluator.evaluate(tree, params)
 }
 

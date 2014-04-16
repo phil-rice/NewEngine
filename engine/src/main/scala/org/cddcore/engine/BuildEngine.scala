@@ -9,24 +9,45 @@ object BuildEngine {
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
 
   def expectedToCode1[P, R]: Either[Exception, R] => CodeHolder[(P) => R] = (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
+  def expectedToCode2[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] = (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
+  def expectedToCode3[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] = (x) => new CodeHolder((p1, p2, p3) => x match { case Right(r) => r }, x.toString())
 
-  def apply[P, R, FullR] =
-    new SimpleBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R]](defaultRoot(defaultRootCode1), new MakeClosures1)
-  def apply[P1, P2, R, FullR] =
-    new SimpleBuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R]](defaultRoot(defaultRootCode2), new MakeClosures2)
-  def apply[P1, P2, P3, R, FullR] =
-    new SimpleBuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R]](defaultRoot(defaultRootCode3), new MakeClosures3)
+  //  def construct1[P, R, E] =  (dt: DecisionTree[P, (P) => Boolean, R, (P) => R ], 
+  //      requirements: BuilderNodeHolder[R, (P)=> R], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) => Engine1(requirements, buildExceptions)
+
+  def builderEngine1[P, R, FullR] = new SimpleBuildEngine1[P, R, FullR]
+  def builderEngine2[P1, P2, R, FullR] = new SimpleBuildEngine2[P1, P2, R, FullR]
+  def builderEngine3[P1, P2, P3, R, FullR] = new SimpleBuildEngine3[P1, P2, P3, R, FullR]
 
 }
+case class SimpleBuildEngine1[P, R, FullR] extends SimpleBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
+  def constructEngine(dt: DecisionTree[P, (P) => Boolean, R, (P) => R],
+    requirements: BuilderNodeHolder[R, (P) => R],
+    exceptionMap: Map[BuilderNode[R, (P) => R], List[Exception]]): Engine1[P, R] =
+    Engine1(dt, evaluateTree, requirements, exceptionMap)
 
-class SimpleBuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]](
-  root: DecisionTreeNode[Params, BFn, R, RFn],
-  makeClosures: MakeClosures[Params, BFn, R, RFn])(implicit val ldp: LoggerDisplayProcessor) extends BuildEngine[Params, BFn, R, RFn, FullR, E] {
-  val evaluateTree = new SimpleEvaluateTree(makeClosures, new DecisionTreeLens[Params, BFn, R, RFn])
-  val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
-  val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
-  val requirementsModifier = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
-  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
+}
+case class SimpleBuildEngine2[P1, P2, R, FullR] extends SimpleBuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode2), new MakeClosures2, BuildEngine.expectedToCode2) {
+  def constructEngine(dt: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], requirements: BuilderNodeHolder[R, (P1, P2) => R], exceptionMap: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) =
+    Engine2(dt, evaluateTree, requirements, exceptionMap)
+}
+case class SimpleBuildEngine3[P1, P2, P3, R, FullR] extends SimpleBuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode3), new MakeClosures3, BuildEngine.expectedToCode3) {
+  def constructEngine(dt: DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], requirements: BuilderNodeHolder[R, (P1, P2, P3) => R], exceptionMap: Map[BuilderNode[R, (P1, P2, P3) => R], List[Exception]]) =
+    Engine3(dt, evaluateTree, requirements, exceptionMap)
+}
+
+abstract class SimpleBuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]](
+  val root: DecisionTreeNode[Params, BFn, R, RFn],
+  makeClosures: MakeClosures[Params, BFn, R, RFn],
+  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor) extends BuildEngine[Params, BFn, R, RFn, FullR, E] {
+  lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
+  lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens)
+  lazy val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
+  lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
+  lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
 }
 
 trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] {
@@ -37,20 +58,27 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   type S = Scenario[Params, BFn, R, RFn]
   type EMap = Map[BuilderNode[R, RFn], List[Exception]]
 
-  val evaluateTree: EvaluateTree[Params, BFn, R, RFn]
-  val validator: ValidateScenario[Params, BFn, R, RFn]
-  val blankTree: DT
-  val requirementsModifier: BuilderWithModifyChildrenForBuild[R, RFn]
+  def evaluateTree: EvaluateTree[Params, BFn, R, RFn]
+  def validator: ValidateScenario[Params, BFn, R, RFn]
+  def blankTree: DT
+  def builderWithModifyChildrenForBuild: BuilderWithModifyChildrenForBuild[R, RFn]
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
-  val makeClosures = evaluateTree.makeClosures
+  def decisionTreeLens: DecisionTreeLens[Params, BFn, R, RFn]
+  def constructEngine(dt: DecisionTree[Params, BFn, R, RFn], requirements: BuilderNodeHolder[R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
+  val mc = evaluateTree.makeClosures
   implicit def ldp: LoggerDisplayProcessor
 
+  def buildEngine(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap) = {
+    val (dt, eMap) = buildTree(requirements, buildExceptions)
+    constructEngine(dt, requirements, eMap)
+  }
+
   def buildTree(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap): (DT, EMap) = {
-    val scenarios = requirements.all(classOf[S])
+    val scenarios = builderWithModifyChildrenForBuild.modifyChildrenForBuild(requirements).all(classOf[S])
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
       val (dt, eMap) = acc
       try {
-        validator.preValidateScenario(makeClosures, s)
+        validator.preValidateScenario(mc, s)
         val newTree = addScenario(dt, s)
         validator.checkAssertions(evaluateTree, newTree, s)
         (newTree, eMap)
@@ -68,8 +96,9 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   }
 
   def addScenario(tree: DT, scenario: S): DT = {
-    import evaluateTree.lens._
-    def actualFromNewScenario(c: Conc) = makeClosures.safeEvaluateResult(c.code.fn, scenario)
+    val lens = evaluateTree.lens
+    import lens._
+    def actualFromNewScenario(c: Conc) = mc.safeEvaluateResult(c.code.fn, scenario)
 
     val concL = evaluateTree.findLensToConclusion(tree.root, scenario)
     val concLToConclusionL = concL.andThen(toConclusionL)
@@ -82,7 +111,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
     def addDecisionNodeTo = {
       concL.mod(tree, (c) => c match {
         case c: Conc =>
-          c.scenarios.filter((s) => makeClosures.evaluateBecause(scenario, s)) match {
+          c.scenarios.filter((s) => mc.evaluateBecause(scenario, s)) match {
             case Nil => Decision(List(scenario.because.get), yes = newConclusion, no = c, scenarioThatCausedNode = scenario)
             case brokenScenarios => throw ScenarioConflictAndBecauseNotAdequateException(concL, expected, actual, brokenScenarios, scenario)
           }

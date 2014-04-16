@@ -13,7 +13,7 @@ object Example {
       //      matchWith { case x => "x" }.
       scenario(new A(0))
 
-    Engine.folding[A, String, String]("", { _ + _ }).childEngine("someEngine")
+//    Engine.folding[A, String, String]("", { _ + _ }).childEngine("someEngine")
 
     //      matchWith { case x: B => "x" }
     //      useCase("",
