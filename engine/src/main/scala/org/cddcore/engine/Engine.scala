@@ -3,10 +3,7 @@ package org.cddcore.engine
 trait Engine[Params, BFn, R, RFn] extends HasExceptionMap[R, RFn] {
   def requirements: BuilderNodeHolder[R, RFn]
   def tree: DecisionTree[Params, BFn, R, RFn]
-}
-
-trait EngineAndDecisionTree[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] with DecisionTree[Params, BFn, R, RFn] with DecisionTreeAndExceptions[Params, BFn, R, RFn] {
-  def tree: DecisionTree[Params, BFn, R, RFn] = this
+  def evaluator: EvaluateTree[Params, BFn, R, RFn]
 }
 
 object Engine {
@@ -26,7 +23,7 @@ object Engine {
 
   def checkAllScenarios[Params, BFn, R, RFn](engine: Engine[Params, BFn, R, RFn]) {
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
-      val actual = engine.tree.safeEvaluate(s)
+      val actual = engine.evaluator.safeEvaluate(engine.tree, s)
       s.expected match {
         case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
         case _ => throw NoExpectedException(s)

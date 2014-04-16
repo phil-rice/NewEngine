@@ -4,15 +4,9 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
-class BuilderLens2[P1, P2, R, FullR, B <: BuilderNodeHolder[R, (P1, P2) => R]] extends FullBuilderLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, B]
-
 object Builder2 {
-  def bl[P1, P2, R, FullR]() = new BuilderLens2[P1, P2, R, FullR, Builder2[P1, P2, R, FullR]]
-  def expectedToCode[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] =
-    (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
-  def creator[P1, P2, R](requirements: BuilderNodeHolder[R, (P1, P2) => R]) =
-    (r: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
-      buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) => new Engine2(r, requirements, buildExceptions)
+  def bl[P1, P2, R, FullR]() = new FullBuilderLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR]]
+  def expectedToCode[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] = (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
   def becauseImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(because: c.Expr[(P1, P2) => Boolean]): c.Expr[Builder2[P1, P2, R, FullR]] = {
     import c.universe._
     reify {
@@ -43,50 +37,46 @@ object Builder2 {
     }
   }
 }
+
 case class Builder2[P1, P2, R, FullR](
   nodes: List[BuilderNode[R, (P1, P2) => R]] = List(new EngineDescription[R, (P1, P2) => R]),
-  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]] = Map[BuilderNode[R, (P1, P2) => R], List[Exception]]())(implicit val ldp: LoggerDisplayProcessor)
-  extends Builder[R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR]]
-  with BuilderWithModifyChildrenForBuild[R, (P1, P2) => R]
-  with ValidateScenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]
-  with MakeClosures2[P1, P2, R] {
+  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]] = Map[BuilderNode[R, (P1, P2) => R], List[Exception]](),
+  makeClosures: MakeClosures[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
+  validateScenarioWhileBuilding: WhileBuildingValidateScenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R])(implicit val ldp: LoggerDisplayProcessor)
+  extends Builder[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR]] {
 
-  val bl2 = new BuilderLens2[P1, P2, R, FullR, Builder2[P1, P2, R, FullR]]
-  import bl2._
-  lazy val scenarios = all(classOf[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]]).toSet
+  import bl._
+  import validateScenarioWhileBuilding._
+  import makeClosures._
+  lazy val scenarios = all(classOf[Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]]).toList
 
   def code(code: (P1, P2) => R): Builder2[P1, P2, R, FullR] = macro Builder2.codeImpl[P1, P2, R, FullR]
   def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R, FullR] = macro Builder2.becauseImpl[P1, P2, R, FullR]
   def becauseHolder(becauseHolder: CodeHolder[(P1, P2) => Boolean]) =
-    wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(sn))).set(this, Some(becauseHolder)))
+    wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def matchWith(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchWithImpl[P1, P2, R, FullR]
-  def scenario(p1: P1, p2: P2, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title))) :: nodes))
+  def scenario(p1: P1, p2: P2, title: String = null) =
+    wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(scenarios, new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2), Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P1, P2) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, (l) => l :+ ((params: (P1, P2)) => cfg(params._1, params._2))))
-  def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(new Builder2[P1, P2, R, FullR](nodes, buildExceptions))
-  def build: Engine2[P1, P2, R] = BuildEngine.build2(this)
-  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) = new Builder2[P1, P2, R, FullR](nodes, buildExceptions)
+  def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(copy(nodes = nodes))
+  def build: Engine2[P1, P2, R] = ??? //BuildEngine.build2(this)
+  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]]) = wrap(copy(buildExceptions = buildExceptions))
 }
 
-trait MakeClosures2[P1, P2, R] extends MakeClosures[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
+class MakeClosures2[P1, P2, R] extends MakeClosures[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
   def makeBecauseClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): BecauseClosure = ((bfn) => { s.executeConfigurators; bfn(s.params._1, s.params._2) })
   def makeBecauseClosure(params: (P1, P2)): BecauseClosure = ((bfn) => bfn(params._1, params._2))
   def makeResultClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): ResultClosure = ((rfn) => { s.executeConfigurators; rfn(s.params._1, s.params._2) })
   def makeResultClosure(params: (P1, P2)): ResultClosure = ((rfn) => rfn(params._1, params._2))
-
-}
-trait EvaluateTree2[P1, P2, R] extends EvaluateTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with MakeClosures2[P1, P2, R] {
-}
-class DecisionTreeLens2[P1, P2, R] extends DecisionTreeLens[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
-  def creator(requirements: BuilderNodeHolder[R, (P1, P2) => R]) = Builder2.creator(requirements)
 }
 
-case class Engine2[P1, P2, R](root: DecisionTreeNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
+case class Engine2[P1, P2, R](
+  tree: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
+  evaluator: EvaluateTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   requirements: BuilderNodeHolder[R, (P1, P2) => R],
-  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]],
-  rootIsDefault: Boolean = false) extends EngineAndDecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with EvaluateTree2[P1, P2, R] with Function2[P1, P2, R] {
-  val lens = new DecisionTreeLens2[P1, P2, R]
-  def apply(p1: P1, p2: P2) = evaluate(root, (p1, p2))
-  val expectedToCode: Either[Exception, R] => CodeHolder[(P1, P2) => R] = Builder2.expectedToCode
+  buildExceptions: Map[BuilderNode[R, (P1, P2) => R], List[Exception]])
+  extends Engine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, R] {
+  def apply(p1: P1, p2: P2) = evaluator.evaluate(tree, (p1, p2))
 }

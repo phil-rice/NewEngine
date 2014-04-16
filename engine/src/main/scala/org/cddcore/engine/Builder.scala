@@ -11,12 +11,15 @@ trait HasExceptionMap[R, RFn] {
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
 }
-trait Builder[R, RFn, FullR, B <: Builder[R, RFn, FullR, B]] extends BuilderNodeHolder[R, RFn] with CanCopyWithNewExceptionMap[R, RFn] {
+trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B]]
+  extends BuilderNodeHolder[R, RFn]
+  with CanCopyWithNewExceptionMap[R, RFn]
+  with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
-  val bl = new BuilderLens[R, RFn, FullR, Builder[R, RFn, FullR, B]]
+  val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B]]
   import bl._
 
-  protected def wrap(stuff: => Builder[R, RFn, FullR, B]): B = try {
+  protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B]): B = try {
     stuff.asInstanceOf[B]
   } catch {
     case e: Exception => {
@@ -45,63 +48,67 @@ trait Builder[R, RFn, FullR, B <: Builder[R, RFn, FullR, B]] extends BuilderNode
 
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
-  def childEngine(title: String): B =
-    wrap(
-      toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[R, RFn, FullR, B]])
-
+  def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B]])
 }
 
 case class ModifedChildrenBuilderNodeHolder[R, RFn](nodes: List[BuilderNode[R, RFn]] = List()) extends BuilderNodeHolder[R, RFn] {
   def copyNodes(nodes: List[BuilderNode[R, RFn]]) = throw new IllegalStateException
 }
 
-trait ValidateScenario[Params, BFn, R, RFn] extends MakeClosures[Params, BFn, R, RFn] {
-  private type S = Scenario[Params, BFn, R, RFn]
-  def scenarios: Set[S]
-  def preValidateScenario(s: S)(implicit ldp: LoggerDisplayProcessor) = {
-    if (!s.expected.isDefined)
-      throw NoExpectedException(s)
-    checkBecause(s)
-    checkHasExpected(s)
-  }
-  def postValidateScenario(tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
-    checkAssertions(tree, s)
-    checkCorrectValue(tree, s)
-  }
-  def checkDuplicateScenario(s: S) = {
+trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
+  type S = Scenario[Params, BFn, R, RFn]
+  type MC = MakeClosures[Params, BFn, R, RFn]
+  def checkDuplicateScenario(scenarios: List[S], s: S) = {
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
     s
   }
-  def checkBecause(s: S)(implicit ldp: LoggerDisplayProcessor) = {
+  def checkBecause(mc: MC, s: S)(implicit ldp: LoggerDisplayProcessor) = {
     s.because match {
-      case Some(_) => if (!evaluateBecause(s, s)) throw ScenarioBecauseException(s);
+      case Some(_) => if (!mc.evaluateBecause(s, s)) throw ScenarioBecauseException(s);
       case _ =>
     }
     s
   }
+}
+
+class SimpleValidateScenario[Params, BFn, R, RFn] extends ValidateScenario[Params, BFn, R, RFn]
+
+trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenario[Params, BFn, R, RFn] {
+  def preValidateScenario(mc: MC, s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    if (!s.expected.isDefined)
+      throw NoExpectedException(s)
+    checkBecause(mc, s)
+    checkHasExpected(s)
+  }
+  def postValidateScenario(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    checkAssertions(evaluateTree, tree, s)
+    checkCorrectValue(evaluateTree, tree, s)
+  }
+
   def checkHasExpected(s: S) = {
     if (s.expected.isEmpty) throw NoExpectedException(s)
     s
   }
-  def checkAssertions(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
+  def checkAssertions(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
     s.assertions.foreach((a) => {
-      val result = tree.safeEvaluate(s)
+      val result = evaluateTree.safeEvaluate(tree, s)
       val assertionResult = a.fn(s.params, result)
       if (!assertionResult) throw AssertionException(a, s)
     })
   }
-  def checkCorrectValue(tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
-    val actual = tree.safeEvaluate(s)
+  def checkCorrectValue(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
+    val actual = evaluateTree.safeEvaluate(tree, s)
     s.expected match {
       case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
       case _ => throw NoExpectedException(s)
     }
   }
-
 }
 
-trait BuilderWithModifyChildrenForBuild[R, RFn] extends BuilderNodeHolder[R, RFn] {
-  def modifyChildrenForBuild: ModifedChildrenBuilderNodeHolder[R, RFn] = {
+class SimpleBuilderWithModifyChildrenForBuild[R, RFn] extends BuilderWithModifyChildrenForBuild[R, RFn]
+
+trait BuilderWithModifyChildrenForBuild[R, RFn] {
+  def modifyChildrenForBuild(holder: BuilderNodeHolder[R, RFn]): ModifedChildrenBuilderNodeHolder[R, RFn] = {
     def modifyChildAsNode(path: List[Reportable], child: BuilderNode[R, RFn]) = {
       child
     }
@@ -125,6 +132,6 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] extends BuilderNodeHolder[R, RFn
     }
     def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
       holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: BuilderNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
-    new ModifedChildrenBuilderNodeHolder(modifyChildren(List(), this))
+    new ModifedChildrenBuilderNodeHolder(modifyChildren(List(), holder))
   }
 }
