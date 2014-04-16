@@ -61,9 +61,6 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
   }
 }
 
-
-
-
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
 
 case class EngineDescription[R, RFn](
@@ -81,9 +78,9 @@ case class EngineDescription[R, RFn](
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): BuilderNodeHolder[R, RFn] =
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
+  override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")})"
 
 }
-
 
 case class UseCase[R, RFn](
   title: Option[String] = None,

@@ -22,7 +22,7 @@ object Engine {
   def folding[P1, P2, P3, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, FullR](initialNodes(initialValue, foldingFn))(ldp)
 
   private def initialNodes[Params, BFn, R, RFn, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR) =
-    List(FoldingEngineDescription[R, RFn, FullR](initialValue = () => initialValue, foldingFn = foldingFn))
+    List(FoldingEngineDescription[R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = new CodeHolder(foldingFn, "foldingFn")))
 
   def checkAllScenarios[Params, BFn, R, RFn](engine: Engine[Params, BFn, R, RFn]) {
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {

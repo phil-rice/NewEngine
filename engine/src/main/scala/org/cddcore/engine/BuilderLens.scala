@@ -108,7 +108,10 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     Some("codeL"),
     Some(validate))
   val toFoldingEngineDescription = Lens[B, FoldingEngineDescription[R, RFn, FullR]](
-    (b) => b.nodes.head.asInstanceOf[FoldingEngineDescription[R, RFn, FullR]],
+    (b) => b.nodes.head match {
+      case f: FoldingEngineDescription[R, RFn, FullR] => f
+      case _ => throw new CannotHaveChildEnginesWithoutFolderException
+    },
     (b, n) => b.copyNodes(nodes = List(n)).asInstanceOf[B],
     Some("toFoldEngine"))
   val foldEngineNodesL = Lens[FoldingEngineDescription[R, RFn, FullR], List[BuilderNode[R, RFn]]](
@@ -117,7 +120,7 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     Some("nodesL"))
 }
 
-class FullBuilderLens[Params, BFn, R, RFn,FullR,  B <: BuilderNodeHolder[R, RFn]] extends BuilderLens[R, RFn,FullR, B] {
+class FullBuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] extends BuilderLens[R, RFn, FullR, B] {
   type S = Scenario[Params, BFn, R, RFn]
   val toScenarioL = Lens[BuilderNode[R, RFn], S](
     (b) => b match { case s: S => s },

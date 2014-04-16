@@ -47,7 +47,7 @@ trait Builder[R, RFn, FullR, B <: Builder[R, RFn, FullR, B]] extends BuilderNode
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
   def childEngine(title: String): B =
     wrap(
-      toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn] :: n)).asInstanceOf[Builder[R, RFn, FullR, B]])
+      toFoldingEngineDescription.andThen(foldEngineNodesL).mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[R, RFn, FullR, B]])
 
 }
 

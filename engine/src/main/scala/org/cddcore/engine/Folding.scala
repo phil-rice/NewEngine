@@ -11,8 +11,8 @@ case class FoldingEngineDescription[R, RFn, FullR](
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
-  val foldingFn: (FullR, R) => FullR,
-  val initialValue: () => FullR)
+  val foldingFn: CodeHolder[(FullR, R) => FullR],
+  val initialValue: CodeHolder[() => FullR])
   extends BuilderNodeAndHolder[R, RFn] with FoldingBuilderNodeAndHolder[R, RFn, FullR] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
@@ -20,7 +20,7 @@ case class FoldingEngineDescription[R, RFn, FullR](
     new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
   def copyNodes(nodes: List[BuilderNode[R, RFn]]) =
     new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
-
+  override def toString = s"FoldingEngineDescription(${initialValue.description}, ${foldingFn.description}, nodes=${nodes.mkString(", ")}"
 }
 
 //class FoldingBuilderLens[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] {

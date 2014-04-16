@@ -18,6 +18,8 @@ class EngineException(msg: String, cause: Throwable) extends Exception(msg, caus
   def this() = this("", null)
   def this(msg: String) = this(msg, null)
 }
+class CannotHaveChildEnginesWithoutFolderException extends EngineException
+
 class UndecidedException extends EngineException
 
 class ScenarioException(msg: String, val scenario: Scenario[_, _, _, _], cause: Throwable = null) extends EngineException(msg, cause)
