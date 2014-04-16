@@ -35,7 +35,7 @@ object BuildEngine {
     newDecisionTree
   }
 
-  def build1[P, R](builder: Builder1[P, R]) =
+  def build1[P, R, FullR](builder: Builder1[P, R, FullR]) =
     build(builder,
       new Engine1(defaultRoot[P, (P) => Boolean, R, (P) => R](defaultRootCode1[P, R]), builder, builder.buildExceptions, rootIsDefault = true),
       builder).asInstanceOf[Engine1[P, R]]

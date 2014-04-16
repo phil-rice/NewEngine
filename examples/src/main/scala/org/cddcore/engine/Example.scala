@@ -7,7 +7,7 @@ object Example {
 
   def main(args: Array[String]) {
 
-    new Builder1Class[A, String](). 
+    Engine[A, String](). 
       scenario(new A(0)).
       code((x) => "x").
 //      matchWith { case x => "x" }.

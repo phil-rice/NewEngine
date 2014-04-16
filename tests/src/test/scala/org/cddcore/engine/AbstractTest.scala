@@ -153,13 +153,13 @@ trait HolderHolderHolderStringTest extends BuilderConcretizer[(Holder, Holder, H
   def result(seed: String) = seed.toString
   def becauseBfn(seed: String) = (p1: Holder, p2: Holder, p3: Holder) => contains(p1.value, seed) && contains(p2.value, seed) && contains(p3.value, seed)
 }
-trait Builder1Test[P, R] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R], Engine1[P, R]] with MakeClosures1[P, R] {
-  def initializeBuilder(nodes: List[BuilderNode[R, (P) => R]]) = new Builder1Class[P, R](nodes)
+trait Builder1Test[P, R, FullR] extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, Builder1[P, R, FullR], Engine1[P, R]] with MakeClosures1[P, R] {
+  def initializeBuilder(nodes: List[BuilderNode[R, (P) => R]]) = new Builder1[P, R, FullR](nodes)
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p: P) => result(seed), s"(p)=>result$seed")
   protected def scenarioObject(p: P) = Scenario[P, (P) => Boolean, R, (P) => R](p)
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((p: P, r: Either[Exception, R]) => callback))
-  protected def buildImpl(b: Builder1[P, R]) = BuildEngine.build1[P, R](currentBuilder)
+  protected def buildImpl(b: Builder1[P, R, FullR]) = BuildEngine.build1[P, R, FullR](currentBuilder)
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   protected def configuratorPrim(cfg: (P) => Unit) = update(_.configurator(cfg))

@@ -61,9 +61,8 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
   }
 }
 
-trait FoldingBuilderNodeAndHolder[R, RFn, FullR, FullRFn] extends BuilderNodeAndHolder[R, RFn] {
 
-}
+
 
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
 
@@ -84,25 +83,7 @@ case class EngineDescription[R, RFn](
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
 
 }
-case class FoldingEngineDescription[R, RFn, FullR, FullRFn](
-  val title: Option[String] = None,
-  val description: Option[String] = None,
-  val code: Option[CodeHolder[RFn]] = None,
-  val priority: Option[Int] = None,
-  val nodes: List[BuilderNode[R, RFn]] = List(),
-  val expected: Option[Either[Exception, R]] = None,
-  val references: Set[Reference] = Set(),
-  val foldingFn: (FullR, R) => FullR,
-  val initialValue: () => FullR)
-  extends BuilderNodeAndHolder[R, RFn] with FoldingBuilderNodeAndHolder[R, RFn, FullR, FullRFn] {
-  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new FoldingEngineDescription[R, RFn, FullR, FullRFn](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
-  def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
-    new FoldingEngineDescription[R, RFn, FullR, FullRFn](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
-  def copyNodes(nodes: List[BuilderNode[R, RFn]]) =
-    new FoldingEngineDescription[R, RFn, FullR, FullRFn](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
 
-}
 
 case class UseCase[R, RFn](
   title: Option[String] = None,

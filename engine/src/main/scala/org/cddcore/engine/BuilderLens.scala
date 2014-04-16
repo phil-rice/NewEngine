@@ -126,14 +126,3 @@ class FullBuilderLens[Params, BFn, R, RFn, B <: BuilderNodeHolder[R, RFn]] exten
     Some("configuratorL"))
 }
 
-class FoldingBuilderLens[R, RFn, FullR, FullRFn, B <: FoldingBuilder[R, RFn, FullR, FullRFn, B]] {
-  val toFoldingEngineDescription = Lens[FoldingBuilder[R, RFn, FullR, FullRFn, B], FoldingEngineDescription[R, RFn, FullR, FullRFn]](
-    (b) => b.nodes.head.asInstanceOf[FoldingEngineDescription[R, RFn, FullR, FullRFn]],
-    (b, n) => b.copyNodes(nodes = List(n)).asInstanceOf[B],
-    Some("toFoldEngine"))
-  val foldEngineNodesL = Lens[FoldingEngineDescription[R, RFn, FullR, FullRFn], List[BuilderNode[R, RFn]]](
-    (b) => b.nodes,
-    (b, n) => b.copyNodes(nodes = n),
-    Some("nodesL"))
-
-}
