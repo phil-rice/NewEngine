@@ -7,8 +7,26 @@ import scala.language.implicitConversions
 abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] with FoldingBuilderTest[R, FullR] {
   implicit def toSome[X](x: X) = Some(x)
+  implicit def toFoldingEngine(e: Engine[Params, BFn, R, RFn]) = e.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, FullR]]
+  type FD = FoldingEngineDescription[R, RFn, FullR]
+  type ED = EngineDescription[R, RFn]
+  implicit def toFullR(seed: String): FullR
+  implicit def toR(seed: String): R = result(seed)
 
-  "An builder with child engines" should "add the child engines under the main engine" in {
+  def compareFoldingEngineDescriptions(left: FD, nodes: List[BuilderNode[R, RFn]]) = {
+    assertEquals(nodes.size, 1)
+    val right = nodes.head.asInstanceOf[FD]
+    val withDifferentFoldingStuff = left.copy(foldingFn = right.foldingFn, initialValue = right.initialValue)
+    assertEquals(withDifferentFoldingStuff, right)
+  }
+
+  "A folding builder" should "have a folding engine description with engine description when created" in {
+    val b = currentBuilder
+    val empty: FD = FoldingEngineDescription(initialValue = () => initialValue, foldingFn = foldingFn)
+    compareFoldingEngineDescriptions(empty, currentBuilder.nodes)
+
+  }
+  it should "add the child engines under the main engine" in {
     update(_.childEngine("ce1").useCase("uc11").useCase("uc12"))
     update(_.childEngine("ce2").useCase("uc21").useCase("uc22"))
     update(_.childEngine("ce3").useCase("uc31").useCase("uc32"))
@@ -30,11 +48,14 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
   it should "create a folding engine with child engines" in {
     update(_.childEngine("ce1"))
     scenario("A")
-    expected("A")
+    expected("X")
     update(_.childEngine("ce2"))
     scenario("B")
-    expected("B")
+    expected("Y")
     val e = build
+
+    val expectedValue = List[R]("X", "Y").foldLeft(initialValue)(foldingFn)
+    assertEquals(expectedValue, e.applyParams(params("a")))
 
   }
   //
@@ -126,7 +147,9 @@ abstract class EngineFolding3Test[P1, P2, P3, R, FullR] extends EngineFoldingTes
 trait StringToStringFoldingTest {
   def foldingFn = (x: String, y: String) => { x + y }
   def initialValue: String = "_"
+  implicit def toFullR(x: String) = x
 }
+
 @RunWith(classOf[JUnitRunner])
 class EngineFoldingStringStringTest extends EngineFolding1Test[String, String, String] with StringStringTest with StringToStringFoldingTest
 
