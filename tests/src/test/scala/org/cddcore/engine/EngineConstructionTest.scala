@@ -51,6 +51,10 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     evaluating { because("B") } should produce[ScenarioBecauseException]
 
   }
+  "An builder that hasn't been set up as a folding builder" should "throw CannotHaveChildEnginesWithoutFolderException" in {
+    evaluating { update(_.childEngine("some title")) } should produce[CannotHaveChildEnginesWithoutFolderException]
+  }
+
 }
 
 abstract class EngineConstruction1Test[P, R] extends EngineConstructionTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R, R]] with SimpleBuilder1Test[P, R]

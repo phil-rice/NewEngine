@@ -1,6 +1,6 @@
 package org.cddcore.engine
 
-trait Engine[Params, BFn, R, RFn]  {
+trait Engine[Params, BFn, R, RFn] {
   def requirements: BuilderNodeHolder[R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
@@ -18,9 +18,12 @@ object Engine {
   /** returns a builder for an engine that implements Function3[P1,P2,P3,R] */
   def apply[P1, P2, P3, R]()(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, R](initialNodes, Map(), BuildEngine.builderEngine3)(ldp)
 
-  //  def folding[P, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, FullR](initialNodes(initialValue, foldingFn))(ldp)
-  //  def folding[P1, P2, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) = Builder2[P1, P2, R, FullR](initialNodes(initialValue, foldingFn))(ldp)
-  //  def folding[P1, P2, P3, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, FullR](initialNodes(initialValue, foldingFn))(ldp)
+  def folding[P, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+    Builder1[P, R, FullR](initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine1[P, R, FullR](initialValue, foldingFn))(ldp)
+  def folding[P1, P2, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+    Builder2[P1, P2, R, FullR](initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine2[P1, P2, R, FullR](initialValue, foldingFn))(ldp)
+  def folding[P1, P2, P3, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+    Builder3[P1, P2, P3, R, FullR](initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine3[P1, P2, P3, R, FullR](initialValue, foldingFn))(ldp)
 
   private def initialNodes[R, RFn] = List(EngineDescription[R, RFn]())
   private def initialNodes[Params, BFn, R, RFn, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR) =
