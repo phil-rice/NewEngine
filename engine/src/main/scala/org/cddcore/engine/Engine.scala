@@ -1,9 +1,12 @@
 package org.cddcore.engine
 
-trait Engine[Params, BFn, R, RFn] extends HasExceptionMap[R, RFn] {
+trait Engine[Params, BFn, R, RFn]  {
   def requirements: BuilderNodeHolder[R, RFn]
-  def tree: DecisionTree[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
+  def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
+}
+trait EngineFromTests[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] {
+  def tree: DecisionTree[Params, BFn, R, RFn]
   def applyParams(params: Params): R
 }
 
@@ -23,7 +26,7 @@ object Engine {
   private def initialNodes[Params, BFn, R, RFn, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR) =
     List(FoldingEngineDescription[R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = new CodeHolder(foldingFn, "foldingFn")))
 
-  def checkAllScenarios[Params, BFn, R, RFn](engine: Engine[Params, BFn, R, RFn]) {
+  def checkAllScenarios[Params, BFn, R, RFn](engine: EngineFromTests[Params, BFn, R, RFn]) {
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
       val actual = engine.evaluator.safeEvaluate(engine.tree, s)
       s.expected match {

@@ -115,14 +115,14 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
 
 }
 //
-//abstract class EngineFolding1Test[P, R, FullR] extends EngineFoldingTest[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R]] with Builder1Test[P, R, FullR] {
+//abstract class EngineFolding1Test[P, R, FullR] extends EngineFoldingTest[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R, R]] with Builder1Test[P, R, FullR] {
 //  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P, R, FullR](initialValue, foldingFn) }
 //}
-//abstract class EngineFolding2Test[P1, P2, R, FullR] extends EngineFoldingTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R, FullR] {
+//abstract class EngineFolding2Test[P1, P2, R, FullR] extends EngineFoldingTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, R]] with Builder2Test[P1, P2, R, FullR] {
 //  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, R, FullR](initialValue, foldingFn) }
 //
 //}
-//abstract class EngineFolding3Test[P1, P2, P3, R, FullR] extends EngineFoldingTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, FullR] {
+//abstract class EngineFolding3Test[P1, P2, P3, R, FullR] extends EngineFoldingTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R,R]] with Builder3Test[P1, P2, P3, R, FullR] {
 //  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, P3, R, FullR](initialValue, foldingFn) }
 //}
 //

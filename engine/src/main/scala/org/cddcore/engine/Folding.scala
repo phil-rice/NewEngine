@@ -10,7 +10,7 @@ case class FoldingEngineDescription[R, RFn, FullR](
   val priority: Option[Int] = None,
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
-  val references: Set[Reference] = Set(),
+  val references: Set[Reference] = Set(), 
   val foldingFn: CodeHolder[(FullR, R) => FullR],
   val initialValue: CodeHolder[() => FullR])
   extends BuilderNodeAndHolder[R, RFn] with FoldingBuilderNodeAndHolder[R, RFn, FullR] {
@@ -23,15 +23,14 @@ case class FoldingEngineDescription[R, RFn, FullR](
   override def toString = s"FoldingEngineDescription(${initialValue.description}, ${foldingFn.description}, nodes=${nodes.mkString(", ")}"
 }
 
-//class FoldingBuilderLens[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] {
-//
-//}
-//
-//trait FoldingBuilder[R, RFn, FullR, B <: FoldingBuilder[R, RFn, FullR, B]] extends BuilderNodeHolder[R, RFn] {
-//  val bl: BuilderLens[R, RFn, FullR, B]
-//  import bl._
-//  val foldingLens = new FoldingBuilderLens[R, RFn, FullR, B]
-//  import foldingLens._
-//  protected def wrap(stuff: => Builder[R, RFn, FullR, B]): B
-//}
+trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with Engine[Params, BFn, R, RFn] {
+  def trees: List[DecisionTree[Params, BFn, R, RFn]]
+  def initialValue: CodeHolder[() => FullR]
+  def foldingFn: (FullR, R) => FullR
+  def applyParams(params: Params): FullR = {
+    val result = trees.foldLeft(initialValue.fn())((acc, t) => foldingFn(acc, evaluator.evaluate(t, params)))
+    result
+  }
+}
+
 

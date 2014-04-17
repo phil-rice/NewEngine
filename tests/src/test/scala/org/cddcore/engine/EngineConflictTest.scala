@@ -31,9 +31,9 @@ abstract class EngineConflictTest[Params, BFn, R, RFn, B <: Builder[Params, BFn,
   }
 }
 
-abstract class EngineConflict1Test[P, R] extends EngineConflictTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R]] with Builder1Test[P, R, R]
-abstract class EngineConflict2Test[P1, P2, R] extends EngineConflictTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R, R], Engine2[P1, P2, R]] with Builder2Test[P1, P2, R, R]
-abstract class EngineConflict3Test[P1, P2, P3, R] extends EngineConflictTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R]] with Builder3Test[P1, P2, P3, R, R]
+abstract class EngineConflict1Test[P, R] extends EngineConflictTest[P, (P) => Boolean, R, (P) => R, Builder1[P, R, R], Engine1[P, R, R]] with SimpleBuilder1Test[P, R]
+abstract class EngineConflict2Test[P1, P2, R] extends EngineConflictTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Builder2[P1, P2, R, R], Engine2[P1, P2, R, R]] with SimpleBuilder2Test[P1, P2, R]
+abstract class EngineConflict3Test[P1, P2, P3, R] extends EngineConflictTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Builder3[P1, P2, P3, R, R], Engine3[P1, P2, P3, R,R]] with SimpleBuilder3Test[P1, P2, P3, R]
 
 trait ConflictMessages {
   protected def expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode: String

@@ -29,9 +29,9 @@ object Builder1 {
 case class Builder1[P, R, FullR](
   nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]),
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]] = Map[BuilderNode[R, (P) => R], List[Exception]](),
-  buildEngine: BuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R]])(implicit val ldp: LoggerDisplayProcessor)
+  buildEngine: BuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
 
-  extends Builder[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R]] {
+  extends Builder[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R, FullR]] {
   val makeClosures = buildEngine.mc
   val validator = buildEngine.validator
   import bl._
@@ -48,7 +48,7 @@ case class Builder1[P, R, FullR](
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copy(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[BuilderNode[R, (P) => R]]) = wrap(copy(nodes = nodes))
-  def build: Engine1[P, R] = buildEngine.buildEngine(this, buildExceptions)
+  def build: Engine1[P, R, FullR] = buildEngine.buildEngine(this, buildExceptions)
   def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]]) =
     wrap(copy(buildExceptions = buildExceptions))
 }
@@ -60,17 +60,29 @@ class MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
   def makeResultClosure(params: P): ResultClosure = (rfn) => rfn(params)
 }
 
-case class Engine1[P, R](
+trait Engine1[P, R, FullR] extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
+
+case class Engine1FromTests[P, R](
   tree: DecisionTree[P, (P) => Boolean, R, (P) => R],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   requirements: BuilderNodeHolder[R, (P) => R],
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]])
-  extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
+  extends Engine1[P, R, R] with EngineFromTests[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
   def apply(p: P) = evaluator.evaluate(tree, p)
   def applyParams(p: P) = {
     val result = evaluator.evaluate(tree, p);
     result
   }
 
+}
+case class FoldingEngine1[P, R, FullR](
+  trees: List[DecisionTree[P, (P) => Boolean, R, (P) => R]],
+  evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
+  requirements: BuilderNodeHolder[R, (P) => R],
+  buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]],
+  initialValue: CodeHolder[() => FullR],
+  foldingFn: (FullR, R) => FullR)
+  extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR]  {
+  def apply(p: P) = applyParams(p)
 }
 
