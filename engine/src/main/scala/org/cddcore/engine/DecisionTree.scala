@@ -63,7 +63,7 @@ trait MakeClosures[Params, BFn, R, RFn] {
   def makeBecauseClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): BecauseClosure
 
   protected def wrapBecause[X](s: S, x: => X): X = try { x } catch { case e: Exception => throw BecauseClauseScenarioException(s, e) }
-  protected def wrapBecause[X](p: Params,  x: => X): X = try { x } catch { case e: Exception => throw BecauseClauseException(p,  e) }
+  protected def wrapBecause[X](p: Params, x: => X): X = try { x } catch { case e: Exception => throw BecauseClauseException(p, e) }
 
   def makeResultClosure(params: Params): ResultClosure
   def makeResultClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): ResultClosure
@@ -91,6 +91,7 @@ trait EvaluateTree[Params, BFn, R, RFn] {
 
   def findLensToConclusion(root: DTN, s: S): Lens[DT, DTN] = findLensToConclusion(root, makeBecauseClosure(s), rootL)
   def findLensToConclusion(root: DTN, bc: (BFn) => Boolean): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL)
+  def findLensToLastDecisionNode(root: DTN, s: S): Option[Lens[DT, Decision[Params, BFn, R, RFn]]] = findLensToLastDecisionNode(root, makeBecauseClosure(s), rootL.andThen(toDecisionL))
 
   def safeEvaluate(tree: DT, scenarioWithParams: S) = safe(evaluate(tree, scenarioWithParams))
 
@@ -126,6 +127,21 @@ trait EvaluateTree[Params, BFn, R, RFn] {
         case true => findLensToConclusion(d.yes, bc, soFar.andThen(toDecisionL).andThen(yesL))
         case false => findLensToConclusion(d.no, bc, soFar.andThen(toDecisionL).andThen(noL))
       }
+    }
+  protected def findLensToLastDecisionNode(root: DTN, bc: BecauseClosure, soFar: Lens[DT, Decision[Params, BFn, R, RFn]]): Option[Lens[DT, Decision[Params, BFn, R, RFn]]] =
+    root match {
+      case d: Decision[Params, BFn, R, RFn] => {
+        def returnMeOrRecurse(child: DTN, nextSoFar: LensToNode): Option[Lens[DT, Decision[Params, BFn, R, RFn]]] =
+          child match {
+            case c: Conclusion[Params, BFn, R, RFn] => Some(soFar)
+            case d: Decision[Params, BFn, R, RFn] => findLensToLastDecisionNode(child, bc, nextSoFar.andThen(toDecisionL))
+          }
+        d.isTrue(bc) match {
+          case true => returnMeOrRecurse(d.yes, soFar.andThen(yesL))
+          case false => returnMeOrRecurse(d.no, soFar.andThen(noL))
+        }
+      }
+      case c: Conclusion[Params, BFn, R, RFn] => None
     }
 }
 

@@ -59,7 +59,24 @@ class MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
   def makeResultClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): ResultClosure = (rfn) => { s.executeConfigurators; rfn(s.params) }
   def makeResultClosure(params: P): ResultClosure = (rfn) => rfn(params)
 }
+case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean, R, (P) => R, Engine1[P, R, R]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
+  def constructEngine(dt: DecisionTree[P, (P) => Boolean, R, (P) => R],
+    requirements: BuilderNodeHolder[R, (P) => R],
+    exceptionMap: Map[BuilderNode[R, (P) => R], List[Exception]]): Engine1[P, R, R] =
+    Engine1FromTests(dt, evaluateTree, requirements, exceptionMap)
 
+}
+class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
+  def constructEngine(
+    dts: List[DecisionTree[P, (P) => Boolean, R, (P) => R]],
+    requirements: BuilderNodeHolder[R, (P) => R],
+    exceptionMap: Map[BuilderNode[R, (P) => R], List[Exception]],
+    initialValue: CodeHolder[() => FullR],
+    foldingFn: (FullR, R) => FullR): FoldingEngine1[P, R, FullR] =
+    FoldingEngine1(dts, evaluateTree, requirements, exceptionMap, initialValue, foldingFn)
+}
 trait Engine1[P, R, FullR] extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
 
 case class Engine1FromTests[P, R](

@@ -139,4 +139,19 @@ object BecauseClauseException {
     throw new BecauseClauseException(s"Threw exception in a because clause", params, cause)
 }
 
-class BecauseClauseException(msg: String,  val params: Any, cause: Throwable) extends EngineException(msg, cause)
+class BecauseClauseException(msg: String, val params: Any, cause: Throwable) extends EngineException(msg, cause)
+
+object ScenarioCausingProblemWithOrRuleException {
+  def apply(scenariosThatWouldBeBroken: List[Scenario[_, _, _, _]], beingAdded: Scenario[_, _, _, _])(implicit ldp: LoggerDisplayProcessor) = {
+    val msg = "The scenario you added already came to the correct conclusion. \n" +
+      "As well as that it had a because clause, and if the because clause was added, other scenario(s) that as already been added would now come to the wrong conclusion\n" +
+      s"Scenario being added:\n${ExceptionScenarioPrinter.full(beingAdded)}\n" +
+      "------------------------------------------------------------------------------------\n" +
+      "Scenarios that would be broken" +
+      scenariosThatWouldBeBroken.map((s) => ExceptionScenarioPrinter.full(s)).mkString("\n-------------------------------\n")
+    throw new ScenarioCausingProblemWithOrRuleException(msg, scenariosThatWouldBeBroken, beingAdded);
+  }
+}
+class ScenarioCausingProblemWithOrRuleException(msg: String,
+  val scenariosThatWouldBeBroken: List[Scenario[_, _, _, _]],
+  beingAdded: Scenario[_, _, _, _]) extends ScenarioConflictException(msg, scenariosThatWouldBeBroken, beingAdded)
