@@ -66,8 +66,8 @@ case class Builder2[P1, P2, R, FullR](
 }
 
 class MakeClosures2[P1, P2, R] extends MakeClosures[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
-  def makeBecauseClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): BecauseClosure = ((bfn) => { s.executeConfigurators; bfn(s.params._1, s.params._2) })
-  def makeBecauseClosure(params: (P1, P2)): BecauseClosure = ((bfn) => bfn(params._1, params._2))
+  def makeBecauseClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): BecauseClosure = ((bfn) => wrapBecause(s, { s.executeConfigurators; bfn(s.params._1, s.params._2) }))
+  def makeBecauseClosure(params: (P1, P2)): BecauseClosure = ((bfn) => wrapBecause(params, bfn(params._1, params._2)))
   def makeResultClosure(s: Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]): ResultClosure = ((rfn) => { s.executeConfigurators; rfn(s.params._1, s.params._2) })
   def makeResultClosure(params: (P1, P2)): ResultClosure = ((rfn) => rfn(params._1, params._2))
 }

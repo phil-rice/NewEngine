@@ -62,6 +62,9 @@ trait MakeClosures[Params, BFn, R, RFn] {
   def makeBecauseClosure(params: Params): BecauseClosure
   def makeBecauseClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): BecauseClosure
 
+  protected def wrapBecause[X](s: S, x: => X): X = try { x } catch { case e: Exception => throw BecauseClauseScenarioException(s, e) }
+  protected def wrapBecause[X](p: Params,  x: => X): X = try { x } catch { case e: Exception => throw BecauseClauseException(p,  e) }
+
   def makeResultClosure(params: Params): ResultClosure
   def makeResultClosure(scenarioWithParams: Scenario[Params, BFn, R, RFn]): ResultClosure
 

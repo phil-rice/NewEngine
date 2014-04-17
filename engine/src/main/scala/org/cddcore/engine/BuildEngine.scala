@@ -116,11 +116,12 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R,
     requirements.nodes match {
       case (f: FoldingBuilderNodeAndHolder[R, RFn, FullR]) :: Nil => {
         val initial = (List[DT](), buildExceptions)
+        if (f.nodes.isEmpty) throw new CannotHaveFoldingEngineWithoutChildEnginesException
         val (dts, eMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
           case e: EngineDescription[R, RFn] => {
             val (dts, initialEMap) = acc
             val (dt, eMap) = buildTree(e, initialEMap)
-            (dt:: dts, eMap)
+            (dt :: dts, eMap)
           }
         });
         constructEngine(dts, requirements, eMap, f.initialValue, f.foldingFn)

@@ -35,6 +35,41 @@ class FewSmokeTest extends AbstractTest {
     assertEquals("love - all", engine(0, 0, 99))
   }
 
+  "A Folding Engine1" should "be constructable from the Engine object" in {
+    val builder = Engine.foldList[(Int, Int), String].
+      title("engine").description("description").
+      childEngine("ce1").
+      scenario((0, 0)).expected("love - all").
+      childEngine("ce2").
+      scenario((0, 0)).expected("zero")
+    val engine = builder.build
+    assertEquals(builder, engine.requirements)
+    assertEquals(List("love - all", "zero"), engine(0, 0))
+  }
+  
+  "A Folding Engine2" should "be constructable from the Engine object" in {
+    val builder = Engine.foldList[Int, Int, String].
+      title("engine").description("description").
+      childEngine("ce1").
+      scenario(0, 0).expected("love - all").
+      childEngine("ce2").
+      scenario(0, 0).expected("zero")
+    val engine = builder.build
+    assertEquals(builder, engine.requirements)
+    assertEquals(List("love - all", "zero"), engine(0, 0))
+  }
+  "A Folding Engine3" should "be constructable from the Engine object" in {
+    val builder = Engine.foldList[Int, Int, Int, String].
+      title("engine").description("description").
+      childEngine("ce1").
+      scenario(0, 0, 0).expected("love - all").
+      childEngine("ce2").
+      scenario(0, 0, 0).expected("zero")
+    val engine = builder.build
+    assertEquals(builder, engine.requirements)
+    assertEquals(List("love - all", "zero"), engine(0, 0, 0))
+  }
+
   //  it should "allow the match with syntax" in {
   //    val builder = Engine[Int, Int, String]().
   //      title("engine").description("description").

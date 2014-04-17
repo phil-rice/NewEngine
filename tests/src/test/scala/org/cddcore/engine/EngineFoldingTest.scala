@@ -56,75 +56,38 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
 
     val expectedValue = List[R]("X", "Y").foldLeft(initialValue)(foldingFn)
     assertEquals(expectedValue, e.applyParams(params("a")))
+  }
+
+  it should "throw an Exception if no child engines are specified" in {
+    evaluating { build } should produce[CannotHaveFoldingEngineWithoutChildEnginesException]
+  }
+
+  it should "have a buildExceptions that is the aggregate of the child engine's when executed in test mode" in {
+    val e0 = new RuntimeException("e0");
+    val e1 = new RuntimeException("e1");
+    val e = Engine.test {
+      update(_.childEngine("ce1"))
+      scenario("A")
+      expected("Y")
+      becauseException(e0)
+      update(_.childEngine("ce2"))
+      scenario("B")
+      expected("Y")
+      becauseException(e1)
+
+      build
+    }
+
+    val eMap = e.buildExceptions
+    val sa = s("A", expected = "Y")
+    val sb = s("B", expected = "Y")
+    val mapToListOfClasses = eMap.mapValues((listE) => listE.map(_.getClass))
+    val mapToListOfExceptions = eMap.mapValues((listE) => listE.map(_.getCause))
+    val clazz = classOf[BecauseClauseScenarioException]
+    assertEquals(Map(sa -> List(clazz), sb -> List(clazz)), mapToListOfClasses)
+    assertEquals(Map(sa -> List(e0), sb -> List(e1)), mapToListOfExceptions)
 
   }
-  //
-  //    "An engine with a child engine" should "allow each child engine to come to correct conclusion" in {
-  //      val childEngines = Engine[Int, String]().
-  //        childEngine("ce0").scenario(0).expected("zero").
-  //        childEngine("ce1").scenario(1).expected("one").
-  //        builderData.childrenModifiedForBuild.collect { case e: ChildEngine[_] => e }
-  //  
-  //      assertEquals("zero", childEngines(0).applyParams(List(0)))
-  //      assertEquals("zero", childEngines(0).applyParams(List(1)))
-  //  
-  //      assertEquals("one", childEngines(1).applyParams(List(0)))
-  //      assertEquals("one", childEngines(1).applyParams(List(1)))
-  //    }
-  //  
-  //    it should "have a toString method composed of the title strings of it's children" in {
-  //      val eBase = Engine.folding[Int, String, String]((acc, r) => acc, "").
-  //        childEngine("ce0").scenario(0).expected("zero").
-  //        childEngine("ce1").scenario(1).expected("one").
-  //        build
-  //      val e01 = Engine.folding[Int, String, String]((acc, r) => acc, "").
-  //        childEngine("ce0").scenario(0).expected("zero").
-  //        childEngine("ce1").priority(1).scenario(1).expected("one").
-  //        build
-  //      val e10 = Engine.folding[Int, String, String]((acc, r) => acc, "").
-  //        childEngine("ce0").priority(1).scenario(0).expected("zero").
-  //        childEngine("ce1").scenario(1).expected("one").
-  //        build
-  //      assertEquals("EngineWithChildren(ce0,ce1)", e01.toString)
-  //      assertEquals("EngineWithChildren(ce1,ce0)", e10.toString)
-  //      assertEquals("EngineWithChildren(ce0,ce1)", eBase.toString)
-  //    }
-  //    it should "use the fold function to produce the correct result" in {
-  //      val b = Engine.folding[Int, String, String](_ + _, { "Init" }).
-  //        childEngine("ce0").scenario(0).expected("Zero").
-  //        childEngine("ce1").scenario(1).expected("One")
-  //      val e = b.build
-  //      val result = e(0)
-  //      assertEquals("InitZeroOne", e(0))
-  //      assertEquals("InitZeroOne", e(123))
-  //    }
-  //  
-  //    it should "throw a exception if a fold function has been specified and there are no child engines" in {
-  //      evaluating {
-  //        Engine.foldList[Int, String].build
-  //      } should produce[CannotHaveFolderWithoutChildEnginesException]
-  //      evaluating { Engine.foldList[Int, Int, String].build } should produce[CannotHaveFolderWithoutChildEnginesException]
-  //      evaluating { Engine.foldList[Int, Int, Int, String].build } should produce[CannotHaveFolderWithoutChildEnginesException]
-  //  
-  //    }
-  //  
-  //    it should "have a ScenarioExceptionMap that is the aggregate of the child engine's" in {
-  //      import EngineWithScenarioExceptionMap._
-  //      val e0 = new RuntimeException("e0");
-  //      val e1 = new RuntimeException("e1");
-  //      val e = Engine.test {
-  //        Engine.foldList[Int, String].
-  //          childEngine("ce1").scenario(0).expected("x").because((x: Int) => throw e0).
-  //          childEngine("ce2").scenario(1).expected("x").code((x: Int) => throw new RuntimeException(e1)).
-  //          build
-  //      }
-  //      val scenarios = e.all(classOf[Test])
-  //      val s0 = scenarios(0)
-  //      val s1 = scenarios(1)
-  //      //    assertEquals(e0, e.scenarioExceptionMap(s0).asInstanceOf[BecauseClauseException].getCause())
-  //      //    assertEquals(e1, e.scenarioExceptionMap(s1))
-  //    }
-
 }
 
 abstract class EngineFolding1Test[P, R, FullR]

@@ -69,6 +69,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def update(fn: (B) => B): B = { val result = fn(builder); builder = result; result }
   def scenario(seed: Seed, title: String = null) = builder = scenarioImpl(params(seed), title)
   def because(seed: Seed) = builder = becauseImpl(seed)
+  def becauseException(e: Exception) = builder = becauseExceptionImpl(e)
   def expected(seed: ResultSeed) = update(_.expected(result(seed)))
   def assertion(callback: => Boolean) = builder = assertionPrim(callback)
   def configurate(cfg: (Params) => Unit) = builder = configuratorPrim(cfg)
@@ -77,6 +78,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def initializeBuilder(nodes: List[BuilderNode[R, RFn]] = List(new EngineDescription[R, RFn])): B
   protected def scenarioImpl(params: Params, title: String): B
   protected def becauseImpl(seed: Seed): B
+  protected def becauseExceptionImpl(e: Exception): B
   protected def scenarioObject(params: Params): Scenario[Params, BFn, R, RFn]
   protected def resultCodeHolder(seed: ResultSeed): CodeHolder[RFn]
   protected def becauseCodeHolder(seed: Seed) = CodeHolder[BFn](becauseBfn(seed), s"because$seed")
@@ -169,6 +171,7 @@ trait Builder1Test[P, R, FullR]
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((p: P, r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P) => Boolean]((p) => throw e, e.toString())))
   protected def configuratorPrim(cfg: (P) => Unit) = update(_.configurator(cfg))
   def expectedToCode = BuildEngine.expectedToCode1[P, R]
 }
@@ -196,6 +199,7 @@ trait Builder2Test[P1, P2, R, FullR] extends DecisionTreeBuilderAndBuilderBeingT
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def configuratorPrim(cfg: ((P1, P2)) => Unit) = update(_.configurator((p1, p2) => cfg(p1, p2)))
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P1, P2) => Boolean]((p1, p2) => throw e, e.toString())))
   def expectedToCode = BuildEngine.expectedToCode2[P1, P2, R]
 }
 
@@ -218,6 +222,7 @@ trait Builder3Test[P1, P2, P3, R, FullR]
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2, P3), r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
+  protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P1, P2, P3) => Boolean]((p1, p2, p3) => throw e, e.toString())))
   protected def configuratorPrim(cfg: ((P1, P2, P3)) => Unit) = update(_.configurator((p1, p2, p3) => cfg(p1, p2, p3)))
   def expectedToCode = BuildEngine.expectedToCode3[P1, P2, P3, R]
 }

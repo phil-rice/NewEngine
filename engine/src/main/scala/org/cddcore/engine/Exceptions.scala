@@ -125,3 +125,18 @@ object CannotSendNoneToOptionLens {
     }
 }
 class CannotSendNoneToOptionLens(msg: String) extends EngineException(msg)
+class CannotHaveFoldingEngineWithoutChildEnginesException extends EngineException
+
+object BecauseClauseScenarioException {
+  def apply(scenario: Scenario[_, _, _, _], cause: Throwable)(implicit ldp: LoggerDisplayProcessor) =
+    throw new BecauseClauseScenarioException((s"Threw exception evaluating because ${scenario.because.getOrElse(throw new IllegalStateException).description} \n${ExceptionScenarioPrinter.full(scenario)}"), scenario, cause)
+}
+
+class BecauseClauseScenarioException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
+
+object BecauseClauseException {
+  def apply(params: Any, cause: Throwable)(implicit ldp: LoggerDisplayProcessor) =
+    throw new BecauseClauseException(s"Threw exception in a because clause", params, cause)
+}
+
+class BecauseClauseException(msg: String,  val params: Any, cause: Throwable) extends EngineException(msg, cause)

@@ -20,14 +20,19 @@ object Engine {
 
   def folding[P, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder1[P, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine1[P, R, FullR])(ldp)
-    
+  def foldList[P, R] = folding[P, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
+  def foldSet[P, R] = folding[P, R, Set[R]](Set(), { _ + _ })
+
   def folding[P1, P2, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder2[P1, P2, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine2[P1, P2, R, FullR])(ldp)
-    
+  def foldList[P1, P2, R] = folding[P1, P2, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
+  def foldSet[P1, P2, R] = folding[P1, P2, R, Set[R]](Set(), { _ + _ })
+
   def folding[P1, P2, P3, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder3[P1, P2, P3, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), Map(), BuildEngine.folderBuilderEngine3[P1, P2, P3, R, FullR])(ldp)
+  def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
+  def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]](Set(), { _ + _ })
 
- 
   def checkAllScenarios[Params, BFn, R, RFn](engine: EngineFromTests[Params, BFn, R, RFn]) {
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
       val actual = engine.evaluator.safeEvaluate(engine.tree, s)

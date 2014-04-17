@@ -54,8 +54,8 @@ case class Builder1[P, R, FullR](
 }
 
 class MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
-  def makeBecauseClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): BecauseClosure = (bfn) => { s.executeConfigurators; bfn(s.params) }
-  def makeBecauseClosure(params: P): BecauseClosure = (bfn) => bfn(params)
+  def makeBecauseClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): BecauseClosure = (bfn) => wrapBecause(s, { s.executeConfigurators; bfn(s.params) })
+  def makeBecauseClosure(params: P): BecauseClosure = (bfn) => wrapBecause(params, bfn(params))
   def makeResultClosure(s: Scenario[P, (P) => Boolean, R, (P) => R]): ResultClosure = (rfn) => { s.executeConfigurators; rfn(s.params) }
   def makeResultClosure(params: P): ResultClosure = (rfn) => rfn(params)
 }
@@ -82,7 +82,7 @@ case class FoldingEngine1[P, R, FullR](
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]],
   initialValue: CodeHolder[() => FullR],
   foldingFn: (FullR, R) => FullR)
-  extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR]  {
+  extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }
 

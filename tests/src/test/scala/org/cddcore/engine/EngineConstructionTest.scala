@@ -35,6 +35,14 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     evaluating { because("A") } should produce[CannotDefineBecauseTwiceException]
   }
 
+  it should "throw BecauseClauseException if an exception is thrown by the because" in {
+    val e = new RuntimeException
+    scenario("A")
+
+    val actual = evaluating { becauseException(e) } should produce[BecauseClauseScenarioException]
+    assertEquals(e, actual.getCause())
+  }
+
   it should "throw  CannotDefineExpectedTwiceException if the expected has already been set" in {
     scenario("A")
     expected("X")
