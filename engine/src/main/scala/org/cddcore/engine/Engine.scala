@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.cddcore.utilities.Strings
 import org.cddcore.utilities.TraceBuilder
 
-trait Engine[Params, BFn, R, RFn] {
+trait Engine[Params, BFn, R, RFn] extends Reportable {
   def requirements: BuilderNodeHolder[R, RFn]
   def asRequirement: Requirement
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
@@ -83,7 +83,7 @@ class TraceEngineMonitor extends EngineMonitor {
 }
 
 object Engine {
-
+  var logging = false
   /** returns a builder for an engine that implements Function[P,R] */
   def apply[P, R]()(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, Map(), BuildEngine.builderEngine1)(ldp)
   /** returns a builder for an engine that implements Function2[P1,P2,R] */

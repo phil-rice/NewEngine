@@ -3,6 +3,7 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
+import org.cddcore.engine.BuildEngine
 
 object Builder1 {
   def bl[P, R, FullR]() = new FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]]
@@ -69,16 +70,16 @@ case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean,
     Engine1FromTests(requirement, dt, evaluateTree, requirements, exceptionMap)
 
 }
-class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR]](
-  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
-  def constructEngine(
+class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR],Engine1[P, R, R]](
+  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
+  def constructFoldingEngine(
     requirement: Requirement,
-    dts: List[DecisionTree[P, (P) => Boolean, R, (P) => R]],
+    engines: List[EngineFromTests[P, (P) => Boolean, R, (P) => R]],
     requirements: BuilderNodeHolder[R, (P) => R],
     exceptionMap: Map[BuilderNode[R, (P) => R], List[Exception]],
     initialValue: CodeHolder[() => FullR],
     foldingFn: (FullR, R) => FullR): FoldingEngine1[P, R, FullR] =
-    FoldingEngine1(requirement, dts, evaluateTree, requirements, exceptionMap, initialValue, foldingFn)
+    FoldingEngine1(requirement, engines, evaluateTree, requirements, exceptionMap, initialValue, foldingFn)
 }
 trait Engine1[P, R, FullR] extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
 
@@ -94,7 +95,7 @@ case class Engine1FromTests[P, R](
 }
 case class FoldingEngine1[P, R, FullR](
   asRequirement: Requirement,
-  trees: List[DecisionTree[P, (P) => Boolean, R, (P) => R]],
+  engines: List[EngineFromTests[P, (P) => Boolean, R, (P) => R]],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   requirements: BuilderNodeHolder[R, (P) => R],
   buildExceptions: Map[BuilderNode[R, (P) => R], List[Exception]],
