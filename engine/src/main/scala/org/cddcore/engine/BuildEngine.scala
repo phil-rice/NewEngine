@@ -12,9 +12,19 @@ object BuildEngine {
   def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] = new CodeHolder((p1: P1, p2: P2) => throw new UndecidedException, "throws Undecided Exception")
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
 
-  def expectedToCode1[P, R]: Either[Exception, R] => CodeHolder[(P) => R] = (x) => new CodeHolder((p) => x match { case Right(r) => r }, x.toString())
-  def expectedToCode2[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] = (x) => new CodeHolder((p1, p2) => x match { case Right(r) => r }, x.toString())
-  def expectedToCode3[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] = (x) => new CodeHolder((p1, p2, p3) => x match { case Right(r) => r }, x.toString())
+  private def expectedValue[R](x: Either[Exception, R]): R = x match {
+    case Left(e) => 
+      throw e
+    case Right(r) => r
+  }
+  private def expectedToString[R](x: Either[Exception, R]) = x match {
+    case Left(e) => e.toString()
+    case Right(r) => r.toString
+  }
+
+  def expectedToCode1[P, R]: Either[Exception, R] => CodeHolder[(P) => R] = (x) => new CodeHolder((p) => expectedValue(x), expectedToString(x))
+  def expectedToCode2[P1, P2, R]: Either[Exception, R] => CodeHolder[(P1, P2) => R] = (x) => new CodeHolder((p1, p2) => expectedValue(x), expectedToString(x))
+  def expectedToCode3[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] = (x) => new CodeHolder((p1, p2, p3) => expectedValue(x), expectedToString(x))
 
   //  def construct1[P, R, E] =  (dt: DecisionTree[P, (P) => Boolean, R, (P) => R ], 
   //      requirements: BuilderNodeHolder[R, (P)=> R], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) => Engine1(requirements, buildExceptions)
@@ -28,21 +38,11 @@ object BuildEngine {
 
 }
 
-abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]](
-  val root: DecisionTreeNode[Params, BFn, R, RFn],
-  makeClosures: MakeClosures[Params, BFn, R, RFn],
-  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor) extends BuildFoldingEngine[Params, BFn, R, RFn, FullR, E] {
-  lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
-  lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens)
-  lazy val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
-  lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
-  lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
-}
-
 abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]](
   val root: DecisionTreeNode[Params, BFn, R, RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
-  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor) extends BuildEngineFromTests[Params, BFn, R, RFn, E] {
+  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
+  extends BuildEngineFromTests[Params, BFn, R, RFn, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens)
   lazy val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
@@ -51,35 +51,16 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(dt: DecisionTree[Params, BFn, R, RFn], requirements: BuilderNodeHolder[R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
+  def constructEngine(asRequirement: Requirement, dt: DecisionTree[Params, BFn, R, RFn], requirements: BuilderNodeHolder[R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
   def buildEngine(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap) = {
-    val (dt, eMap) = buildTree(requirements, buildExceptions)
-    constructEngine(dt, requirements, eMap)
+    requirements.nodes match {
+      case (e: EngineDescription[R, RFn]) :: Nil =>
+        val (dt, eMap) = buildTree(requirements, buildExceptions)
+        constructEngine(e, dt, requirements, eMap)
+    }
   }
 }
 
-trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, E] {
-  def constructEngine(dts: List[DecisionTree[Params, BFn, R, RFn]],
-    requirements: BuilderNodeHolder[R, RFn],
-    exceptionMap: Map[BuilderNode[R, RFn], List[Exception]],
-    initialValue: CodeHolder[() => FullR],
-    foldingFn: (FullR, R) => FullR): E
-  def buildEngine(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap) =
-    requirements.nodes match {
-      case (f: FoldingBuilderNodeAndHolder[R, RFn, FullR]) :: Nil => {
-        val initial = (List[DT](), buildExceptions)
-        if (f.nodes.isEmpty) throw new CannotHaveFoldingEngineWithoutChildEnginesException
-        val (dts, eMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
-          case e: EngineDescription[R, RFn] => {
-            val (dts, initialEMap) = acc
-            val (dt, eMap) = buildTree(e, initialEMap)
-            (dt :: dts, eMap)
-          }
-        });
-        constructEngine(dts, requirements, eMap, f.initialValue, f.foldingFn)
-      }
-    }
-}
 trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] {
   type DT = DecisionTree[Params, BFn, R, RFn]
   type DN = DecisionTreeNode[Params, BFn, R, RFn]

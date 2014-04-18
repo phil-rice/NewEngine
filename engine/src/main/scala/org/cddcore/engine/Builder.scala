@@ -101,7 +101,11 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
   def checkCorrectValue(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
     val actual = evaluateTree.safeEvaluate(tree, s)
     s.expected match {
-      case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
+      case Some(ex) => if (!Reportable.compare(ex, actual))
+        actual match {
+          case Left(cause) => throw CameToWrongConclusionScenarioException(ex, actual, s, cause)
+          case _ => throw CameToWrongConclusionScenarioException(ex, actual, s, null)
+        }
       case _ => throw NoExpectedException(s)
     }
   }

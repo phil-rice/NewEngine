@@ -33,5 +33,42 @@ trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] 
     result
   }
 }
+trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, E] {
+  def constructEngine(
+    requirement: Requirement,
+    dts: List[DecisionTree[Params, BFn, R, RFn]],
+    requirements: BuilderNodeHolder[R, RFn],
+    exceptionMap: Map[BuilderNode[R, RFn], List[Exception]],
+    initialValue: CodeHolder[() => FullR],
+    foldingFn: (FullR, R) => FullR): E
+    
+  def buildEngine(requirements: BuilderNodeHolder[R, RFn],  buildExceptions: EMap) =
+    requirements.nodes match {
+      case (f: FoldingBuilderNodeAndHolder[R, RFn, FullR]) :: Nil => {
+        val initial = (List[DT](), buildExceptions)
+        if (f.nodes.isEmpty) throw new CannotHaveFoldingEngineWithoutChildEnginesException
+        val (dts, eMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
+          case e: EngineDescription[R, RFn] => {
+            val (dts, initialEMap) = acc
+            val (dt, eMap) = buildTree(e, initialEMap)
+            (dt :: dts, eMap)
+          }
+        });
+        constructEngine(f, dts, requirements, eMap, f.initialValue, f.foldingFn)
+      }
+    }
+}
 
+
+abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]](
+  val root: DecisionTreeNode[Params, BFn, R, RFn],
+  makeClosures: MakeClosures[Params, BFn, R, RFn],
+  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
+  extends BuildFoldingEngine[Params, BFn, R, RFn, FullR, E] {
+  lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
+  lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens)
+  lazy val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
+  lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
+  lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
+}
 

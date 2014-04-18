@@ -1,16 +1,89 @@
 package org.cddcore.engine
 
+import java.util.concurrent.atomic.AtomicInteger
+import org.cddcore.utilities.Strings
+import org.cddcore.utilities.TraceBuilder
+
 trait Engine[Params, BFn, R, RFn] {
   def requirements: BuilderNodeHolder[R, RFn]
+  def asRequirement: Requirement
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
 }
 trait EngineFromTests[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] {
   def tree: DecisionTree[Params, BFn, R, RFn]
-  def applyParams(params: Params): R
+  def applyParams(params: Params): R = {
+    val monitor = Engine.currentMonitor
+    monitor.call(this, params)
+    val makeClosures = evaluator.makeClosures
+    import makeClosures._
+    val c = try {
+      val bc = makeBecauseClosure(params)
+      evaluator.findConclusion(tree, bc)
+    } catch {
+      case e: Exception =>
+        monitor.failed(this, None, e)
+        throw e
+    }
+    try {
+      val result: R = makeResultClosure(params).apply(c.code.fn)
+      monitor.finished[R](this, Some(c), result)
+      result
+    } catch {
+      case e: Exception =>
+        monitor.failed(this, Some(c), e)
+        throw e
+    }
+  }
+}
+
+object EngineMonitor {
+  def apply() = new NoEngineMonitor
+
+}
+trait EngineMonitor {
+  def call[Params](e: Engine[Params, _, _, _], params: Params)(implicit ldp: LoggerDisplayProcessor)
+  def finished[R](e: Engine[_, _, R, _], conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor)
+  def failed(e: Engine[_, _, _, _], conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor)
+}
+
+class NoEngineMonitor extends EngineMonitor {
+  def call[Params](e: Engine[Params, _, _, _], params: Params)(implicit ldp: LoggerDisplayProcessor) {}
+  def finished[R](e: Engine[_, _, R, _], conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) {}
+  def failed(e: Engine[_, _, _, _], conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) {}
+}
+
+class PrintlnEngineMonitor extends EngineMonitor {
+  var depth = new AtomicInteger(0)
+  private val indent = Strings.blanks(depth.get * 2)
+  def call[Params](e: Engine[Params, _, _, _], params: Params)(implicit ldp: LoggerDisplayProcessor) {
+    println(Strings.oneLine(s"Calling:  $indent${e.asRequirement.titleString} with ${ldp(params)}"))
+    depth.incrementAndGet()
+  }
+  def finished[R](e: Engine[_, _, R, _], conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) {
+    depth.decrementAndGet()
+    println(s"Finished:  $indent ---> ${ldp(result)}")
+  }
+  def failed(e: Engine[_, _, _, _], conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) {
+    depth.decrementAndGet()
+    println(Strings.oneLine(s"Failed:  $indent ---> ${ldp(exception)}"))
+  }
+}
+
+class TraceEngineMonitor extends EngineMonitor {
+
+  var traceBuilder = TraceBuilder[Engine[_, _, _, _], Any, Any, Conclusion[_, _, _, _]]()
+  def call[Params](e: Engine[Params, _, _, _], params: Params)(implicit ldp: LoggerDisplayProcessor) =
+    traceBuilder = traceBuilder.nest(e.asInstanceOf[Engine[Any, Any, Any, Any]], params)
+  def finished[R](e: Engine[_, _, R, _], conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) =
+    traceBuilder = traceBuilder.finished(result, conclusion)
+  def failed(e: Engine[_, _, _, _], conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) =
+    traceBuilder = traceBuilder.failed(exception, conclusion)
+  def trace = traceBuilder.children
 }
 
 object Engine {
+
   /** returns a builder for an engine that implements Function[P,R] */
   def apply[P, R]()(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, Map(), BuildEngine.builderEngine1)(ldp)
   /** returns a builder for an engine that implements Function2[P1,P2,R] */
@@ -33,13 +106,12 @@ object Engine {
   def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
   def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]](Set(), { _ + _ })
 
+  private def validateScenario[Params, BFn, R, RFn] = new SimpleValidateScenario[Params, BFn, R, RFn]
+
   def checkAllScenarios[Params, BFn, R, RFn](engine: EngineFromTests[Params, BFn, R, RFn]) {
+    val validator = validateScenario[Params, BFn, R, RFn]
     for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
-      val actual = engine.evaluator.safeEvaluate(engine.tree, s)
-      s.expected match {
-        case Some(ex) => if (!Reportable.compare(ex, actual)) throw CameToWrongConclusionScenarioException(ex, actual, s)
-        case _ => throw NoExpectedException(s)
-      }
+      validator.checkCorrectValue(engine.evaluator, engine.tree, s)
     }
   }
 
@@ -53,6 +125,26 @@ object Engine {
       x
     } finally
       _testing.set(false)
+  }
+  protected val defaultMonitor = new ThreadLocal[EngineMonitor] {
+    override def initialValue = EngineMonitor()
+  }
+
+  def currentMonitor = defaultMonitor.get
+
+  def withMonitor[X](m: EngineMonitor, fn: => X) = {
+    val oldMonitor = defaultMonitor.get
+    defaultMonitor.set(m)
+    try {
+      fn
+    } finally {
+      defaultMonitor.set(oldMonitor)
+    }
+  }
+  def trace[X](fn: => X) = {
+    val tm = new TraceEngineMonitor
+    val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
+    (result, tm.trace)
   }
 
 }

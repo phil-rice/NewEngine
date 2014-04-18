@@ -19,6 +19,8 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     update(_.title("X"))
     evaluating { update(_.title("X")) } should produce[CannotDefineTitleTwiceException]
   }
+
+ 
   it should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
     scenario("A")
     update(_.description("X"))

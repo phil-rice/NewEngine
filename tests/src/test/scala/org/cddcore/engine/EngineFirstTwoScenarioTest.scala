@@ -8,7 +8,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) =
     x.asInstanceOf[EngineFromTests[Params, BFn, R, RFn]].tree
-    implicit def toEngineFromTests[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) =
+  implicit def toEngineFromTests[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) =
     x.asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
   implicit def toSome[X](x: X) = Some(x)
   implicit def toResult(x: String) = result(x)
@@ -75,6 +75,13 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     evaluating { because("X") } should produce[ScenarioBecauseException]
   }
 
+  it should "allow exceptException " in {
+    val ex = new RuntimeException
+    scenario("A"); expectException(ex)
+    val e = build
+    val actual = evaluating { e.applyParams("A") } should produce[RuntimeException]
+    assertEquals(ex, actual)
+  }
   //  it should "Add scenario to root if adding with same conclusion, different reason" in {
   //    val b = builderWithDefault.scenario("B").because("B").expected("Z")
   //    val e1 = builderWithDefault.build

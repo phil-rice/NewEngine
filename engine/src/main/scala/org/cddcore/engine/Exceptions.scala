@@ -76,11 +76,11 @@ object ScenarioBecauseException {
 class ScenarioBecauseException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
 
 object CameToWrongConclusionScenarioException {
-  def apply(expected: Any, actual: Any, s: Scenario[_, _, _, _])(implicit ldp: LoggerDisplayProcessor) =
-    new CameToWrongConclusionScenarioException(s"CDD Error: Scenario came to wrong result\nExpected\n$expected\nActual\n$actual\nScenario\n${ExceptionScenarioPrinter.full(s)}", expected, actual, s)
+  def apply(expected: Any, actual: Any, s: Scenario[_, _, _, _], cause: Throwable)(implicit ldp: LoggerDisplayProcessor) =
+    new CameToWrongConclusionScenarioException(s"CDD Error: Scenario came to wrong result\nExpected\n$expected\nActual\n$actual\nScenario\n${ExceptionScenarioPrinter.full(s)}", expected, actual, s, cause)
 
 }
-class CameToWrongConclusionScenarioException(msg: String, val expected: Any, val actual: Any, s: Scenario[_, _, _, _]) extends ScenarioException(msg, s)
+class CameToWrongConclusionScenarioException(msg: String, val expected: Any, val actual: Any, s: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, s, cause)
 
 object AssertionException {
   def apply(a: CodeHolder[_], s: Scenario[_, _, _, _])(implicit ldp: LoggerDisplayProcessor) =
