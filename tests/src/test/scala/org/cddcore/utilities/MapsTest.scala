@@ -4,8 +4,6 @@ import org.junit.runner.RunWith
 import java.util.concurrent.atomic._
 import java.util.concurrent._
 import org.cddcore.engine.AbstractTest
-import org.cddcore.utilities.MapToUniqueName
-import org.cddcore.utilities.Maps
 import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
 
