@@ -5,7 +5,6 @@ import org.cddcore.utilities.Strings
 import org.cddcore.utilities.TraceBuilder
 
 trait Engine[Params, BFn, R, RFn] extends Reportable {
-  def requirements: BuilderNodeHolder[R, RFn]
   def asRequirement: Requirement
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
@@ -108,12 +107,6 @@ object Engine {
 
   private def validateScenario[Params, BFn, R, RFn] = new SimpleValidateScenario[Params, BFn, R, RFn]
 
-  def checkAllScenarios[Params, BFn, R, RFn](engine: EngineFromTests[Params, BFn, R, RFn]) {
-    val validator = validateScenario[Params, BFn, R, RFn]
-    for (s <- engine.requirements.all(classOf[Scenario[Params, BFn, R, RFn]])) {
-      validator.checkCorrectValue(engine.evaluator, engine.tree, s)
-    }
-  }
 
   def testing = _testing.get
   private var _testing = new ThreadLocal[Boolean] {

@@ -13,7 +13,7 @@ object BuildEngine {
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
 
   private def expectedValue[R](x: Either[Exception, R]): R = x match {
-    case Left(e) => 
+    case Left(e) =>
       throw e
     case Right(r) => r
   }
@@ -27,7 +27,7 @@ object BuildEngine {
   def expectedToCode3[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] = (x) => new CodeHolder((p1, p2, p3) => expectedValue(x), expectedToString(x))
 
   //  def construct1[P, R, E] =  (dt: DecisionTree[P, (P) => Boolean, R, (P) => R ], 
-  //      requirements: BuilderNodeHolder[R, (P)=> R], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) => Engine1(requirements, buildExceptions)
+  //      asRequirement: BuilderNodeHolder[R, (P)=> R], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) => Engine1(asRequirement, buildExceptions)
 
   def builderEngine1[P, R] = new SimpleBuildEngine1[P, R]
   def builderEngine2[P1, P2, R] = new SimpleBuildEngine2[P1, P2, R]
@@ -51,12 +51,12 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(asRequirement: Requirement, dt: DecisionTree[Params, BFn, R, RFn], requirements: BuilderNodeHolder[R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
-  def buildEngine(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap) = {
-    requirements.nodes match {
-      case (e: EngineDescription[R, RFn]) :: Nil =>
-        val (dt, eMap) = buildTree(requirements, buildExceptions)
-        constructEngine(e, dt, requirements, eMap)
+  def constructEngine(asRequirement: Requirement, dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
+  def buildEngine(requirement: Requirement, buildExceptions: EMap) = {
+    requirement match {
+      case ed: EngineDescription[R, RFn] =>
+        val (dt, eMap) = buildTree(ed, buildExceptions)
+        constructEngine(ed, dt, eMap)
     }
   }
 }
@@ -78,10 +78,10 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   val mc = evaluateTree.makeClosures
   implicit def ldp: LoggerDisplayProcessor
 
-  def buildEngine(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap): E
+  def buildEngine(requirement: Requirement, buildExceptions: EMap): E
 
-  protected def buildTree(requirements: BuilderNodeHolder[R, RFn], buildExceptions: EMap): (DT, EMap) = {
-    val scenarios = builderWithModifyChildrenForBuild.modifyChildrenForBuild(requirements).all(classOf[S])
+  protected def buildTree(asRequirement: BuilderNodeHolder[R, RFn], buildExceptions: EMap): (DT, EMap) = {
+    val scenarios = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement).all(classOf[S])
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
       val (dt, eMap) = acc
       try {

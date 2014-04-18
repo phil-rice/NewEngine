@@ -13,7 +13,7 @@ class FewSmokeTest extends AbstractTest {
       useCase("useCase1").
       scenario((0, 0)).expected("love - all")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals("love - all", engine(0, 0))
   }
   "An Engine2" should "be constructable from the Engine object" in {
@@ -22,7 +22,7 @@ class FewSmokeTest extends AbstractTest {
       useCase("useCase1").
       scenario(0, 0).expected("love - all")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals("love - all", engine(0, 0))
   }
   "An Engine3" should "be constructable from the Engine object" in {
@@ -31,7 +31,7 @@ class FewSmokeTest extends AbstractTest {
       useCase("useCase1").
       scenario(0, 0, 99).expected("love - all")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals("love - all", engine(0, 0, 99))
   }
 
@@ -43,7 +43,7 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario((0, 0)).expected("zero")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0))
   }
   
@@ -55,7 +55,7 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario(0, 0).expected("zero")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0))
   }
   "A Folding Engine3" should "be constructable from the Engine object" in {
@@ -66,7 +66,7 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario(0, 0, 0).expected("zero")
     val engine = builder.build
-    assertEquals(builder, engine.requirements)
+    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0, 0))
   }
 
@@ -77,7 +77,7 @@ class FewSmokeTest extends AbstractTest {
   //      matchWith { case (0, 0) => "love - all" }
   //
   //    val engine = builder.build
-  //    assertEquals(builder, engine.requirements)
+  //    assertEquals(builder, engine.asRequirement)
   //    assertEquals("love - all", engine(0, 0))
   //
   //  }
