@@ -97,10 +97,10 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def becauseBfn(seed: Seed): BFn
 }
 
-trait BuilderTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]] 
-extends AbstractTest
-with BeforeAndAfter 
-with BuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] {
+trait BuilderTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
+  extends AbstractTest
+  with BeforeAndAfter
+  with BuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] {
   type Seed = String
   type ResultSeed = String
   before {
@@ -173,7 +173,7 @@ trait Builder1Test[P, R, FullR]
   extends DecisionTreeBuilderAndBuilderBeingTested[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R, FullR]] {
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p: P) => result(seed), s"(p)=>result$seed")
-  protected def scenarioObject(p: P) = Scenario[P, (P) => Boolean, R, (P) => R](p)
+  protected def scenarioObject(p: P) = new Scenario[P, (P) => Boolean, R, (P) => R](p)
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((p: P, r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
@@ -200,7 +200,7 @@ trait FoldingBuilder1Test[P, R, FullR] extends Builder1Test[P, R, FullR] with Fo
 trait Builder2Test[P1, P2, R, FullR] extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, FullR]] {
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2) => result(seed), s"(p1,p2)=>result$seed")
-  protected def scenarioObject(p: (P1, P2)) = Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](p)
+  protected def scenarioObject(p: (P1, P2)) = new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](p)
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2), r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def configuratorPrim(cfg: ((P1, P2)) => Unit) = update(_.configurator((p1, p2) => cfg(p1, p2)))
@@ -224,7 +224,7 @@ trait Builder3Test[P1, P2, P3, R, FullR]
   extends DecisionTreeBuilderAndBuilderBeingTested[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R, FullR]] {
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2, p3: P3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
-  protected def scenarioObject(p: (P1, P2, P3)) = Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](p)
+  protected def scenarioObject(p: (P1, P2, P3)) = new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](p)
   protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2, P3), r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))

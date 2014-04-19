@@ -14,9 +14,9 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   implicit def toResult(x: String) = result(x)
   implicit def toParams(x: String) = params(x)
 
-  builderName should "allow the first use not to have a because, and become the default value" in {
+  builderName should "allow the first scenario not to have a because, and become the default value" in {
     scenario("A")
-    update(_.expected("X"))
+    expected("X")
     val e = build
     assertEquals(conc(s("A", expected = "X")), e.root)
 
@@ -24,12 +24,26 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     assertEquals(result("X"), e.applyParams("B"))
   }
 
-  it should " allow the first use not to have a because, and become the default value when we add a second scenario " in {
-    scenario("A"); update(_.expected(result("X")))
-    scenario("B"); update(_.expected(result("Y"))); because("B")
+  it should " allow the first scenario not to have a because, and become the default value when we add a second scenario " in {
+    scenario("A"); expected("X")
+    scenario("B"); expected("Y"); because("B")
     val e = build
 
     val s1 = s("A", expected = "X")
+    val s2 = s("B", expected = "Y", because = "B")
+    assertEquals(dec(s2, conc(s2), conc(s1)), e.root)
+    assertEquals(result("X"), e.applyParams("A"))
+    assertEquals(result("Y"), e.applyParams("B"))
+    assertEquals(result("Y"), e.applyParams("AB"))
+    assertEquals(result("X"), e.applyParams("ACD"))
+  }
+
+  it should "use the priority" in {
+    scenario("B"); expected("Y"); because("B")
+    scenario("A"); expected("X"); update(_.priority(1))
+    val e = build
+
+    val s1 = s("A", expected = "X", priority = 1)
     val s2 = s("B", expected = "Y", because = "B")
     assertEquals(dec(s2, conc(s2), conc(s1)), e.root)
     assertEquals(result("X"), e.applyParams("A"))
@@ -47,7 +61,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
 
   it should "still throw an UndecidedException if a because clause is given by the first scenario when parameters don't match the because clause" in {
     scenario("A")
-    update(_.expected(result("X")))
+    expected("X")
     because("A")
     val e = build
 
@@ -65,8 +79,8 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   }
 
   it should "let a second scenario be added to the root is it's just an assertion " in {
-    scenario("A"); update(_.expected(result("X")))
-    scenario("B"); update(_.expected(result("X")))
+    scenario("A"); expected("X")
+    scenario("B"); expected("X")
     val e = build
 
     assertEquals(conc(s("A", expected = "X"), s("B", expected = "X")), e.root)

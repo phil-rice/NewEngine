@@ -134,7 +134,7 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] {
       withChildren.asInstanceOf[BuilderNode[R, RFn]]
     }
     def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
-      holder.nodes.map((x) => modifyChild(x :: path)).sortBy(-_.textOrder)
+      holder.nodes.map((x) => modifyChild(x :: path)).sortBy(_.textOrder)
     modifyChild(List(requirement)).asInstanceOf[BuilderNodeAndHolder[R, RFn]]
   }
 }

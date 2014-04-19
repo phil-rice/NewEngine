@@ -3,11 +3,9 @@ package org.cddcore.engine
 import java.util.concurrent.atomic.AtomicInteger
 import org.cddcore.utilities.Maps
 trait Reportable {
-  val textOrder: Int = Reportable.count.getAndIncrement()
 }
 
 object Reportable {
-  private val count = new AtomicInteger(0)
   def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
     (left, right) match {
       case (Left(le), Left(re)) => le.getClass() == re.getClass()
@@ -17,9 +15,24 @@ object Reportable {
   }
 }
 object Requirement {
+  final val count = new AtomicInteger(0)
+  def areRequirementFieldsEqual(r1: Requirement, r2: Requirement) = {
+    r1.title == r2.title &&
+      r1.description == r2.description &&
+      r1.priority == r2.priority &&
+      r1.references == r2.references
+  }
+  def areBuilderNodeFieldsEquals[R, RFn](r1: BuilderNode[R, RFn], r2: BuilderNode[R, RFn]) = {
+    areRequirementFieldsEqual(r1, r2) && r1.expected == r2.expected && r1.code == r2.code
+  }
+  def areBuilderNodeAndHolderFieldsEqual[R, RFn](r1: BuilderNodeAndHolder[R, RFn], r2: BuilderNodeAndHolder[R, RFn]) = {
+    Requirement.areBuilderNodeFieldsEquals(r1, r2) && r1.nodes == r2.nodes 
+  }
+
 }
 
 trait Requirement extends Reportable {
+  val textOrder: Int
   def title: Option[String]
   def description: Option[String]
   def priority: Option[Int]
@@ -31,7 +44,8 @@ trait Requirement extends Reportable {
   lazy val titleString = title.getOrElse("")
 }
 
-trait BuilderNode[R, RFn] extends Requirement {
+
+trait BuilderNode[R, RFn] extends Requirement{
   def expected: Option[Either[Exception, R]]
   def code: Option[CodeHolder[RFn]]
   def copyBuilderNode(
@@ -75,16 +89,20 @@ case class EngineDescription[R, RFn](
   val priority: Option[Int] = None,
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
-  val references: Set[Reference] = Set())
+  val references: Set[Reference] = Set(),
+  val textOrder: Int = Requirement.count.getAndIncrement())
   extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
+    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
-    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
+    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): BuilderNodeHolder[R, RFn] =
-    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references)
+    new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
+  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case ed: EngineDescription[R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, ed)
+  }
   override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")})"
-
 }
 
 case class UseCase[R, RFn](
@@ -94,14 +112,19 @@ case class UseCase[R, RFn](
   val priority: Option[Int] = None,
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
-  val references: Set[Reference] = Set()) extends BuilderNodeAndHolder[R, RFn] {
+  val references: Set[Reference] = Set(),
+  val textOrder: Int = Requirement.count.getAndIncrement()) extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
+    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
-    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
+    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): BuilderNodeHolder[R, RFn] =
-    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
+    new UseCase[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   override def toString = s"UseCase(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
+  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case uc: UseCase[R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, uc)
+  }
 }
 
 case class Scenario[Params, BFn, R, RFn](
@@ -114,28 +137,38 @@ case class Scenario[Params, BFn, R, RFn](
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
-  val configurators: List[(Params) => Unit] = List()) extends BuilderNode[R, RFn] {
+  val configurators: List[(Params) => Unit] = List(),
+  val textOrder: Int = Requirement.count.getAndIncrement()) extends BuilderNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
-  def copyScenario(because: Option[CodeHolder[BFn]] = because,
-    assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = assertions,
-    configurators: List[(Params) => Unit] = configurators) =
-    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
+  def copyScenario(because: Option[CodeHolder[BFn]] = because, assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = assertions, configurators: List[(Params) => Unit] = configurators) =
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
 
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
   def executeConfigurators = configurators.foreach((c) => c(params))
+  override def hashCode = (title.hashCode() + params.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case s: Scenario[Params, BFn, R, RFn] => Requirement.areBuilderNodeFieldsEquals(this, s) &&
+      (s.params == params) && (s.because == because) && (s.assertions == assertions) && (s.configurators == configurators) && (s.expected == expected)
+  }
+  override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators)"
 }
 
 case class Document(
-  title: Option[String] = None,
-  description: Option[String] = None,
-  priority: Option[Int] = None,
-  url: Option[String] = None,
-  references: Set[Reference] = Set()) extends Requirement {
+  val title: Option[String] = None,
+  val description: Option[String] = None,
+  val priority: Option[Int] = None,
+  val url: Option[String] = None,
+  val references: Set[Reference] = Set(),
+  val textOrder: Int = Requirement.count.getAndIncrement()) extends Requirement {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Document(title, description, priority, url, references)
+  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case d: Document => Requirement.areRequirementFieldsEqual(this, d) && (url == d.url)
+  }
 
 }
 
@@ -180,4 +213,5 @@ class ExceptionMap(val map: Map[Int, List[Exception]] = Map()) extends Function[
       case (to, le) => textOrderToRequirement(to) -> le
     }).foldLeft(Map[Requirement, List[Exception]]()) { _ + _ }
   }
+  override def toString = map.toString
 } 

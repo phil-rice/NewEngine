@@ -62,6 +62,10 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     evaluating { build } should produce[CannotHaveFoldingEngineWithoutChildEnginesException]
   }
 
+  it should "allow the same scenario in multiple engine without throwing a duplicate scenario exception" in {
+    fail
+  }
+
   it should "have a buildExceptions that is the aggregate of the child engine's when executed in test mode" in {
     val e0 = new RuntimeException("e0");
     val e1 = new RuntimeException("e1");

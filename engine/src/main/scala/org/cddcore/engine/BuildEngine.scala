@@ -80,7 +80,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
 
   protected def buildTree(asRequirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap): (DT, ExceptionMap, BuilderNodeAndHolder[R, RFn]) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)
-    val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), -x.textOrder)))
+    val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), x.textOrder)))
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
       val (dt, exceptionMap) = acc
       try {

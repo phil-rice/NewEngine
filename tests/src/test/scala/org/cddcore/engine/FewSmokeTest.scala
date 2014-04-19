@@ -85,7 +85,7 @@ class FewSmokeTest extends AbstractTest {
         scenario(1).because((x) => throw new RuntimeException).
         build
     }
-    assertEquals(Map(), engine.buildExceptions)
+    assertEquals(ExceptionMap(), engine.buildExceptions)
   }
 
   //  it should "allow the match with syntax" in {
