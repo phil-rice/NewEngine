@@ -40,7 +40,8 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
   def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
 
-  def useCase(title: String): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) => new UseCase[R, RFn](Some(title)) :: nodes))
+  def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) =>
+    new UseCase[R, RFn](Some(title), description = Option(description)) :: nodes))
   def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
 

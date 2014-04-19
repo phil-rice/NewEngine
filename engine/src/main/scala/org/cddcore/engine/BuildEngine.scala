@@ -35,7 +35,7 @@ object BuildEngine {
   def folderBuilderEngine1[P, R, FullR] = new FoldingBuildEngine1[P, R, FullR]
   def folderBuilderEngine2[P1, P2, R, FullR] = new FoldingBuildEngine2[P1, P2, R, FullR]
   def folderBuilderEngine3[P1, P2, P3, R, FullR] = new FoldingBuildEngine3[P1, P2, P3, R, FullR]
-
+  def validateScenario[Params, BFn, R, RFn] = new SimpleValidateScenario[Params, BFn, R, RFn]
 }
 
 abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]](
@@ -44,8 +44,7 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
   extends BuildEngineFromTests[Params, BFn, R, RFn, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
-  lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens)
-  lazy val validator = new SimpleValidateScenario[Params, BFn, R, RFn]
+  lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)
   lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
   lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
 }
@@ -70,12 +69,12 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   type EMap = Map[BuilderNode[R, RFn], List[Exception]]
 
   def evaluateTree: EvaluateTree[Params, BFn, R, RFn]
-  def validator: ValidateScenario[Params, BFn, R, RFn]
   def blankTree: DT
   def builderWithModifyChildrenForBuild: BuilderWithModifyChildrenForBuild[R, RFn]
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
   def decisionTreeLens: DecisionTreeLens[Params, BFn, R, RFn]
   val mc = evaluateTree.makeClosures
+  val validator = evaluateTree.validator
   implicit def ldp: LoggerDisplayProcessor
 
   def buildEngine(requirement: Requirement, buildExceptions: EMap): E

@@ -105,7 +105,7 @@ object Engine {
   def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
   def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]](Set(), { _ + _ })
 
-  private def validateScenario[Params, BFn, R, RFn] = new SimpleValidateScenario[Params, BFn, R, RFn]
+ 
 
 
   def testing = _testing.get

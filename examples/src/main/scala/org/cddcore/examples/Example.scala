@@ -1,4 +1,6 @@
-package org.cddcore.engine
+package org.cddcore.examples
+
+import org.cddcore.engine.Engine
 
 object Example {
 

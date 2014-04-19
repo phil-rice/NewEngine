@@ -2,7 +2,7 @@
 resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 
-name := "jUnit"
+name := "junit"
 
 version := "1.0"
 
@@ -13,6 +13,8 @@ EclipseKeys.withSource := true
 EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource
 
 unmanagedClasspath in Runtime <+= (baseDirectory) map { bd => Attributed.blank(bd / "src/main/resources") }
+
+libraryDependencies += "junit" % "junit" % "4.10"
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.9" % "test"
 

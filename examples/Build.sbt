@@ -16,7 +16,5 @@ unmanagedClasspath in Runtime <+= (baseDirectory) map { bd => Attributed.blank(b
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.9" % "test"
 
-libraryDependencies += "com.novocode" % "junit-interface" % "0.9" % "test"
-
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.10.4"
             

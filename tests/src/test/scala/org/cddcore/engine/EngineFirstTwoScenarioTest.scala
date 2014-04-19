@@ -38,6 +38,13 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     assertEquals(result("X"), e.applyParams("ACD"))
   }
 
+  it should "allow use cases to be specified with a title and a description " in {
+    update(_.useCase("title1", "description"))
+    assertEquals(EngineDescription[R, RFn](nodes = List(UseCase[R, RFn](
+      title = Some("title1"),
+      description = Some("description")))), currentBuilder.nodes.head)
+  }
+
   it should "still throw an UndecidedException if a because clause is given by the first scenario when parameters don't match the because clause" in {
     scenario("A")
     update(_.expected(result("X")))

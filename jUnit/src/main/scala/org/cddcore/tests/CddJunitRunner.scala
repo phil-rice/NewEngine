@@ -1,13 +1,16 @@
 package org.cddcore.tests
 
+import java.io.File
+import java.lang.reflect._
+import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+
 import org.cddcore.engine._
-import java.io.File
-import org.junit.runner.Runner
-import java.lang.reflect._
-import org.junit.runner.Description
 import org.cddcore.utilities._
+import org.junit.runner.Description
+import org.junit.runner.Runner
+import org.junit.runner.notification._
 
 object CddRunner {
   val separator = "\n#########\n"
@@ -30,14 +33,15 @@ trait CddRunner extends Runner {
   def clazz: Class[_ <: Any]
   val rootEngines: List[Engine[_, _, _, _]]
   var allEngines = List[Engine[_, _, _, _]]()
+  val requirementToEngines = new IdentityHashMap[Requirement, Engine[_, _, _, _]]
 
-  var reportableToDescription = Map[Requirement, Description]()
+  val reportableToDescription = new IdentityHashMap[Requirement, Description]()
   /** Descriptions should have unique names as JUnit has defined equals on it.  */
   def makeDescriptionfor(r: Requirement): Description = {
     names = names.add(r)
     val name = names(r)
     val description = Description.createSuiteDescription(name)
-    reportableToDescription = reportableToDescription + (r -> description)
+    reportableToDescription.put(r, description)
     description
   }
   var names = new MapToUniqueName[Requirement]((r: Requirement, count: Int) => {
@@ -57,10 +61,11 @@ trait CddRunner extends Runner {
 
   def addEngine(e: Engine[_, _, _, _]) {
     exceptionMap = exceptionMap ++ e.buildExceptions
+    requirementToEngines.put(e.asRequirement, e)
     allEngines = e :: allEngines
     e match {
-      case f: FoldingEngine[_, _, _, _, _] =>
-          f.engines
+      case f: FoldingEngine[_, _, _, _, _] => for (e <- f.engines) addEngine(e)
+      case _ =>
     }
   }
   for (e <- rootEngines)
@@ -69,50 +74,78 @@ trait CddRunner extends Runner {
   lazy val getDescription = {
     val result = Description.createSuiteDescription(title);
     if (Engine.logging) println("Running\n" + rootEngines.mkString("\n---------------------\n"))
-    for (engine <- rootEngines) {
-      val engineRequirement = engine.asRequirement
-    }
+    for (engine <- rootEngines)
+      addRequirement(result, engine.asRequirement)
     result
   }
 
-  def addRequirement(d: Description, r: Requirement): Description = {
-    val name = names(r)
+  def addRequirement(d: Description, r: Requirement): Unit = {
     val childDescription = makeDescriptionfor(r)
+    val name = names(r)
     d.addChild(childDescription)
-
     r match {
       case holder: BuilderNodeHolder[_, _] => for (c <- holder.nodes) addRequirement(childDescription, c)
       case _ =>
     }
+  }
+  def newEngine[Params, BFn, R, RFn](r: Requirement, e: Option[EngineFromTests[Params, BFn, R, RFn]]) =
+    requirementToEngines.get(r).asInstanceOf[EngineFromTests[Params, BFn, R, RFn]] match {
+      case e: EngineFromTests[Params, BFn, R, RFn] => Some(e)
+      case _ => e
+    }
 
-//    if (Engine.logging) {
-//      println(name)
-//      println(engine)
-//    }
-//
-//    engineDescription
+  def run(notifier: RunNotifier) = {
+    for (e <- rootEngines) {
+      val r = e.asRequirement
+      runRequirement(notifier, newEngine(r, None), r)
+    }
+    println("Done")
   }
 
+  def runRequirement[Params, BFn, R, RFn](notifier: RunNotifier, e: Option[EngineFromTests[Params, BFn, R, RFn]], r: Requirement) {
+    var description = reportableToDescription.get(r)
+    if (exceptionMap.contains(r)) {
+      notifier.fireTestStarted(description)
+      exceptionMap(r) match {
+        case e :: Nil => notifier.fireTestFailure(new Failure(description, e))
+      }
+    } else
+      r match {
+        case holder: BuilderNodeHolder[R, RFn] => {
+          try {
+            notifier.fireTestStarted(description)
+            for (child <- holder.nodes)
+              runRequirement(notifier, newEngine(holder, e), child)
+            notifier.fireTestFinished(description)
+          } catch {
+            case e: Exception => notifier.fireTestFailure(new Failure(description, e))
+          }
+        }
+        case s: Scenario[Params, BFn, R, RFn] => {
+          notifier.fireTestStarted(description)
+          try {
+            val engine = e.getOrElse(throw new IllegalStateException)
+            val validator = engine.evaluator.validator
+            validator.checkCorrectValue(engine.evaluator, engine.tree, s)
+            notifier.fireTestFinished(description)
+          } catch {
+            case e: Exception => notifier.fireTestFailure(new Failure(description, e))
+          }
+        }
+      }
+  }
 }
 
 class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
   import org.cddcore.engine.Engine._
 
   def title = "CDD: " + clazz.getName
-  val instance = test { Reflection.instantiate(clazz) };
+  lazy val instance = test { Reflection.instantiate(clazz) };
 
-  val methodRootEnginesAndNames = clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => (m.invoke(instance).asInstanceOf[Engine[_, _, _, _]], m.getName))
-  val variableRootEnginesAndNames = clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => (f.get(instance).asInstanceOf[Engine[_, _, _, _]], f.getName)).sortBy(_._2)
-  val enginesToNameMap = Map(rootEnginesAndNames: _*)
-  val rootEnginesAndNames = test { methodRootEnginesAndNames ++ variableRootEnginesAndNames }
-  val rootEngines = rootEnginesAndNames.map(_._1)
+  lazy val methodRootEngines = clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => m.invoke(instance).asInstanceOf[Engine[_, _, _, _]])
+  lazy val variableRootEngines = clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => f.get(instance).asInstanceOf[Engine[_, _, _, _]])
+  lazy val rootEngines = test { methodRootEngines ++ variableRootEngines }.sortBy((e) => e.asRequirement.textOrder).toList
   CddRunner.addToEngines(rootEngines.toList)
-
-  if (logging) {
-    println(clazz)
-    for ((name, engine) <- rootEnginesAndNames)
-      println("Engine: " + name)
-  }
 
   def returnTypeIsEngine(m: Method): Boolean = {
     val rt = m.getReturnType()

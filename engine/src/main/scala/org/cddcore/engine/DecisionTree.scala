@@ -77,7 +77,8 @@ trait MakeClosures[Params, BFn, R, RFn] {
 
 case class SimpleEvaluateTree[Params, BFn, R, RFn](
   val makeClosures: MakeClosures[Params, BFn, R, RFn],
-  val lens: DecisionTreeLens[Params, BFn, R, RFn]) extends EvaluateTree[Params, BFn, R, RFn] {
+  val lens: DecisionTreeLens[Params, BFn, R, RFn],
+  val validator: ValidateScenario[Params, BFn, R, RFn]) extends EvaluateTree[Params, BFn, R, RFn] {
 }
 
 trait EvaluateTree[Params, BFn, R, RFn] {
@@ -85,6 +86,7 @@ trait EvaluateTree[Params, BFn, R, RFn] {
   type DTN = DecisionTreeNode[Params, BFn, R, RFn]
 
   val makeClosures: MakeClosures[Params, BFn, R, RFn]
+  val validator: ValidateScenario[Params, BFn, R, RFn]
   val lens: DecisionTreeLens[Params, BFn, R, RFn]
   import makeClosures._
   import lens._
