@@ -9,7 +9,7 @@ class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Param
     Some("rootL"))
 
   //  def exceptionMapL(asRequirement: BuilderNodeHolder[R, RFn]) =
-  //    Lens[DecisionTree[Params, BFn, R, RFn], Map[BuilderNode[R, RFn], List[Exception]]](
+  //    Lens[DecisionTree[Params, BFn, R, RFn],ExceptionMap](
   //      (tree) => tree.buildExceptions,
   //      (tree, buildExceptions) => creator(asRequirement)(tree.root, buildExceptions),
   //      Some("exceptionMapL"))

@@ -46,7 +46,7 @@ class FewSmokeTest extends AbstractTest {
     assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0))
   }
-  
+
   "A Folding Engine2" should "be constructable from the Engine object" in {
     val builder = Engine.foldList[Int, Int, String].
       title("engine").description("description").
@@ -68,6 +68,24 @@ class FewSmokeTest extends AbstractTest {
     val engine = builder.build
     assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0, 0))
+  }
+
+  "An engine" should "have it's scenarios in text order" in {
+    val engine = Engine[Int, Int]().
+      scenario(0).expected(0).
+      scenario(1).expected(1).code { _ + 0 }.priority(1).
+      scenario(2).expected(2).
+      build
+    assertEquals(List(0, 1, 2), engine.scenarios.map(_.params).toList)
+  }
+  it should "remember an exception in the because, even if a later exception is thrown" in {
+    val engine = Engine.test {
+      Engine[Int, Int]().
+        scenario(0).expected(0).code { _ + 0 }.
+        scenario(1).because((x) => throw new RuntimeException).
+        build
+    }
+    assertEquals(Map(), engine.buildExceptions)
   }
 
   //  it should "allow the match with syntax" in {

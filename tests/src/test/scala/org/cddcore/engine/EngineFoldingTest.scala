@@ -78,14 +78,14 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
       build
     }
 
-    val eMap = e.buildExceptions
+    val exceptionMap = e.buildExceptions
     val sa = s("A", expected = "Y")
     val sb = s("B", expected = "Y")
-    val mapToListOfClasses = eMap.mapValues((listE) => listE.map(_.getClass))
-    val mapToListOfExceptions = eMap.mapValues((listE) => listE.map(_.getCause))
+    val mapToListOfClasses = exceptionMap.map.mapValues((listE) => listE.map(_.getClass))
+    val mapToListOfExceptions = exceptionMap.map.mapValues((listE) => listE.map(_.getCause))
     val clazz = classOf[BecauseClauseScenarioException]
-    assertEquals(Map(sa -> List(clazz), sb -> List(clazz)), mapToListOfClasses)
-    assertEquals(Map(sa -> List(e0), sb -> List(e1)), mapToListOfExceptions)
+    assertEquals(Map(sa.textOrder -> List(clazz), sb.textOrder -> List(clazz)), mapToListOfClasses)
+    assertEquals(Map(sa.textOrder -> List(e0), sb.textOrder -> List(e1)), mapToListOfExceptions)
 
   }
 }

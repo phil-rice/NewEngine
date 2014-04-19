@@ -11,7 +11,7 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     (b: B) => currentNodeForHoldersL.get(b),
     (b: B, n: BuilderNode[R, RFn]) => { val result = currentNodeForHoldersL.set(b, n).asInstanceOf[B]; result })
 
-  val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn], Map[BuilderNode[R, RFn], List[Exception]]](
+  val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn],ExceptionMap](
     (c) => c.buildExceptions,
     (c, e) =>
       c.copyWithNewExceptions(e),
@@ -127,13 +127,13 @@ class FullBuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]
     (b, s) => b match { case _: S => s })
   def becauseL(validate: (S, S, CodeHolder[BFn]) => Unit) = Lens.option[S, CodeHolder[BFn]](
     (s) => s.because,
-    (s, bCodeHolder) => s.copy(because = bCodeHolder),
+    (s, bCodeHolder) => s.copyScenario(because = bCodeHolder),
     (old, v) => CannotDefineBecauseTwiceException(old, v),
     Some("becauseL"),
     Some(validate))
   def configuratorL = Lens[S, List[Params => Unit]](
     (s) => s.configurators,
-    (s, c) => s.copy(configurators = c),
+    (s, c) => s.copyScenario(configurators = c),
     Some("configuratorL"))
 }
 

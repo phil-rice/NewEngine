@@ -104,7 +104,8 @@ object CannotDefineCodeTwiceException {
 class CannotDefineCodeTwiceException(msg: String, val original: CodeHolder[_], val beingAdded: CodeHolder[_]) extends EngineException(msg, null)
 
 object CannotDefineTitleTwiceException {
-  def apply(original: String, beingAdded: String) = new CannotDefineTitleTwiceException(s"Original ${original}\nBeing Added $beingAdded ", original, beingAdded);
+  def apply(original: String, beingAdded: String) =
+    new CannotDefineTitleTwiceException(s"Original ${original}\nBeing Added $beingAdded ", original, beingAdded);
 }
 class CannotDefineTitleTwiceException(msg: String, val original: String, val beingAdded: String) extends EngineException(msg, null)
 

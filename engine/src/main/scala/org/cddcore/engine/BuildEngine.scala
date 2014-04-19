@@ -3,7 +3,7 @@ import org.cddcore.utilities.Maps
 import sun.security.validator.SimpleValidator
 
 object BuildEngine {
-  def initialNodes[R, RFn] = List(EngineDescription[R, RFn]())
+  def initialNodes[R, RFn] = List(new EngineDescription[R, RFn]())
   def initialNodes[Params, BFn, R, RFn, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR) =
     List(FoldingEngineDescription[R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = foldingFn))
 
@@ -27,7 +27,7 @@ object BuildEngine {
   def expectedToCode3[P1, P2, P3, R]: Either[Exception, R] => CodeHolder[(P1, P2, P3) => R] = (x) => new CodeHolder((p1, p2, p3) => expectedValue(x), expectedToString(x))
 
   //  def construct1[P, R, E] =  (dt: DecisionTree[P, (P) => Boolean, R, (P) => R ], 
-  //      asRequirement: BuilderNodeHolder[R, (P)=> R], buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]) => Engine1(asRequirement, buildExceptions)
+  //      asRequirement: BuilderNodeHolder[R, (P)=> R], buildExceptions:ExceptionMap) => Engine1(asRequirement, buildExceptions)
 
   def builderEngine1[P, R] = new SimpleBuildEngine1[P, R]
   def builderEngine2[P1, P2, R] = new SimpleBuildEngine2[P1, P2, R]
@@ -50,12 +50,12 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(asRequirement: Requirement, dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: Map[BuilderNode[R, RFn], List[Exception]]): E
-  def buildEngine(requirement: Requirement, buildExceptions: EMap) = {
+  def constructEngine(asRequirement: BuilderNodeAndHolder[R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap:ExceptionMap): E
+  def buildEngine(requirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap) = {
     requirement match {
       case ed: EngineDescription[R, RFn] =>
-        val (dt, eMap) = buildTree(ed, buildExceptions)
-        constructEngine(ed, dt, eMap)
+        val (dt, exceptionMap, modifiedRequirement) = buildTree(ed, buildExceptions)
+        constructEngine(modifiedRequirement, dt, exceptionMap)
     }
   }
 }
@@ -66,7 +66,6 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   type Dec = Decision[Params, BFn, R, RFn]
   type Conc = Conclusion[Params, BFn, R, RFn]
   type S = Scenario[Params, BFn, R, RFn]
-  type EMap = Map[BuilderNode[R, RFn], List[Exception]]
 
   def evaluateTree: EvaluateTree[Params, BFn, R, RFn]
   def blankTree: DT
@@ -77,28 +76,29 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   val validator = evaluateTree.validator
   implicit def ldp: LoggerDisplayProcessor
 
-  def buildEngine(requirement: Requirement, buildExceptions: EMap): E
+  def buildEngine(requirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap): E
 
-  protected def buildTree(asRequirement: BuilderNodeHolder[R, RFn], buildExceptions: EMap): (DT, EMap) = {
-    val scenarios = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement).all(classOf[S])
+  protected def buildTree(asRequirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap): (DT, ExceptionMap, BuilderNodeAndHolder[R, RFn]) = {
+    val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)
+    val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), -x.textOrder)))
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
-      val (dt, eMap) = acc
+      val (dt, exceptionMap) = acc
       try {
         validator.preValidateScenario(mc, s)
         val newTree = addScenario(dt, s)
         validator.checkAssertions(evaluateTree, newTree, s)
-        (newTree, eMap)
+        (newTree, exceptionMap)
       } catch {
         case e: Exception =>
           Engine.testing match {
             case false => throw e;
-            case true => (dt, Maps.addToList(eMap, s, e))
+            case true => (dt, exceptionMap + (s -> e))
           }
       }
     })
     if (!Engine.testing)
       scenarios.foreach((x) => validator.postValidateScenario(evaluateTree, newDecisionTree, x))
-    (newDecisionTree, newENap)
+    (newDecisionTree, newENap, modifiedRequirements)
   }
   protected def addScenario(tree: DT, scenario: S): DT = {
     val lens = evaluateTree.lens
@@ -149,7 +149,8 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
         case (false, None, _) =>
           oldConclusion.scenarios match {
             case Nil => throw ScenarioConflictingWithDefaultAndNoBecauseException(concL, actual, expected, scenario)
-            case existing => throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, scenario)
+            case existing =>
+              throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, scenario)
           }
         case (false, Some(b), _) => addDecisionNodeTo
       }

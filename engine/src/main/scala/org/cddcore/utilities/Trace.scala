@@ -24,7 +24,7 @@ case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params,
     other match {
       case t: TraceItem[Main, Params, Result, Evidence] => t.main == main && t.params == params && t.children == children && t.result == result;
       case _ => false
-    }
+    } 
   override def toString = s"TraceItem($main,$params,$result,children=(${children.mkString(",")}))"
 }
 

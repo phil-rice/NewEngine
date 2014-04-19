@@ -1,12 +1,13 @@
 package org.cddcore.engine
 
 import java.util.concurrent.atomic.AtomicInteger
+import org.cddcore.utilities.Maps
 trait Reportable {
-  val textOrder = Reportable.count.getAndIncrement()
+  val textOrder: Int = Reportable.count.getAndIncrement()
 }
 
 object Reportable {
-  val count = new AtomicInteger(0)
+  private val count = new AtomicInteger(0)
   def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
     (left, right) match {
       case (Left(le), Left(re)) => le.getClass() == re.getClass()
@@ -15,6 +16,9 @@ object Reportable {
     }
   }
 }
+object Requirement {
+}
+
 trait Requirement extends Reportable {
   def title: Option[String]
   def description: Option[String]
@@ -46,7 +50,7 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
     }
   }
 
-  def all[C <: BuilderNode[R, RFn]](clazz: Class[C]) = this.collect { case c: C if (clazz.isAssignableFrom(c.getClass())) => c }
+  def all[C <: Requirement](clazz: Class[C]) = this.collect { case c: C if (clazz.isAssignableFrom(c.getClass())) => c }
 
   val paths = new Traversable[List[Reportable]] {
     def foreach[U](f: List[Reportable] => U): Unit = foreachPrim(f, List[Reportable](BuilderNodeHolder.this))
@@ -59,6 +63,7 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
       case _ => f(path)
     }
   }
+
 }
 
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
@@ -83,13 +88,13 @@ case class EngineDescription[R, RFn](
 }
 
 case class UseCase[R, RFn](
-  title: Option[String] = None,
-  description: Option[String] = None,
-  code: Option[CodeHolder[RFn]] = None,
-  priority: Option[Int] = None,
-  nodes: List[BuilderNode[R, RFn]] = List(),
-  expected: Option[Either[Exception, R]] = None,
-  references: Set[Reference] = Set()) extends BuilderNodeAndHolder[R, RFn] {
+  val title: Option[String] = None,
+  val description: Option[String] = None,
+  val code: Option[CodeHolder[RFn]] = None,
+  val priority: Option[Int] = None,
+  val nodes: List[BuilderNode[R, RFn]] = List(),
+  val expected: Option[Either[Exception, R]] = None,
+  val references: Set[Reference] = Set()) extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new UseCase[R, RFn](title, description, code, priority, nodes, expected, references)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -113,6 +118,10 @@ case class Scenario[Params, BFn, R, RFn](
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
+    new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
+  def copyScenario(because: Option[CodeHolder[BFn]] = because,
+    assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = assertions,
+    configurators: List[(Params) => Unit] = configurators) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators)
 
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
@@ -149,4 +158,26 @@ case class Reference(ref: String = "", document: Option[Document] = None) extend
       }
     }).find((f) => f != 0).getOrElse(0)
   }
+
 }
+
+object ExceptionMap {
+  def apply() = new ExceptionMap()
+}
+class ExceptionMap(val map: Map[Int, List[Exception]] = Map()) extends Function[Requirement, List[Exception]] {
+  def apply(r: Requirement) = map(r.textOrder)
+  def +(kv: (Requirement, Exception)) = kv match { case (r, e) => new ExceptionMap(Maps.addToList(map, r.textOrder, e)) }
+  def ++(em: ExceptionMap) = {
+    em.map.foldLeft(map)((acc, kv) => kv._2.foldLeft(acc)((acc, v) => Maps.addToList(acc, kv._1, v)))
+  }
+  def contains(r: Requirement) = map.contains(r.textOrder)
+  def size = map.size
+  override def hashCode() = map.hashCode
+  override def equals(other: Any) = other match { case e: ExceptionMap => e.map == map; case _ => false }
+  def toMap[Params, BFn, R, RFn](e: Engine[Params, BFn, R, RFn]) = {
+    val textOrderToRequirement = e.asRequirement.all(classOf[Requirement]).foldLeft(Map[Int, Requirement]())((acc, r) => acc + (r.textOrder -> r))
+    map.map((kv) => kv match {
+      case (to, le) => textOrderToRequirement(to) -> le
+    }).foldLeft(Map[Requirement, List[Exception]]()) { _ + _ }
+  }
+} 

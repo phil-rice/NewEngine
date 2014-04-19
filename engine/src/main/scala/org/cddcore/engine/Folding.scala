@@ -22,6 +22,7 @@ case class FoldingEngineDescription[R, RFn, FullR](
   def copyNodes(nodes: List[BuilderNode[R, RFn]]) =
     new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
   override def toString = s"FoldingEngineDescription(${initialValue.description}, $foldingFn, nodes=${nodes.mkString(", ")}"
+
 }
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with Engine[Params, BFn, R, RFn] {
@@ -35,27 +36,27 @@ trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] 
 }
 trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: Engine[Params, BFn, R, RFn], E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, F] {
   def constructFoldingEngine(
-    requirement: Requirement,
+    requirement: BuilderNodeAndHolder[R, RFn],
     engines: List[EngineFromTests[Params, BFn, R, RFn]],
-    exceptionMap: Map[BuilderNode[R, RFn], List[Exception]],
+    exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
     foldingFn: (FullR, R) => FullR): F
   def buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E]
 
-  def buildEngine(r: Requirement, buildExceptions: EMap) = {
+  def buildEngine(r: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap) = {
     r match {
       case f: FoldingEngineDescription[R, RFn, FullR] => {
         val initial = (List[EngineFromTests[Params, BFn, R, RFn]](), buildExceptions)
         if (f.nodes.isEmpty) throw new CannotHaveFoldingEngineWithoutChildEnginesException
-        val (engines: List[EngineFromTests[Params, BFn, R, RFn]], eMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
+        val (engines: List[EngineFromTests[Params, BFn, R, RFn]], exceptionMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
           case ed: EngineDescription[R, RFn] => {
-            val (engines, initialEMap) = acc
-            val (dt, eMap) = buildTree(ed, initialEMap)
-            val engine = buildChildEngine.buildEngine(ed, buildExceptions).asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
-            (engine :: engines, eMap)
+            val (engines, initialExceptionMap) = acc
+            val (dt, exceptionMap, newRequirements) = buildTree(ed, initialExceptionMap)
+            val engine = buildChildEngine.buildEngine(newRequirements, buildExceptions).asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
+            (engine :: engines, exceptionMap)
           }
         });
-        constructFoldingEngine(f, engines, eMap, f.initialValue, f.foldingFn)
+        constructFoldingEngine(f, engines, exceptionMap, f.initialValue, f.foldingFn)
       }
     }
   }

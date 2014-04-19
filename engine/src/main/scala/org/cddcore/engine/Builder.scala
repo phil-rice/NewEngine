@@ -6,10 +6,10 @@ import scala.language.experimental.macros
 import scala.util.Sorting
 import org.cddcore.utilities.Maps
 trait HasExceptionMap[R, RFn] {
-  def buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]
+  def buildExceptions: ExceptionMap
 }
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
-  def copyWithNewExceptions(buildExceptions: Map[BuilderNode[R, RFn], List[Exception]]): CanCopyWithNewExceptionMap[R, RFn]
+  def copyWithNewExceptions(buildExceptions: ExceptionMap): CanCopyWithNewExceptionMap[R, RFn]
 }
 trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends BuilderNodeHolder[R, RFn]
@@ -28,7 +28,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
         case true => {
           val current = currentNodeL.get(this)
           val result = builderToCanCopyWithNewExceptionMapL.andThen(exceptionMap).mod(this, (map) =>
-            Maps.addToList(map, current, e)).asInstanceOf[B]
+            map + (current -> e)).asInstanceOf[B]
           result
         }
         case false => throw e
@@ -52,10 +52,6 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
   def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
     mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
-}
-
-case class ModifedChildrenBuilderNodeHolder[R, RFn](nodes: List[BuilderNode[R, RFn]] = List()) extends BuilderNodeHolder[R, RFn] {
-  def copyNodes(nodes: List[BuilderNode[R, RFn]]) = throw new IllegalStateException
 }
 
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
@@ -115,7 +111,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
 class SimpleBuilderWithModifyChildrenForBuild[R, RFn] extends BuilderWithModifyChildrenForBuild[R, RFn]
 
 trait BuilderWithModifyChildrenForBuild[R, RFn] {
-  def modifyChildrenForBuild(holder: BuilderNodeHolder[R, RFn]): ModifedChildrenBuilderNodeHolder[R, RFn] = {
+  def modifyChildrenForBuild(requirement: BuilderNodeAndHolder[R, RFn]): BuilderNodeAndHolder[R, RFn] = {
     def modifyChildAsNode(path: List[Reportable], child: BuilderNode[R, RFn]) = {
       child
     }
@@ -138,7 +134,7 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] {
       withChildren.asInstanceOf[BuilderNode[R, RFn]]
     }
     def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
-      holder.nodes.map((x) => modifyChild(x :: path)).sorted(Ordering.by((x: BuilderNode[R, RFn]) => (-x.priority.getOrElse(0), -x.textOrder)))
-    new ModifedChildrenBuilderNodeHolder(modifyChildren(List(), holder))
+      holder.nodes.map((x) => modifyChild(x :: path)).sortBy(-_.textOrder)
+    modifyChild(List(requirement)).asInstanceOf[BuilderNodeAndHolder[R, RFn]]
   }
 }

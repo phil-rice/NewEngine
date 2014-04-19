@@ -55,7 +55,7 @@ trait CddRunner extends Runner {
     val result = count match { case 1 => name; case _ => name + "_" + count }
     result
   })
-  var exceptionMap: Map[Requirement, List[Exception]] = Map()
+  var exceptionMap: ExceptionMap= new ExceptionMap()
 
   def title: String
 
@@ -107,7 +107,8 @@ trait CddRunner extends Runner {
     if (exceptionMap.contains(r)) {
       notifier.fireTestStarted(description)
       exceptionMap(r) match {
-        case e :: Nil => notifier.fireTestFailure(new Failure(description, e))
+        case e :: Nil =>
+          notifier.fireTestFailure(new Failure(description, e))
       }
     } else
       r match {

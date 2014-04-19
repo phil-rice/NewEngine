@@ -39,7 +39,9 @@ extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
     assertEquals(ed, lens.currentNodeL.get(builderEd))
     assertEquals(ed1, lens.currentNodeL.get(builderEd1))
 
-    assertEquals(builderEd1, lens.currentNodeL.set(builderEd, ed1))
+    val actual = lens.currentNodeL.set(builderEd, ed1)
+    val expected = builderEd1
+    assertEquals(expected, actual)
   }
 
   it should "focus on the deepest child... checking builder / enginedescription / usecase" in {

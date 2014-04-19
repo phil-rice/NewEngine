@@ -13,7 +13,8 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
       doIt
       build
     }
-    val exceptions = e.buildExceptions
+    val s = e.scenarios
+    val exceptions = e.buildExceptions.toMap(e)
     assertEquals(messages.size, exceptions.size)
     for ((s, list) <- messages) {
       val actual = exceptions(s)
@@ -26,6 +27,14 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
         }
       }
     }
+  }
+  builderName should "store  CannotDefineTitleTwiceException if the title has already been set in test mode" in {
+    checkExceptions({
+      scenario("A"); expected("X")
+      update(_.title("X"))
+      update(_.title("X"))
+    },
+      (s("A", title = "X", expected = "X"), List((classOf[CannotDefineTitleTwiceException], None))))
   }
 
   builderName should "store ScenarioConflictingWithDefaultAndNoBecauseException if comes to different conclusion when there is decision node in test mode" in {
@@ -40,7 +49,8 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
       scenario("A"); because("A"); expected("X");
       scenario("AB"); expected("Y")
     },
-      (s("AB", expected = "Y"), List((classOf[ScenarioConflictingWithoutBecauseException], expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode))))
+      (s("AB", expected = "Y"), List(
+        (classOf[ScenarioConflictingWithoutBecauseException], expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode))))
   }
 
   it should "store ScenarioConflictAndBecauseNotAdequateException if the scenario being added has a different tconclusion and the because isn't good enough to differentiate it from the other scenarios in the conclusion with just root in test mode" in {
@@ -52,14 +62,6 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
       (s("BC", expected = "Y", because = "B"), List((classOf[ScenarioConflictAndBecauseNotAdequateException], expectedMessageFoBecauseNotAdequate))))
   }
 
-  builderName should "store  CannotDefineTitleTwiceException if the title has already been set in test mode" in {
-    checkExceptions({
-      scenario("A"); expected("X")
-      update(_.title("X"))
-      update(_.title("X"))
-    },
-      (s("A", title = "X", expected = "X"), List((classOf[CannotDefineTitleTwiceException], None))))
-  }
   it should "store  CannotDefineDescriptionTwiceException if the description has already been set in test mode" in {
     checkExceptions({
       scenario("A"); expected("X")
