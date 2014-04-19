@@ -1,8 +1,5 @@
 package org.cddcore.engine
 
-import org.apache.log4j.Logger
-import org.apache.log4j.Level
-
 trait LoggerDisplay {
   def loggerDisplay(dp: LoggerDisplayProcessor): String
 }
