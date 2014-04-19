@@ -18,7 +18,6 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   implicit def ldp: LoggerDisplayProcessor
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
   import bl._
-  lazy val scenarios = all(classOf[Scenario[Params, BFn, R, RFn]]).toList
 
   protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B, E]): B = try {
     stuff.asInstanceOf[B]
@@ -57,7 +56,8 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   type S = Scenario[Params, BFn, R, RFn]
   type MC = MakeClosures[Params, BFn, R, RFn]
-  def checkDuplicateScenario(scenarios: List[S], s: S) = {
+  def checkDuplicateScenario[FullR, B <: BuilderNodeHolder[R, RFn]](lens: BuilderLens[R, RFn, FullR, B], rootRequirement: BuilderNodeHolder[R, RFn], s: S) = {
+    val scenarios = lens.engineDescriptionL.get(rootRequirement).all(classOf[Scenario[Params, BFn, R, RFn]]).toList;
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
     s
   }

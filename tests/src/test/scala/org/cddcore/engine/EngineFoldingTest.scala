@@ -63,7 +63,27 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
   }
 
   it should "allow the same scenario in multiple engine without throwing a duplicate scenario exception" in {
-    fail
+    update(_.childEngine("ce1"))
+    scenario("A")
+    expected("X")
+    update(_.childEngine("ce2"))
+    scenario("A")
+    expected("X")
+    val e = build
+
+    val expectedValue = List[R]("X", "X").foldLeft(initialValue)(foldingFn)
+    assertEquals(expectedValue, e.applyParams(params("a")))
+  }
+
+  it should "have it's scenarios in text order" in {
+    update(_.childEngine("ce1"))
+    scenario("A"); expected("1")
+    scenario("B"); expected("1")
+    update(_.childEngine("ce2"))
+    scenario("C"); expected("3")
+    scenario("D"); expected("3")
+    val e = build
+    assertEquals(List("A", "B", "C", "D").map(params(_)), e.scenarios.map(_.params))
   }
 
   it should "have a buildExceptions that is the aggregate of the child engine's when executed in test mode" in {
@@ -83,8 +103,9 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     }
 
     val exceptionMap = e.buildExceptions
-    val sa = s("A", expected = "Y")
-    val sb = s("B", expected = "Y")
+    val sa = e.scenarios(0)
+    val sb = e.scenarios(1)
+    assertEquals(params("A"), sa.params)
     val mapToListOfClasses = exceptionMap.map.mapValues((listE) => listE.map(_.getClass))
     val mapToListOfExceptions = exceptionMap.map.mapValues((listE) => listE.map(_.getCause))
     val clazz = classOf[BecauseClauseScenarioException]

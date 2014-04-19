@@ -43,7 +43,7 @@ case class Builder1[P, R, FullR](
 
   def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) = wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def scenario(p: P, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
-    checkDuplicateScenario(scenarios, new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes))
+    checkDuplicateScenario(bl, this, new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))

@@ -26,7 +26,7 @@ object Requirement {
     areRequirementFieldsEqual(r1, r2) && r1.expected == r2.expected && r1.code == r2.code
   }
   def areBuilderNodeAndHolderFieldsEqual[R, RFn](r1: BuilderNodeAndHolder[R, RFn], r2: BuilderNodeAndHolder[R, RFn]) = {
-    Requirement.areBuilderNodeFieldsEquals(r1, r2) && r1.nodes == r2.nodes 
+    Requirement.areBuilderNodeFieldsEquals(r1, r2) && r1.nodes == r2.nodes
   }
 
 }
@@ -44,8 +44,7 @@ trait Requirement extends Reportable {
   lazy val titleString = title.getOrElse("")
 }
 
-
-trait BuilderNode[R, RFn] extends Requirement{
+trait BuilderNode[R, RFn] extends Requirement {
   def expected: Option[Either[Exception, R]]
   def code: Option[CodeHolder[RFn]]
   def copyBuilderNode(
@@ -101,7 +100,8 @@ case class EngineDescription[R, RFn](
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case ed: EngineDescription[R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, ed)
-  }
+      case _ => false
+}
   override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")})"
 }
 
@@ -124,6 +124,7 @@ case class UseCase[R, RFn](
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case uc: UseCase[R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, uc)
+    case _ => false
   }
 }
 
@@ -152,7 +153,8 @@ case class Scenario[Params, BFn, R, RFn](
   override def equals(other: Any) = other match {
     case s: Scenario[Params, BFn, R, RFn] => Requirement.areBuilderNodeFieldsEquals(this, s) &&
       (s.params == params) && (s.because == because) && (s.assertions == assertions) && (s.configurators == configurators) && (s.expected == expected)
-  }
+     case _ => false
+ }
   override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators)"
 }
 
@@ -168,7 +170,8 @@ case class Document(
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case d: Document => Requirement.areRequirementFieldsEqual(this, d) && (url == d.url)
-  }
+      case _ => false
+}
 
 }
 
@@ -200,9 +203,7 @@ object ExceptionMap {
 class ExceptionMap(val map: Map[Int, List[Exception]] = Map()) extends Function[Requirement, List[Exception]] {
   def apply(r: Requirement) = map(r.textOrder)
   def +(kv: (Requirement, Exception)) = kv match { case (r, e) => new ExceptionMap(Maps.addToList(map, r.textOrder, e)) }
-  def ++(em: ExceptionMap) = {
-    em.map.foldLeft(map)((acc, kv) => kv._2.foldLeft(acc)((acc, v) => Maps.addToList(acc, kv._1, v)))
-  }
+  def ++(em: ExceptionMap) = new ExceptionMap(em.map.foldLeft(map)((acc, kv) => kv._2.foldLeft(acc)((acc, v) => Maps.addToList(acc, kv._1, v))))
   def contains(r: Requirement) = map.contains(r.textOrder)
   def size = map.size
   override def hashCode() = map.hashCode

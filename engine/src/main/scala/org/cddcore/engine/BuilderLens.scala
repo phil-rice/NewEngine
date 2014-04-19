@@ -11,7 +11,7 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     (b: B) => currentNodeForHoldersL.get(b),
     (b: B, n: BuilderNode[R, RFn]) => { val result = currentNodeForHoldersL.set(b, n).asInstanceOf[B]; result })
 
-  val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn],ExceptionMap](
+  val exceptionMap = Lens[CanCopyWithNewExceptionMap[R, RFn], ExceptionMap](
     (c) => c.buildExceptions,
     (c, e) =>
       c.copyWithNewExceptions(e),
@@ -36,6 +36,20 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
   val nextUseCaseHolderL = Lens[B, BuilderNodeHolder[R, RFn]](
     (b) => nextUseCaseHolderForHoldersL.get(b),
     (b, n) => nextUseCaseHolderForHoldersL.set(b, n).asInstanceOf[B])
+
+  val engineDescriptionL: Lens[BuilderNodeHolder[R, RFn], EngineDescription[R, RFn]] = Lens[BuilderNodeHolder[R, RFn], EngineDescription[R, RFn]](
+    (b: BuilderNodeHolder[R, RFn]) => {
+      (b, b.nodes) match {
+        case (ed: EngineDescription[R, RFn], _) => ed
+        case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => engineDescriptionL.get(h)
+      }
+    },
+    (enh: BuilderNodeHolder[R, RFn], n: EngineDescription[R, RFn]) => {
+      (enh, enh.nodes) match {
+        case (ed: EngineDescription[R, RFn], _) => n
+        case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => enh.copyNodes(engineDescriptionL.set(h, n).asInstanceOf[BuilderNode[R, RFn]] :: tail)
+      }
+    })
 
   protected val nextUseCaseHolderForHoldersL: Lens[BuilderNodeHolder[R, RFn], BuilderNodeHolder[R, RFn]] = Lens[BuilderNodeHolder[R, RFn], BuilderNodeHolder[R, RFn]](
     (b: BuilderNodeHolder[R, RFn]) => {

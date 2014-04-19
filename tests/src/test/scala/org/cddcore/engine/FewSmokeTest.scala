@@ -85,7 +85,11 @@ class FewSmokeTest extends AbstractTest {
         scenario(1).because((x) => throw new RuntimeException).
         build
     }
-    assertEquals(ExceptionMap(), engine.buildExceptions)
+    val s1 = engine.scenarios(1)
+    val actual = engine.buildExceptions.map.mapValues((list) => list.map(_.getClass()))
+    assertEquals(Map(s1.textOrder -> List(
+      classOf[NoExpectedException],
+      classOf[BecauseClauseScenarioException])), actual)
   }
 
   //  it should "allow the match with syntax" in {

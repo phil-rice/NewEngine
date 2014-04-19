@@ -7,7 +7,7 @@ trait FoldingBuilderNodeAndHolder[R, RFn, FullR] extends BuilderNodeAndHolder[R,
 case class FoldingEngineDescription[R, RFn, FullR](
   val title: Option[String] = None,
   val description: Option[String] = None,
-  val code: Option[CodeHolder[RFn]] = None, 
+  val code: Option[CodeHolder[RFn]] = None,
   val priority: Option[Int] = None,
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
@@ -28,6 +28,7 @@ case class FoldingEngineDescription[R, RFn, FullR](
     case fe: FoldingEngineDescription[R, RFn, FullR] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, fe) &&
       (foldingFn == fe.foldingFn) &&
       (initialValue == fe.initialValue)
+    case _ => false
   }
 
 }

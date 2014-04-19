@@ -8,7 +8,7 @@ trait Engine[Params, BFn, R, RFn] extends Reportable {
   def asRequirement: BuilderNodeAndHolder[R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: ExceptionMap
-  lazy val scenarios = asRequirement.all(classOf[Scenario[Params, BFn, R, RFn]])
+  lazy val scenarios = asRequirement.all(classOf[Scenario[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
 }
 
 trait EngineFromTests[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] {
