@@ -79,13 +79,11 @@ class EngineHolderTest extends AbstractTest {
 
   "An engine holders paths method" should "return all the nodes in a path" in {
     assertEquals(List(
-      List(holderEn1),
-      List(en1, holderEn1)), holderEn1.paths.toList)
+      List(en1)), holderEn1.paths.toList)
     assertEquals(List(
-      List(holderHolderEn12),
-      List(holderEn12, holderHolderEn12),
-      List(en1, holderEn12, holderHolderEn12),
-      List(en2, holderEn12, holderHolderEn12)),
+      List(holderEn12),
+      List(en1, holderEn12),
+      List(en2, holderEn12)),
       holderHolderEn12.paths.toList)
   }
 }

@@ -11,7 +11,6 @@ import org.cddcore.engine.BuilderNodeHolder
 import org.cddcore.engine.Engine
 import org.cddcore.engine.Engine.test
 import org.cddcore.engine.EngineFromTests
-import org.cddcore.engine.ExceptionMap
 import org.cddcore.engine.FoldingEngine
 import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.engine.Requirement
@@ -24,6 +23,7 @@ import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
 import org.cddcore.engine.MultipleScenarioExceptions
+import org.cddcore.utilities.ExceptionMap
 
 object CddRunner {
   val separator = "\n#########\n"

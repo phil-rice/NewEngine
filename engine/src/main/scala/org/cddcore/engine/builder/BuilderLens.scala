@@ -3,6 +3,7 @@ package org.cddcore.engine.builder
 import org.cddcore.utilities.Lens
 import org.cddcore.engine._
 import org.cddcore.utilities.CodeHolder
+import org.cddcore.utilities.ExceptionMap
 
 class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
 

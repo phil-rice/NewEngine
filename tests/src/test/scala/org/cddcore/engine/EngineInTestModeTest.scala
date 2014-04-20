@@ -4,6 +4,7 @@ import scala.language.implicitConversions
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.cddcore.engine.builder._
+import org.cddcore.utilities.NestedHolder
 
 abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with ConflictMessages {
   implicit def toSome[X](x: X) = Some(x)
@@ -15,7 +16,8 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
       build
     }
     val s = e.scenarios
-    val exceptions = e.buildExceptions.toMap(e)
+    val n : NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]] = e.asRequirement.asInstanceOf[BuilderNodeHolder[R, RFn]]
+    val exceptions = e.buildExceptions.toMap[BuilderNode[R, RFn],NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]]](n)
     assertEquals(messages.size, exceptions.size)
     for ((s, list) <- messages) {
       val actual = exceptions(s)

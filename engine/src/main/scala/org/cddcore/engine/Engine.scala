@@ -6,6 +6,7 @@ import org.cddcore.utilities.TraceBuilder
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.engine.builder._
 import org.cddcore.utilities.LoggerDisplayProcessor
+import org.cddcore.utilities.ExceptionMap
 
 trait Engine[Params, BFn, R, RFn] extends Reportable {
   def asRequirement: BuilderNodeAndHolder[R, RFn]
