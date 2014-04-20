@@ -69,12 +69,12 @@ class EngineOrStringStringTest extends EngineOr1Test[String, String] with String
     "As well as that it had a because clause, and if the because clause was added, other scenario(s) that as already been added would now come to the wrong conclusion\n" +
     "Scenario being added:\n" +
     "Scenario:\n" +
-    "Scenario(ACD,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(y))),Set(),List(),List())\n" +
+    "Scenario(ACD,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(y)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "ACD\n" +
     "\n------------------------------------------------------------------------------------\n" +
     "Scenarios that would be brokenScenario:\n" +
-    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(x))),Set(),List(),List())\n" +
+    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(x)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "A"
 }

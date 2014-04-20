@@ -5,7 +5,6 @@ import org.cddcore.engine.builder._
 import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
 
-object DecisionTreeLensTest
 
 abstract class DecisionTreeLensTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {

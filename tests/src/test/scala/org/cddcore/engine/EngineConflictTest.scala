@@ -48,36 +48,36 @@ trait ConflictMessages1 extends ConflictMessages {
     "Actual Result:\n" +
     "Left(org.cddcore.engine.UndecidedException: )\n" +
     "Expected\n" +
-    "Right(Result(Z))\n" +
+    "Right(Z)\n" +
     "Scenario:\n" +
-    "Scenario(B,None,None,None,Some(CodeHolder((p)=>resultZ)),None,Some(Right(Result(Z))),Set(),List(),List())\n" +
+    "Scenario(B,None,None,None,Some(CodeHolder((p)=>resultZ)),None,Some(Right(Z)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "B"
   val expectedMessageForNoBecauseWhenThereIsANoneDefaultConclusionAndNoBecauseNode = "\n" +
-    "Came to wrong conclusion: Right(Result(Y))\n" +
-    "Instead of Right(Result(X))\n" +
+    "Came to wrong conclusion: Right(Y)\n" +
+    "Instead of Right(X)\n" +
     "Lens(rootL.toDecisionL.yesL)\n" +
     "Existing: A\n" +
     "Being Added: AB\n" +
     "Detailed existing:\n" +
-    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(X))),Set(),List(),List())\n" +
+    "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario(AB,None,None,None,None,None,Some(Right(Result(Y))),Set(),List(),List())"
+    "Scenario(AB,None,None,None,None,None,Some(Right(Y)),Set(),List(),List())"
   val expectedMessageFoBecauseNotAdequate = "\n" +
     "The because is valid in these other scenarios, which the engine thinks are similar.\n" +
     "The Engine doesn't have enough information to decide what to do\n" +
     "To resolve this you could improve the because clause in this scenario to differentiate it from the listed scenarios\n" +
     "If you understand how the engine is constructed, you could change scenario priorities, but often it is better to refine the because clause\n" +
     "The because clause is becauseB\n" +
-    "Came to wrong conclusion: Right(Result(X))\n" +
-    "Instead of Right(Result(Y))\n" +
+    "Came to wrong conclusion: Right(X)\n" +
+    "Instead of Right(Y)\n" +
     "Lens(rootL)\n" +
     "Existing: AB\n" +
     "Being Added: BC\n" +
     "Detailed existing:\n" +
-    "Scenario(AB,None,None,None,None,None,Some(Right(Result(X))),Set(),List(),List())\n" +
+    "Scenario(AB,None,None,None,None,None,Some(Right(X)),Set(),List(),List())\n" +
     "Detailed of being Added:\n" +
-    "Scenario(BC,None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Result(Y))),Set(),List(),List())"
+    "Scenario(BC,None,None,Some(CodeHolder(becauseB)),None,None,Some(Right(Y)),Set(),List(),List())"
 }
 
 trait ConflictMessages2 extends ConflictMessages {

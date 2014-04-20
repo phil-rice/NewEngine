@@ -123,7 +123,7 @@ trait BuilderConcretizer[From, To] {
 trait StringStringTest extends BuilderConcretizer[String, String] {
   def builderName: String = "Builder1[String,String]"
   def params(seed: String): String = seed
-  def result(seed: String): String = s"Result($seed)"
+  def result(seed: String): String = s"$seed"
   def becauseBfn(seed: String) = (p: String) => contains(p, seed)
 }
 
@@ -147,7 +147,7 @@ trait HolderStringTest extends BuilderConcretizer[Holder, String] {
   import HolderStringTest._
   def builderName: String = "Builder1[Holder,Holder]"
   def params(seed: String): Holder = holder
-  def result(seed: String): String = s"Result($seed)"
+  def result(seed: String): String = s"$seed"
   def becauseBfn(seed: String) = (p: Holder) => contains(p.value, seed)
 }
 object HolderHolderStringTest {

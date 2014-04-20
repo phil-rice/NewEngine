@@ -46,6 +46,18 @@ trait EngineFromTests[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] {
         throw e
     }
   }
+  def toString(indent: String, root: DecisionTreeNode[Params, BFn, R, RFn]): String = {
+    root match {
+      case d: Decision[Params, BFn, R, RFn] =>
+        indent + "if(" + d.prettyString + ")\n" +
+          toString(indent + " ", d.yes) +
+          indent + "else\n" +
+          toString(indent + " ", d.no)
+      case c: Conclusion[Params, BFn, R, RFn] => indent + c.code.pretty + "\n";
+    }
+  }
+  override def toString(): String = toString("", tree.root)
+
 }
 
 object EngineMonitor {

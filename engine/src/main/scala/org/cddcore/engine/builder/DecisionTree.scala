@@ -52,6 +52,7 @@ case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: Lis
 case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn]) extends DecisionTreeNode[Params, BFn, R, RFn] {
   def scenarios = yes.scenarios ++ no.scenarios
   def isTrue(bc: (BFn) => Boolean) = because.foldLeft(false)((acc, ch) => acc || bc(ch.fn))
+  def prettyString = because.map(_.pretty).mkString(" or ")
 }
 
 trait MakeClosures[Params, BFn, R, RFn] {
