@@ -1,9 +1,9 @@
-package org.cddcore.engine
+package org.cddcore.engine.builder
 
-import scala.language.implicitConversions
 import scala.reflect.macros.Context
-import scala.language.experimental.macros
-
+import org.cddcore.engine._
+import org.cddcore.utilities._
+ import scala.language.experimental.macros
 
 object Builder1 {
   def bl[P, R, FullR]() = new FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]]

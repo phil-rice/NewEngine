@@ -1,4 +1,4 @@
-package org.cddcore.tests
+package org.cddcore.cddjunit
 
 import java.io.File
 import java.lang.reflect.Field
@@ -6,17 +6,14 @@ import java.lang.reflect.Method
 import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.Array.canBuildFrom
-
 import org.cddcore.engine.BuilderNodeHolder
 import org.cddcore.engine.Engine
 import org.cddcore.engine.Engine.test
 import org.cddcore.engine.EngineFromTests
 import org.cddcore.engine.ExceptionMap
 import org.cddcore.engine.FoldingEngine
-import org.cddcore.engine.LoggerDisplayProcessor
-import org.cddcore.engine.MultipleScenarioExceptions
+import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.engine.Requirement
 import org.cddcore.engine.Scenario
 import org.cddcore.utilities.MapToUniqueName
@@ -26,6 +23,7 @@ import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
+import org.cddcore.engine.MultipleScenarioExceptions
 
 object CddRunner {
   val separator = "\n#########\n"

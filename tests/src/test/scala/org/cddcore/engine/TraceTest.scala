@@ -1,10 +1,11 @@
 package org.cddcore.engine
 
 import org.junit.runner.RunWith
+import org.cddcore.engine.builder._
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 import org.cddcore.utilities.TraceItem
-import com.sun.xml.internal.bind.v2.model.runtime.RuntimeElement
+
 abstract class TraceTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)

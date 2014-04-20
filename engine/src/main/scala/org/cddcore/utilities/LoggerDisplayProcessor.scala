@@ -1,4 +1,4 @@
-package org.cddcore.engine
+package org.cddcore.utilities
 
 trait LoggerDisplay {
   def loggerDisplay(dp: LoggerDisplayProcessor): String

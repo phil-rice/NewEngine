@@ -1,7 +1,8 @@
-package org.cddcore.engine
+package org.cddcore.engine.builder
 
-import scala.language.implicitConversions
 import scala.reflect.macros.Context
+import org.cddcore.engine._
+import org.cddcore.utilities._
 import scala.language.experimental.macros
 
 object Builder3 {

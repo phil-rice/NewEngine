@@ -1,10 +1,9 @@
-package org.cddcore.engine
+package org.cddcore.engine.builder
 
 import scala.language.implicitConversions
-import scala.reflect.macros.Context
-import scala.language.experimental.macros
-import scala.util.Sorting
-import org.cddcore.utilities.Maps
+import org.cddcore.utilities._
+import org.cddcore.engine._
+
 trait HasExceptionMap[R, RFn] {
   def buildExceptions: ExceptionMap
 }
@@ -17,7 +16,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
-  import bl._
+  import bl._ 
 
   protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B, E]): B = try {
     stuff.asInstanceOf[B]

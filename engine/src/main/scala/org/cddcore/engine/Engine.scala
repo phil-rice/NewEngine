@@ -3,12 +3,22 @@ package org.cddcore.engine
 import java.util.concurrent.atomic.AtomicInteger
 import org.cddcore.utilities.Strings
 import org.cddcore.utilities.TraceBuilder
+import org.cddcore.utilities.CodeHolder
+import org.cddcore.engine.builder._
+import org.cddcore.utilities.LoggerDisplayProcessor
 
 trait Engine[Params, BFn, R, RFn] extends Reportable {
   def asRequirement: BuilderNodeAndHolder[R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: ExceptionMap
   lazy val scenarios = asRequirement.all(classOf[Scenario[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
+}
+
+trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with Engine[Params, BFn, R, RFn] {
+  def engines: List[EngineFromTests[Params, BFn, R, RFn]]
+  def initialValue: CodeHolder[() => FullR]
+  def foldingFn: (FullR, R) => FullR
+  def applyParams(params: Params): FullR = engines.foldLeft(initialValue.fn())((acc, e) => foldingFn(acc, e.applyParams(params)))
 }
 
 trait EngineFromTests[Params, BFn, R, RFn] extends Engine[Params, BFn, R, RFn] {

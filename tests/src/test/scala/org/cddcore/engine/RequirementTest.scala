@@ -3,6 +3,7 @@ package org.cddcore.engine
 import scala.language.implicitConversions
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import org.cddcore.utilities.CodeHolder
 
 case class RequirementForTest(
   val title: Option[String] = None,

@@ -1,9 +1,9 @@
 package org.cddcore.examples
 
-import org.cddcore.tests.CddContinuousIntegrationTest
-import org.junit.runner.RunWith
-import org.cddcore.tests.CddContinuousIntegrationRunner
+import org.cddcore.cddjunit.CddContinuousIntegrationTest
 import org.cddcore.examples.folding.Folding
+import org.junit.runner.RunWith
+import org.cddcore.cddjunit.CddContinuousIntegrationRunner
 
 @RunWith(classOf[CddContinuousIntegrationRunner])
 class ContinuousIntegrationTest extends CddContinuousIntegrationTest {

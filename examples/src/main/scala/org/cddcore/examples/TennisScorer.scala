@@ -3,7 +3,7 @@ package org.cddcore.examples
 import org.cddcore.engine.Document
 import org.cddcore.engine.Engine
 import org.junit.runner.RunWith
-import org.cddcore.tests.CddJunitRunner
+import org.cddcore.cddjunit.CddJunitRunner
 
 @RunWith(classOf[CddJunitRunner])
 object TennisScorer {

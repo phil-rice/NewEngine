@@ -1,4 +1,8 @@
-package org.cddcore.engine
+package org.cddcore.engine.builder
+
+import org.cddcore.utilities.Lens
+import org.cddcore.engine._
+import org.cddcore.utilities.CodeHolder
 
 class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
 

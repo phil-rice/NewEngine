@@ -2,6 +2,7 @@ package org.cddcore.engine
 
 import java.util.concurrent.atomic.AtomicInteger
 import org.cddcore.utilities.Maps
+import org.cddcore.utilities.CodeHolder
 trait Reportable {
 }
 
@@ -76,11 +77,42 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
       case _ => f(path)
     }
   }
+}
 
+trait FoldingBuilderNodeAndHolder[R, RFn, FullR] extends BuilderNodeAndHolder[R, RFn] {
+  def foldingFn: (FullR, R) => FullR
+  def initialValue: CodeHolder[() => FullR]
 }
 
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
+case class FoldingEngineDescription[R, RFn, FullR](
+  val title: Option[String] = None,
+  val description: Option[String] = None,
+  val code: Option[CodeHolder[RFn]] = None,
+  val priority: Option[Int] = None,
+  val nodes: List[BuilderNode[R, RFn]] = List(),
+  val expected: Option[Either[Exception, R]] = None,
+  val references: Set[Reference] = Set(),
+  val foldingFn: (FullR, R) => FullR,
+  val initialValue: CodeHolder[() => FullR],
+  val textOrder: Int = Requirement.count.getAndIncrement)
+  extends BuilderNodeAndHolder[R, RFn] with FoldingBuilderNodeAndHolder[R, RFn, FullR] {
+  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
+    new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
+  def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
+    new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
+  def copyNodes(nodes: List[BuilderNode[R, RFn]]) =
+    new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
+  override def toString = s"FoldingEngineDescription(${initialValue.description}, $foldingFn, nodes=${nodes.mkString(", ")}"
+  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case fe: FoldingEngineDescription[R, RFn, FullR] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, fe) &&
+      (foldingFn == fe.foldingFn) &&
+      (initialValue == fe.initialValue)
+    case _ => false
+  }
 
+}
 case class EngineDescription[R, RFn](
   val title: Option[String] = None,
   val description: Option[String] = None,

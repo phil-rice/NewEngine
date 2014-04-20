@@ -1,9 +1,10 @@
 package org.cddcore.engine
 
 import org.scalatest._
-
 import bsh.Node
 import org.scalatest.FlatSpecLike
+import org.cddcore.utilities.CodeHolder
+import org.cddcore.engine.builder._
 
 trait AssertEquals {
   def assertEquals[T1, T2](expected: T1, actual: T2, prefix: String = "") {

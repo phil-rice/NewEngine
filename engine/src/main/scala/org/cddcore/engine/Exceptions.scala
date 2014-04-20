@@ -1,4 +1,5 @@
 package org.cddcore.engine
+import org.cddcore.utilities._
 
 object ExceptionScenarioPrinter {
   val fullScenario = false

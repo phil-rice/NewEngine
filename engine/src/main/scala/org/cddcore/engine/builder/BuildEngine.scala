@@ -1,6 +1,7 @@
-package org.cddcore.engine
-import org.cddcore.utilities.Maps
-import sun.security.validator.SimpleValidator
+package org.cddcore.engine.builder
+
+import org.cddcore.utilities._
+import org.cddcore.engine._
 
 object BuildEngine {
   def initialNodes[R, RFn] = List(new EngineDescription[R, RFn]())

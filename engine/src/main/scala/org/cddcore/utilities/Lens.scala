@@ -1,4 +1,7 @@
-package org.cddcore.engine
+package org.cddcore.utilities
+
+import org.cddcore.engine.EngineException
+import org.cddcore.engine.CannotSendNoneToOptionLens
 
 trait Lens[A, B] extends Immutable {
   def get: A => B

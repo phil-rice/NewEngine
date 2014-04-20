@@ -1,6 +1,9 @@
-package org.cddcore.engine
+package org.cddcore.engine.builder
 
 import scala.language.implicitConversions
+import org.cddcore.utilities.Lens
+import org.cddcore.utilities.CodeHolder
+import org.cddcore.engine._
 
 class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn] = (root: DecisionTreeNode[Params, BFn, R, RFn]) => new SimpleDecisionTree(root, false)) {
   val rootL = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](

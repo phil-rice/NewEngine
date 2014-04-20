@@ -3,6 +3,7 @@ package org.cddcore.engine
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
+import org.cddcore.engine.builder._
 
 abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, R, B, E] with DecisionTreeBuilder[Params, BFn, R, RFn] {
   implicit def toBuilderWithModifyChildrenForBuild[R, RFn](b: B) = b.asInstanceOf[BuilderWithModifyChildrenForBuild[R, RFn]]
