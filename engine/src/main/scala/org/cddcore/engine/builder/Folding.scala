@@ -28,7 +28,8 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: Engine[Params, BFn, R,
             (engine :: engines, exceptionMap)
           }
         });
-        constructFoldingEngine(f, engines, exceptionMap, f.initialValue, f.foldingFn)
+        val requirements = f.copyNodes(engines.map(_.asRequirement))
+        constructFoldingEngine(requirements, engines, exceptionMap, f.initialValue, f.foldingFn)
       }
     }
   }

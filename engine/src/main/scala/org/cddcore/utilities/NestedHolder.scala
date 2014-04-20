@@ -1,5 +1,9 @@
 package org.cddcore.utilities
 
+
+
+
+
 trait NestedHolder[T, +H <: NestedHolder[T, H]] extends Traversable[T] {
   def nodes: List[T]
   def copyNodes(nodes: List[T]): H

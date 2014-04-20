@@ -12,18 +12,22 @@ import org.cddcore.engine.Engine
 import org.cddcore.engine.Engine.test
 import org.cddcore.engine.EngineFromTests
 import org.cddcore.engine.FoldingEngine
-import org.cddcore.utilities.LoggerDisplayProcessor
+import org.cddcore.engine.Reportable
 import org.cddcore.engine.Requirement
 import org.cddcore.engine.Scenario
+import org.cddcore.utilities.ExceptionMap
+import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.utilities.MapToUniqueName
 import org.cddcore.utilities.Reflection
 import org.cddcore.utilities.Strings
 import org.junit.runner.Description
 import org.junit.runner.Runner
-import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
+import org.junit.runner.notification.Failure
+import org.cddcore.engine.builder.Engine1
+import org.cddcore.utilities.KeyedMap
+import org.cddcore.utilities.KeyLike
 import org.cddcore.engine.MultipleScenarioExceptions
-import org.cddcore.utilities.ExceptionMap
 
 object CddRunner {
   val separator = "\n#########\n"
@@ -41,20 +45,23 @@ object CddRunner {
   }
 }
 
+trait EngineWalker {
+  def walk()
+}
+
 trait CddRunner extends Runner {
   def ldp: LoggerDisplayProcessor = implicitly[LoggerDisplayProcessor]
   def clazz: Class[_ <: Any]
   val rootEngines: List[Engine[_, _, _, _]]
   var allEngines = List[Engine[_, _, _, _]]()
-  val requirementToEngines = new IdentityHashMap[Requirement, Engine[_, _, _, _]]
-
-  val reportableToDescription = new IdentityHashMap[Requirement, Description]()
-  /** Descriptions should have unique names as JUnit has defined equals on it.  */
+  var reportableToDescription = new KeyedMap[Description]()
+  var exceptionMap: ExceptionMap = new ExceptionMap()
+  /** Descriptions should have unique names as JUnit has defined equals on it.  This helps avoid subtle bugs*/
   def makeDescriptionfor(r: Requirement): Description = {
     names = names.add(r)
     val name = names(r)
     val description = Description.createSuiteDescription(name)
-    reportableToDescription.put(r, description)
+    reportableToDescription = reportableToDescription + (r -> description)
     description
   }
   var names = new MapToUniqueName[Requirement]((r: Requirement, count: Int) => {
@@ -68,18 +75,12 @@ trait CddRunner extends Runner {
     val result = count match { case 1 => name; case _ => name + "_" + count }
     result
   })
-  var exceptionMap: ExceptionMap = new ExceptionMap()
 
   def title: String
 
   def addEngine(e: Engine[_, _, _, _]) {
     exceptionMap = exceptionMap ++ e.buildExceptions
-    requirementToEngines.put(e.asRequirement, e)
     allEngines = e :: allEngines
-    e match {
-      case f: FoldingEngine[_, _, _, _, _] => for (e <- f.engines) addEngine(e)
-      case _ =>
-    }
   }
   for (e <- rootEngines)
     addEngine(e)
@@ -93,6 +94,7 @@ trait CddRunner extends Runner {
   }
 
   def addRequirement(d: Description, r: Requirement): Unit = {
+    if (Engine.logging) println(s"Adding requirement: $r")
     val childDescription = makeDescriptionfor(r)
     val name = names(r)
     d.addChild(childDescription)
@@ -101,61 +103,48 @@ trait CddRunner extends Runner {
       case _ =>
     }
   }
-  def newEngine[Params, BFn, R, RFn](r: Requirement, e: Option[EngineFromTests[Params, BFn, R, RFn]]): Option[EngineFromTests[Params, BFn, R, RFn]] =
-    requirementToEngines.get(r) match {
-      case e: EngineFromTests[Params, BFn, R, RFn] => Some(e)
-      case _ => e
-    }
 
   def run(notifier: RunNotifier) = {
-    for (e <- rootEngines) {
-      val r = e.asRequirement
-      runRequirement(notifier, newEngine(r, None), r)
+    import KeyLike._
+    def fail(d: Description, e: Exception) = {
+      if (Engine.logging) { println(s"Failed: d"); e.printStackTrace() }
+      notifier.fireTestFailure(new Failure(d, e))
     }
-    if (Engine.logging) println("Done")
-  }
 
-  def runRequirement[Params, BFn, R, RFn](notifier: RunNotifier, e: Option[EngineFromTests[Params, BFn, R, RFn]], r: Requirement) {
-    var description = reportableToDescription.get(r)
-    if (Engine.logging) println(description)
-    if (exceptionMap.contains(r)) {
-      if (Engine.logging) println("          <<<<<<< Exception for " + r)
-      notifier.fireTestStarted(description)
-      exceptionMap(r) match {
-        case e :: Nil =>
-          notifier.fireTestFailure(new Failure(description, e))
-        case listE =>
-          notifier.fireTestFailure(new Failure(description, MultipleScenarioExceptions(listE)))
-      }
-    } else
-      r match {
-        case holder: BuilderNodeHolder[R, RFn] => {
-          try {
-            if (Engine.logging) println("          <<<<<<< Holder " + r)
-            notifier.fireTestStarted(description)
-            for (child <- holder.nodes)
-              runRequirement(notifier, newEngine(holder, e), child)
-            notifier.fireTestFinished(description)
-          } catch {
-            case e: Exception => notifier.fireTestFailure(new Failure(description, e))
-          }
-        }
-        case s: Scenario[Params, BFn, R, RFn] => {
-          notifier.fireTestStarted(description)
-          try {
-            val engine = e.getOrElse(throw new IllegalStateException)
-            val validator = engine.evaluator.validator
-            validator.checkCorrectValue(engine.evaluator, engine.tree, s)
-            notifier.fireTestFinished(description)
-          } catch {
-            case e: Exception =>
-              if (Engine.logging) println("          <<<<<<< Test Exception for " + r)
-              notifier.fireTestFailure(new Failure(description, e))
-          }
-        }
-      }
-  }
+    def runDescription(description: Description, middle: => Unit) {
+      if (Engine.logging) println(s"Starting: $description")
+      notifier.fireTestStarted(description);
+      try {
+        middle
+        notifier.fireTestFinished(description)
+        if (Engine.logging) println(s"Finishing: $description")
+      } catch { case e: Exception => fail(description, e) }
+    }
 
+    def runReportable(r: Requirement, middle: => Unit) = {
+      val description = reportableToDescription(r);
+      if (description == null) {
+        if (Engine.logging) println(s"No description found for $r")
+        throw new IllegalStateException(s"No description found for $r")
+      }
+      exceptionMap.get(r) match {
+        case Some(e :: Nil) => fail(description, e)
+        case Some(eList) => fail(description, MultipleScenarioExceptions(eList))
+        case _ => runDescription(description, middle)
+      }
+    }
+    def runReportableAndChildren[Params, BFn, R, RFn](r: Requirement, e: EngineFromTests[Params, BFn, R, RFn]): Unit =
+      runReportable(r, r match {
+        case holder: BuilderNodeHolder[R, RFn] => for (child <- holder.nodes) runReportableAndChildren(child, e)
+        case scenario: Scenario[Params, BFn, R, RFn] => import e._; evaluator.validator.checkCorrectValue(evaluator, tree, scenario)
+      })
+    def runEngine[Params, BFn, R, RFn, FullR](e: Engine[Params, BFn, R, RFn]): Unit = e match {
+      case f: FoldingEngine[Params, BFn, R, RFn, FullR] => runReportable(f.asRequirement, for (e <- f.engines) runEngine(e))
+      case e: EngineFromTests[Params, BFn, R, RFn] => runReportableAndChildren(e.asRequirement, e)
+    }
+    runDescription(getDescription, { for (e <- rootEngines) runEngine(e) })
+
+  }
 }
 
 class CddJunitRunner(val clazz: Class[_]) extends CddRunner {

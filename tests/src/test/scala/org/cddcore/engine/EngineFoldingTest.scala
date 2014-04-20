@@ -87,6 +87,26 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     assertEquals(List("A", "B", "C", "D").map(params(_)), e.scenarios.map(_.params))
   }
 
+  it should "have childEngines with requirements that are identical to the folding engine's requirements" in {
+    update(_.childEngine("ce1"))
+    scenario("A"); expected("1")
+    scenario("B"); expected("1")
+    update(_.childEngine("ce2"))
+    scenario("C"); expected("3")
+    scenario("D"); expected("3")
+    val f = build
+    val fs_ed = f.asRequirement.nodes
+    val es_ed = f.engines.map(_.asRequirement)
+    for ((f, e) <- fs_ed.zip(es_ed)) {
+      if (!f.eq(e))
+        if (f == e)
+          fail(s"Equal but not identical\nFrom folding: $f\nFrom child:  $e")
+        else
+          fail(s"\nFrom folding: $f\nFrom child:    $e")
+    }
+
+  }
+
   it should "have a buildExceptions that is the aggregate of the child engine's when executed in test mode" in {
     val e0 = new RuntimeException("e0");
     val e1 = new RuntimeException("e1");

@@ -43,7 +43,6 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario((0, 0)).expected("zero")
     val engine = builder.build
-    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0))
   }
 
@@ -55,7 +54,6 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario(0, 0).expected("zero")
     val engine = builder.build
-    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0))
   }
   "A Folding Engine3" should "be constructable from the Engine object" in {
@@ -66,7 +64,6 @@ class FewSmokeTest extends AbstractTest {
       childEngine("ce2").
       scenario(0, 0, 0).expected("zero")
     val engine = builder.build
-    assertEquals(builder.nodes.head, engine.asRequirement)
     assertEquals(List("love - all", "zero"), engine(0, 0, 0))
   }
 
