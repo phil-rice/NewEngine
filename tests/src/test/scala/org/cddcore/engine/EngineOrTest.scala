@@ -72,7 +72,7 @@ class EngineOrStringStringTest extends EngineOr1Test[String, String] with String
     "Scenario(ACD,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(y))),Set(),List(),List())\n" +
     "Parameters:\n" +
     "ACD\n" +
-    "------------------------------------------------------------------------------------\n" +
+    "\n------------------------------------------------------------------------------------\n" +
     "Scenarios that would be brokenScenario:\n" +
     "Scenario(A,None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(Result(x))),Set(),List(),List())\n" +
     "Parameters:\n" +
@@ -89,7 +89,7 @@ class EngineOrStringStringStringTest extends EngineOr2Test[String, String, Strin
     "Scenario((ACD,ACD),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(y)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "(ACD,ACD)\n" +
-    "------------------------------------------------------------------------------------\n" +
+    "\n------------------------------------------------------------------------------------\n" +
     "Scenarios that would be brokenScenario:\n" +
     "Scenario((A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(x)),Set(),List(),List())\n" +
     "Parameters:\n" +
@@ -106,7 +106,7 @@ class EngineOrLensStringStringStringStringTest extends EngineOr3Test[String, Str
     "Scenario((ACD,ACD,ACD),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(y)),Set(),List(),List())\n" +
     "Parameters:\n" +
     "(ACD,ACD,ACD)\n" +
-    "------------------------------------------------------------------------------------\n" +
+    "\n------------------------------------------------------------------------------------\n" +
     "Scenarios that would be brokenScenario:\n" +
     "Scenario((A,A,A),None,None,Some(CodeHolder(becauseA)),None,None,Some(Right(x)),Set(),List(),List())\n" +
     "Parameters:\n" +
