@@ -62,6 +62,7 @@ case class Builder3[P1, P2, P3, R, FullR](
   def copyNodes(nodes: List[BuilderNode[R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine3[P1, P2, P3, R, FullR] = nodes match {
     case (r: BuilderNodeAndHolder[R, (P1, P2, P3) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
+    case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) = wrap(copy(buildExceptions = buildExceptions))
 }

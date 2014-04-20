@@ -42,12 +42,15 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
       (b, b.nodes) match {
         case (ed: EngineDescription[R, RFn], _) => ed
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => engineDescriptionL.get(h)
+        case x => throw new IllegalArgumentException(x.toString)
       }
     },
     (enh: BuilderNodeHolder[R, RFn], n: EngineDescription[R, RFn]) => {
       (enh, enh.nodes) match {
         case (ed: EngineDescription[R, RFn], _) => n
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => enh.copyNodes(engineDescriptionL.set(h, n).asInstanceOf[BuilderNode[R, RFn]] :: tail)
+        case x => throw new IllegalArgumentException(x.toString)
+        
       }
     })
 
@@ -56,12 +59,14 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
       (b, b.nodes) match {
         case (ed: EngineDescription[R, RFn], _) => ed
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => nextUseCaseHolderForHoldersL.get(h)
+        case x => throw new IllegalArgumentException(x.toString)
       }
     },
     (enh: BuilderNodeHolder[R, RFn], n: BuilderNodeHolder[R, RFn]) => {
       (enh, enh.nodes) match {
         case (ed: EngineDescription[R, RFn], _) => n
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => enh.copyNodes(nextUseCaseHolderForHoldersL.set(h, n).asInstanceOf[BuilderNode[R, RFn]] :: tail)
+        case x => throw new IllegalArgumentException(x.toString)
       }
     })
 

@@ -63,7 +63,7 @@ trait BuilderNodeHolder[R, RFn] extends Traversable[BuilderNode[R, RFn]] with Re
     }
   }
 
-  def all[C <: Requirement](clazz: Class[C]) = this.collect { case c: C if (clazz.isAssignableFrom(c.getClass())) => c }
+  def all[C <: Requirement](clazz: Class[C]) = this.collect { case c: Any if (clazz.isAssignableFrom(c.getClass())) => c.asInstanceOf[C] }
 
   val paths = new Traversable[List[Reportable]] {
     def foreach[U](f: List[Reportable] => U): Unit = foreachPrim(f, List[Reportable](BuilderNodeHolder.this))
@@ -100,8 +100,8 @@ case class EngineDescription[R, RFn](
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case ed: EngineDescription[R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, ed)
-      case _ => false
-}
+    case _ => false
+  }
   override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")})"
 }
 
@@ -153,8 +153,8 @@ case class Scenario[Params, BFn, R, RFn](
   override def equals(other: Any) = other match {
     case s: Scenario[Params, BFn, R, RFn] => Requirement.areBuilderNodeFieldsEquals(this, s) &&
       (s.params == params) && (s.because == because) && (s.assertions == assertions) && (s.configurators == configurators) && (s.expected == expected)
-     case _ => false
- }
+    case _ => false
+  }
   override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators)"
 }
 
@@ -170,8 +170,8 @@ case class Document(
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case d: Document => Requirement.areRequirementFieldsEqual(this, d) && (url == d.url)
-      case _ => false
-}
+    case _ => false
+  }
 
 }
 

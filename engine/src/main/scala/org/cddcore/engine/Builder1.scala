@@ -4,6 +4,7 @@ import scala.language.implicitConversions
 import scala.reflect.macros.Context
 import scala.language.experimental.macros
 
+
 object Builder1 {
   def bl[P, R, FullR]() = new FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]]
 
@@ -50,6 +51,7 @@ case class Builder1[P, R, FullR](
   def copyNodes(nodes: List[BuilderNode[R, (P) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine1[P, R, FullR] = nodes match {
     case (r: BuilderNodeAndHolder[R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
+    case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) =
     wrap(copy(buildExceptions = buildExceptions))
