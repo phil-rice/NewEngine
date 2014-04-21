@@ -89,7 +89,8 @@ case class Engine1FromTests[P, R](
   asRequirement: BuilderNodeAndHolder[R, (P) => R],
   tree: DecisionTree[P, (P) => Boolean, R, (P) => R],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
-  buildExceptions: ExceptionMap)
+  buildExceptions: ExceptionMap,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine1[P, R, R] with EngineFromTests[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
   def apply(p: P) = applyParams(p)
 
@@ -100,7 +101,8 @@ case class FoldingEngine1[P, R, FullR](
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
-  foldingFn: (FullR, R) => FullR)
+  foldingFn: (FullR, R) => FullR,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }

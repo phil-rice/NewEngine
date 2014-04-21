@@ -1,16 +1,16 @@
 package org.cddcore.engine
 
 import scala.language.implicitConversions
+import org.cddcore.utilities.CodeHolder
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.cddcore.utilities.CodeHolder
 
 case class RequirementForTest(
   val title: Option[String] = None,
   val description: Option[String] = None,
   val priority: Option[Int] = None,
   val references: Set[Reference] = Set(),
-  val textOrder: Int = Requirement.count.getAndIncrement()) extends Requirement {
+  val textOrder: Int = Reportable.count.getAndIncrement()) extends Requirement {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new RequirementForTest(title, description, priority, references, textOrder)
 }
@@ -22,7 +22,7 @@ case class BuilderNodeForTest[R, RFn](
   val references: Set[Reference] = Set(),
   val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None,
-  val textOrder: Int = Requirement.count.getAndIncrement()) extends BuilderNode[R, RFn] {
+  val textOrder: Int = Reportable.count.getAndIncrement()) extends BuilderNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new BuilderNodeForTest(title, description, priority, references, expected, code)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -40,7 +40,7 @@ case class BuilderNodeAndHolderForTest[R, RFn](
   val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None,
   val nodes: List[BuilderNode[R, RFn]],
-  val textOrder: Int = 0) extends BuilderNodeAndHolder[R, RFn] {
+  val textOrder: Int = Reportable.count.getAndIncrement) extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new BuilderNodeAndHolderForTest(title, description, priority, references, expected, code, nodes, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -52,17 +52,20 @@ case class BuilderNodeAndHolderForTest[R, RFn](
 
 class RequirementTest
 
-@RunWith(classOf[JUnitRunner])
-class EngineHolderTest extends AbstractTest {
+trait SomeHoldersForTest {
   implicit def toSome[X](x: X) = Some(x)
+
   type EN = BuilderNodeForTest[String, (String) => String]
   type ENH = BuilderNodeAndHolderForTest[String, (String) => String]
   val en1: EN = BuilderNodeForTest(title = "1")
   val en2: EN = BuilderNodeForTest(title = "2")
   val holderEn1: ENH = BuilderNodeAndHolderForTest(nodes = List(en1))
   val holderEn12: ENH = BuilderNodeAndHolderForTest(nodes = List(en1, en2))
-  val holderHolderEn12: ENH = BuilderNodeAndHolderForTest(nodes = List[BuilderNode[String, (String) => String]](
-    BuilderNodeAndHolderForTest(nodes = List(en1, en2))))
+  val holderHolderEn12: ENH = BuilderNodeAndHolderForTest(nodes = List(holderEn12))
+}
+
+@RunWith(classOf[JUnitRunner])
+class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
 
   "An engine holder foreach  method" should "return all the engine nodes" in {
     assertEquals(List(en1), holderEn1.toList)
@@ -73,7 +76,8 @@ class EngineHolderTest extends AbstractTest {
     assertEquals(List(en1), holderEn1.all(classOf[EN]))
     assertEquals(List(en1), holderEn1.all(classOf[BuilderNode[String, (String) => String]]))
     assertEquals(List(en1, en2), holderEn12.all(classOf[EN]))
-    assertEquals(List(holderEn12, en1, en2), holderHolderEn12.all(classOf[BuilderNode[String, (String) => String]]))
+    val actual = holderHolderEn12.all(classOf[BuilderNode[String, (String) => String]])
+    assertEquals(List(holderEn12, en1, en2), actual)
     assertEquals(List(en1, en2), holderHolderEn12.all(classOf[EN]))
   }
 

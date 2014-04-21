@@ -63,7 +63,7 @@ case class Builder2[P1, P2, R, FullR](
   def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine2[P1, P2, R, FullR] = nodes match {
     case (r: BuilderNodeAndHolder[R, (P1, P2) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
-      case _ => throw new IllegalArgumentException(nodes.toString)
+    case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) = wrap(copy(buildExceptions = buildExceptions))
 }
@@ -98,7 +98,8 @@ case class Engine2FromTests[P1, P2, R](
   asRequirement: BuilderNodeAndHolder[R, (P1, P2) => R],
   tree: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   evaluator: EvaluateTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
-  buildExceptions: ExceptionMap)
+  buildExceptions: ExceptionMap,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine2[P1, P2, R, R] with EngineFromTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, R] {
   def apply(p1: P1, p2: P2) = applyParams((p1, p2))
 }
@@ -109,7 +110,8 @@ case class FoldingEngine2[P1, P2, R, FullR](
   evaluator: EvaluateTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
-  foldingFn: (FullR, R) => FullR)
+  foldingFn: (FullR, R) => FullR,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine2[P1, P2, R, FullR] with FoldingEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR] {
   def apply(p1: P1, p2: P2) = applyParams(p1, p2)
 }

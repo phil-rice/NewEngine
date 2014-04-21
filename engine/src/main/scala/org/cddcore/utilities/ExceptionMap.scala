@@ -14,7 +14,7 @@ trait KeyLike[-T] {
   def apply(t: T): Int
 }
 object KeyLike {
-  implicit object RequirementLike extends KeyLike[Requirement] { def apply(r: Requirement): Int = r.textOrder }
+  implicit object ReportableLike extends KeyLike[Reportable] { def apply(r: Reportable): Int = r.textOrder }
 }
 
 class KeyedMap[V](val map: Map[Int, V] = Map[Int, V]()) {

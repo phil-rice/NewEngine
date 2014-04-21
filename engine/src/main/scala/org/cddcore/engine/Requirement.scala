@@ -5,9 +5,14 @@ import org.cddcore.utilities.Maps
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.utilities.NestedHolder
 trait Reportable {
+  val textOrder: Int
+}
+trait ReportableWithTemplate extends Reportable {
+  val template: String
 }
 
 object Reportable {
+  final val count = new AtomicInteger(0)
   def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
     (left, right) match {
       case (Left(le), Left(re)) => le.getClass() == re.getClass()
@@ -17,7 +22,6 @@ object Reportable {
   }
 }
 object Requirement {
-  final val count = new AtomicInteger(0)
   def areRequirementFieldsEqual(r1: Requirement, r2: Requirement) = {
     r1.title == r2.title &&
       r1.description == r2.description &&
@@ -34,7 +38,6 @@ object Requirement {
 }
 
 trait Requirement extends Reportable {
-  val textOrder: Int
   def title: Option[String]
   def description: Option[String]
   def priority: Option[Int]
@@ -54,7 +57,7 @@ trait BuilderNode[R, RFn] extends Requirement {
     code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn]
 }
 
-trait BuilderNodeHolder[R, RFn] extends NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]] 
+trait BuilderNodeHolder[R, RFn] extends NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]]
 
 trait FoldingBuilderNodeAndHolder[R, RFn, FullR] extends BuilderNodeAndHolder[R, RFn] {
   def foldingFn: (FullR, R) => FullR
@@ -62,6 +65,7 @@ trait FoldingBuilderNodeAndHolder[R, RFn, FullR] extends BuilderNodeAndHolder[R,
 }
 
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
+
 
 case class FoldingEngineDescription[R, RFn, FullR](
   val title: Option[String] = None,
@@ -73,7 +77,7 @@ case class FoldingEngineDescription[R, RFn, FullR](
   val references: Set[Reference] = Set(),
   val foldingFn: (FullR, R) => FullR,
   val initialValue: CodeHolder[() => FullR],
-  val textOrder: Int = Requirement.count.getAndIncrement)
+  val textOrder: Int = Reportable.count.getAndIncrement)
   extends BuilderNodeAndHolder[R, RFn] with FoldingBuilderNodeAndHolder[R, RFn, FullR] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new FoldingEngineDescription[R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
@@ -89,7 +93,6 @@ case class FoldingEngineDescription[R, RFn, FullR](
       (initialValue == fe.initialValue)
     case _ => false
   }
-
 }
 case class EngineDescription[R, RFn](
   val title: Option[String] = None,
@@ -99,7 +102,7 @@ case class EngineDescription[R, RFn](
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
-  val textOrder: Int = Requirement.count.getAndIncrement())
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineDescription[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
@@ -123,7 +126,7 @@ case class UseCase[R, RFn](
   val nodes: List[BuilderNode[R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
-  val textOrder: Int = Requirement.count.getAndIncrement()) extends BuilderNodeAndHolder[R, RFn] {
+  val textOrder: Int = Reportable.count.getAndIncrement()) extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new UseCase[R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -149,7 +152,7 @@ case class Scenario[Params, BFn, R, RFn](
   val references: Set[Reference] = Set(),
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
   val configurators: List[(Params) => Unit] = List(),
-  val textOrder: Int = Requirement.count.getAndIncrement()) extends BuilderNode[R, RFn] {
+  val textOrder: Int = Reportable.count.getAndIncrement()) extends BuilderNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -174,7 +177,7 @@ case class Document(
   val priority: Option[Int] = None,
   val url: Option[String] = None,
   val references: Set[Reference] = Set(),
-  val textOrder: Int = Requirement.count.getAndIncrement()) extends Requirement {
+  val textOrder: Int = Reportable.count.getAndIncrement()) extends Requirement {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Document(title, description, priority, url, references)
   override def hashCode = (title.hashCode() + description.hashCode()) / 2

@@ -102,7 +102,8 @@ case class Engine3FromTests[P1, P2, P3, R](
   asRequirement: BuilderNodeAndHolder[R, (P1, P2, P3) => R],
   tree: DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   evaluator: EvaluateTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
-  buildExceptions: ExceptionMap)
+  buildExceptions: ExceptionMap,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine3[P1, P2, P3, R, R] with EngineFromTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)
 }
@@ -112,7 +113,8 @@ case class FoldingEngine3[P1, P2, P3, R, FullR](
   evaluator: EvaluateTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
-  foldingFn: (FullR, R) => FullR)
+  foldingFn: (FullR, R) => FullR,
+  val textOrder: Int = Reportable.count.getAndIncrement())
   extends Engine3[P1, P2, P3, R, FullR]
   with FoldingEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR] with Function3[P1, P2, P3, FullR] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)

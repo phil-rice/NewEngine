@@ -8,6 +8,14 @@ import org.cddcore.engine.builder._
 import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.utilities.ExceptionMap
 
+object TemplateLike {
+  implicit object ReportableTemplateLike extends TemplateLike[Reportable] { def apply(r: Reportable) = r.getClass().getSimpleName }
+  implicit object ReportableWithTemplateLike extends TemplateLike[ReportableWithTemplate] { def apply(r: ReportableWithTemplate) = r.template }
+}
+trait TemplateLike[T] {
+  def apply(t: T): String
+}
+
 trait Engine[Params, BFn, R, RFn] extends Reportable {
   def asRequirement: BuilderNodeAndHolder[R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
