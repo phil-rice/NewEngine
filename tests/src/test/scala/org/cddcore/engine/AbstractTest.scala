@@ -80,7 +80,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def configurate(cfg: (Params) => Unit) = builder = configuratorPrim(cfg)
   def code(seed: ResultSeed) = update(_.codeHolder(resultCodeHolder(seed)))
   def currentBuilder: B = builder
-  def initializeBuilder(nodes: List[BuilderNode[R, RFn]] = List(new EngineDescription[R, RFn])): B
+  def initializeBuilder(nodes: List[BuilderNode[R, RFn]] = List(new EngineDescription[Params,BFn,R, RFn])): B
   protected def scenarioImpl(params: Params, title: String): B
   protected def becauseImpl(seed: Seed): B
   protected def becauseExceptionImpl(e: Exception): B

@@ -10,7 +10,7 @@ case class RequirementForTest(
   val description: Option[String] = None,
   val priority: Option[Int] = None,
   val references: Set[Reference] = Set(),
-  val textOrder: Int = Reportable.count.getAndIncrement()) extends Requirement {
+  val textOrder: Int = Reportable.nextTextOrder) extends Requirement {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new RequirementForTest(title, description, priority, references, textOrder)
 }
@@ -22,7 +22,7 @@ case class BuilderNodeForTest[R, RFn](
   val references: Set[Reference] = Set(),
   val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None,
-  val textOrder: Int = Reportable.count.getAndIncrement()) extends BuilderNode[R, RFn] {
+  val textOrder: Int = Reportable.nextTextOrder) extends BuilderNode[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new BuilderNodeForTest(title, description, priority, references, expected, code)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =
@@ -40,7 +40,7 @@ case class BuilderNodeAndHolderForTest[R, RFn](
   val expected: Option[Either[Exception, R]] = None,
   val code: Option[CodeHolder[RFn]] = None,
   val nodes: List[BuilderNode[R, RFn]],
-  val textOrder: Int = Reportable.count.getAndIncrement) extends BuilderNodeAndHolder[R, RFn] {
+  val textOrder: Int = Reportable.nextTextOrder) extends BuilderNodeAndHolder[R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new BuilderNodeAndHolderForTest(title, description, priority, references, expected, code, nodes, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[R, RFn] =

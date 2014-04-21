@@ -41,7 +41,7 @@ class ExceptionMap(val map: Map[Int, List[Exception]] = Map()) {
   override def hashCode() = map.hashCode
   override def equals(other: Any) = other match { case e: ExceptionMap => e.map == map; case _ => false }
 
-  def toMap[T, N <: NestedHolder[T, N]](holder: N)(implicit conv: KeyLike[T]): Map[T, List[Exception]] = {
+  def toMap[T](holder: NestedHolder[T])(implicit conv: KeyLike[T]): Map[T, List[Exception]] = {
     val keyToT = holder.foldLeft(Map[Int, T]())((acc, t) => acc + (conv(t) -> t))
     map.map((kv) => kv match { case (to, le) => keyToT(to) -> le }).foldLeft(Map[T, List[Exception]]()) { _ + _ }
   }

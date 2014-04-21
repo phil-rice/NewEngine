@@ -55,7 +55,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
 
   it should "allow use cases to be specified with a title and a description " in {
     update(_.useCase("title1", "description"))
-    assertEquals(EngineDescription[R, RFn](nodes = List(UseCase[R, RFn](
+    assertEquals(EngineDescription[Params,BFn,R, RFn](nodes = List(UseCase[R, RFn](
       title = Some("title1"),
       description = Some("description")))), currentBuilder.nodes.head)
   }

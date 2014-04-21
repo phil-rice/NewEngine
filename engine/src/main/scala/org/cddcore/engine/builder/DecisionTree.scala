@@ -4,6 +4,7 @@ import scala.language.implicitConversions
 import org.cddcore.utilities.Lens
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.engine._
+import org.cddcore.utilities.NestedHolder
 
 class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Params, BFn, R, RFn]) => DecisionTree[Params, BFn, R, RFn] = (root: DecisionTreeNode[Params, BFn, R, RFn]) => new SimpleDecisionTree(root, false)) {
   val rootL = Lens[DecisionTree[Params, BFn, R, RFn], DecisionTreeNode[Params, BFn, R, RFn]](
@@ -35,24 +36,39 @@ class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Param
     Some("noL"))
 }
 
-trait DecisionTree[Params, BFn, R, RFn] {
+trait DecisionTree[Params, BFn, R, RFn] extends NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] {
   def root: DecisionTreeNode[Params, BFn, R, RFn]
   def rootIsDefault: Boolean
+  def nodes = List(root)
 
 }
 
 case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params, BFn, R, RFn], val rootIsDefault: Boolean = true) extends DecisionTree[Params, BFn, R, RFn]
 
-sealed trait DecisionTreeNode[Params, BFn, R, RFn] {
+sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]
 }
 
-case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]]) extends DecisionTreeNode[Params, BFn, R, RFn]
+case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] {
+  override def hashCode = textOrder
+  override def equals(other: Any) = other match {
+    case c: Conclusion[Params, BFn, R, RFn] => c.code == code && c.scenarios == scenarios
+    case _ => false
+  }
 
-case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn]) extends DecisionTreeNode[Params, BFn, R, RFn] {
+}
+
+case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn], textOrder: Int = Reportable.nextTextOrder)
+  extends DecisionTreeNode[Params, BFn, R, RFn] with NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] {
   def scenarios = yes.scenarios ++ no.scenarios
   def isTrue(bc: (BFn) => Boolean) = because.foldLeft(false)((acc, ch) => acc || bc(ch.fn))
   def prettyString = because.map(_.pretty).mkString(" or ")
+  def nodes = List(yes, no)
+  override lazy val hashCode = (because.hashCode + yes.hashCode() + no.hashCode()) / 3
+  override def equals(other: Any) = other match {
+    case d: Decision[Params, BFn, R, RFn] => d.because == because && d.yes == yes && d.no == no
+    case _ => false
+  }
 }
 
 trait MakeClosures[Params, BFn, R, RFn] {

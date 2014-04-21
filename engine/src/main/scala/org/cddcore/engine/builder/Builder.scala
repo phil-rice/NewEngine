@@ -16,7 +16,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
-  import bl._ 
+  import bl._
 
   protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B, E]): B = try {
     stuff.asInstanceOf[B]
@@ -49,13 +49,13 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
   def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
-    mod(this.asInstanceOf[B], ((n) => new EngineDescription[R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
+    mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params,BFn,R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
 }
 
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   type S = Scenario[Params, BFn, R, RFn]
   type MC = MakeClosures[Params, BFn, R, RFn]
-  def checkDuplicateScenario[FullR, B <: BuilderNodeHolder[R, RFn]](lens: BuilderLens[R, RFn, FullR, B], rootRequirement: BuilderNodeHolder[R, RFn], s: S) = {
+  def checkDuplicateScenario[FullR, B <: BuilderNodeHolder[R, RFn]](lens: BuilderLens[Params, BFn, R, RFn, FullR, B], rootRequirement: BuilderNodeHolder[R, RFn], s: S) = {
     val scenarios = lens.engineDescriptionL.get(rootRequirement).all(classOf[Scenario[Params, BFn, R, RFn]]).toList;
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
     s
@@ -110,7 +110,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
 class SimpleBuilderWithModifyChildrenForBuild[R, RFn] extends BuilderWithModifyChildrenForBuild[R, RFn]
 
 trait BuilderWithModifyChildrenForBuild[R, RFn] {
-  def modifyChildrenForBuild(requirement: BuilderNodeAndHolder[R, RFn]): BuilderNodeAndHolder[R, RFn] = {
+  def modifyChildrenForBuild[ED <: BuilderNodeAndHolder[R, RFn]](requirement: ED): ED = {
     def modifyChildAsNode(path: List[Reportable], child: BuilderNode[R, RFn]) = {
       child
     }
@@ -134,6 +134,6 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] {
     }
     def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
       holder.nodes.map((x) => modifyChild(x :: path)).sortBy(_.textOrder)
-    modifyChild(List(requirement)).asInstanceOf[BuilderNodeAndHolder[R, RFn]]
+    modifyChild(List(requirement)).asInstanceOf[ED]
   }
 }

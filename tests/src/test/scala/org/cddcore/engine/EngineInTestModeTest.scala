@@ -15,9 +15,9 @@ abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BF
       doIt
       build
     }
-    val s = e.scenarios
-    val n : NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]] = e.asRequirement.asInstanceOf[BuilderNodeHolder[R, RFn]]
-    val exceptions = e.buildExceptions.toMap[BuilderNode[R, RFn],NestedHolder[BuilderNode[R, RFn], BuilderNodeHolder[R, RFn]]](n)
+    val s = e.asRequirement.scenarios
+    val n : NestedHolder[BuilderNode[R, RFn]] = e.asRequirement.asInstanceOf[BuilderNodeHolder[R, RFn]]
+    val exceptions = e.buildExceptions.toMap[BuilderNode[R, RFn]](n)
     assertEquals(messages.size, exceptions.size)
     for ((s, list) <- messages) {
       val actual = exceptions(s)

@@ -39,7 +39,7 @@ object Builder3 {
   }
 }
 case class Builder3[P1, P2, P3, R, FullR](
-  nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[R, (P1, P2, P3) => R]),
+  nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]),
   buildExceptions: ExceptionMap = ExceptionMap(),
   buildEngine: BuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R, FullR]] {
@@ -62,7 +62,7 @@ case class Builder3[P1, P2, P3, R, FullR](
 
   def copyNodes(nodes: List[BuilderNode[R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine3[P1, P2, P3, R, FullR] = nodes match {
-    case (r: BuilderNodeAndHolder[R, (P1, P2, P3) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
+    case (r: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
     case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) = wrap(copy(buildExceptions = buildExceptions))
@@ -82,7 +82,7 @@ class MakeClosures3[P1, P2, P3, R] extends MakeClosures[(P1, P2, P3), (P1, P2, P
 class FoldingBuildEngine3[P1, P2, P3, R, FullR] extends SimpleFoldingBuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R, R]](
   BuildEngine.defaultRoot(BuildEngine.defaultRootCode3), new MakeClosures3, BuildEngine.expectedToCode3, BuildEngine.builderEngine3[P1, P2, P3, R]) {
   def constructFoldingEngine(
-    requirement: BuilderNodeAndHolder[R, (P1, P2, P3) => R],
+    requirement: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
     engines: List[EngineFromTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]],
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
@@ -91,7 +91,7 @@ class FoldingBuildEngine3[P1, P2, P3, R, FullR] extends SimpleFoldingBuildEngine
 }
 case class SimpleBuildEngine3[P1, P2, P3, R] extends SimpleBuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, Engine3[P1, P2, P3, R, R]](
   BuildEngine.defaultRoot(BuildEngine.defaultRootCode3), new MakeClosures3, BuildEngine.expectedToCode3) {
-  def constructEngine(requirement: BuilderNodeAndHolder[R, (P1, P2, P3) => R], dt: DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
+  def constructEngine(requirement: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R], dt: DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
     exceptionMap: ExceptionMap) =
     Engine3FromTests(requirement, dt, evaluateTree, exceptionMap)
 }
@@ -99,22 +99,22 @@ case class SimpleBuildEngine3[P1, P2, P3, R] extends SimpleBuildEngine[(P1, P2, 
 trait Engine3[P1, P2, P3, R, FullR] extends Engine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] with Function3[P1, P2, P3, FullR]
 
 case class Engine3FromTests[P1, P2, P3, R](
-  asRequirement: BuilderNodeAndHolder[R, (P1, P2, P3) => R],
+  asRequirement: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   tree: DecisionTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   evaluator: EvaluateTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   buildExceptions: ExceptionMap,
-  val textOrder: Int = Reportable.count.getAndIncrement())
+  val textOrder: Int = Reportable.nextTextOrder)
   extends Engine3[P1, P2, P3, R, R] with EngineFromTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)
 }
 case class FoldingEngine3[P1, P2, P3, R, FullR](
-  asRequirement: BuilderNodeAndHolder[R, (P1, P2, P3) => R],
+  asRequirement: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   engines: List[EngineFromTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]],
   evaluator: EvaluateTree[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
   foldingFn: (FullR, R) => FullR,
-  val textOrder: Int = Reportable.count.getAndIncrement())
+  val textOrder: Int = Reportable.nextTextOrder)
   extends Engine3[P1, P2, P3, R, FullR]
   with FoldingEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR] with Function3[P1, P2, P3, FullR] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)

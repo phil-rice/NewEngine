@@ -13,7 +13,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
   "Scenarios when modifiedForBuild" should "inherit priority from parent if not defined" in {
     update(_.priority(2).useCase("UC").priority(1))
     scenario("A")
-    assertEquals(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(s("A", priority = 1))))),
       modifiedChildrenForBuild)
   }
@@ -21,7 +21,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     update(_.priority(2).useCase("UC").priority(1))
     scenario("A")
     update(_.priority(3))
-    assertEquals(EngineDescription[R, RFn](priority = 2, nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](priority = 2, nodes = List(
       UseCase(title = "UC", priority = 1, nodes = List(
         s("A", priority = 3))))),
       modifiedChildrenForBuild)
@@ -29,7 +29,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
   it should "inherit expected from parent if not defined" in {
     update(_.expected(result("X")).useCase("UC").expected(result("Y")))
     scenario("A")
-    assertEquals(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(s("A", expected = "Y"))))),
       modifiedChildrenForBuild)
   }
@@ -38,7 +38,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     update(_.expected(result("X")).useCase("UC").expected(result("Y")))
     scenario("A")
     update(_.expected(result("Z")))
-    assertEquals(EngineDescription[R, RFn](expected = Right(result("X")), nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](expected = Right(result("X")), nodes = List(
       UseCase(title = "UC", expected = Right(result("Y")), nodes = List(
         s("A", expected = "Z"))))),
       modifiedChildrenForBuild)
@@ -49,7 +49,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     code("Y")
     scenario("A")
 
-    assertEquals(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Y")))))),
       modifiedChildrenForBuild)
@@ -62,7 +62,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     scenario("A")
     code("Z")
 
-    assertEquals(EngineDescription[R, RFn](code = resultCodeHolder("X"), nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](code = resultCodeHolder("X"), nodes = List(
       UseCase(title = "UC", code = resultCodeHolder("Y"), nodes = List(
         s("A", code = resultCodeHolder("Z")))))),
       modifiedChildrenForBuild)
@@ -70,7 +70,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
 
   it should "sort children by text order"  in {
     update(_.useCase("UC1").priority(1).useCase("UC2").priority(2).useCase("UC3").useCase("UC4"))
-    assertEquals(EngineDescription[R, RFn](nodes = List(
+    assertEquals(EngineDescription[Params,BFn,R, RFn](nodes = List(
       UseCase(title = "UC1", priority = 1),
       UseCase(title = "UC2", priority = 2),
       UseCase(title = "UC3"),
@@ -84,7 +84,7 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     scenario("A")
     val e = build
     val actual = e.asRequirement
-    val expect = EngineDescription[R, RFn]( priority = 2, nodes = List(UseCase(title = "UC", priority = 1, expected = Right(result("X")),
+    val expect = EngineDescription[Params,BFn,R, RFn]( priority = 2, nodes = List(UseCase(title = "UC", priority = 1, expected = Right(result("X")),
       nodes = List(s("A", priority = 1, expected = "X")))))
     assertEquals(expect, actual)
   }

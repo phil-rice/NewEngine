@@ -9,8 +9,8 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] with FoldingBuilderTest[R, FullR] {
   implicit def toSome[X](x: X) = Some(x)
   implicit def toFoldingEngine(e: Engine[Params, BFn, R, RFn]) = e.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, FullR]]
-  type FD = FoldingEngineDescription[R, RFn, FullR]
-  type ED = EngineDescription[R, RFn]
+  type FD = FoldingEngineDescription[Params, BFn, R, RFn, FullR]
+  type ED = EngineDescription[Params, BFn, R, RFn]
   implicit def toFullR(seed: String): FullR
   implicit def toR(seed: String): R = result(seed)
 
@@ -32,12 +32,12 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     update(_.childEngine("ce2").useCase("uc21").useCase("uc22"))
     update(_.childEngine("ce3").useCase("uc31").useCase("uc32"))
 
-    val ce1 = EngineDescription[R, RFn](title = "ce1", nodes = List(UseCase(title = "uc12"), UseCase(title = "uc11")))
-    val ce2 = EngineDescription[R, RFn](title = "ce2", nodes = List(UseCase(title = "uc22"), UseCase(title = "uc21")))
-    val ce3 = EngineDescription[R, RFn](title = "ce3", nodes = List(UseCase(title = "uc32"), UseCase(title = "uc31")))
-    val fe = FoldingEngineDescription[R, RFn, FullR](nodes = List(ce3, ce2, ce1), foldingFn = foldingFn, initialValue = () => initialValue)
-    val actualFr = currentBuilder.nodes.head.asInstanceOf[FoldingEngineDescription[R, RFn, FullR]]
-    val actualCe3 = actualFr.nodes.head.asInstanceOf[EngineDescription[R, RFn]]
+    val ce1 = EngineDescription[Params, BFn, R, RFn](title = "ce1", nodes = List(UseCase(title = "uc12"), UseCase(title = "uc11")))
+    val ce2 = EngineDescription[Params, BFn, R, RFn](title = "ce2", nodes = List(UseCase(title = "uc22"), UseCase(title = "uc21")))
+    val ce3 = EngineDescription[Params, BFn, R, RFn](title = "ce3", nodes = List(UseCase(title = "uc32"), UseCase(title = "uc31")))
+    val fe = FoldingEngineDescription[Params, BFn, R, RFn, FullR](nodes = List(ce3, ce2, ce1), foldingFn = foldingFn, initialValue = () => initialValue)
+    val actualFr = currentBuilder.nodes.head.asInstanceOf[FoldingEngineDescription[Params, BFn, R, RFn, FullR]]
+    val actualCe3 = actualFr.nodes.head.asInstanceOf[EngineDescription[Params, BFn, R, RFn]]
     val actualUC32 = actualCe3.nodes.head
     val withDifferentFoldingStuff = actualFr.copy(foldingFn = fe.foldingFn, initialValue = fe.initialValue)
     assertEquals(UseCase[R, RFn](title = "uc32"), actualUC32)
@@ -84,7 +84,7 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     scenario("C"); expected("3")
     scenario("D"); expected("3")
     val e = build
-    assertEquals(List("A", "B", "C", "D").map(params(_)), e.scenarios.map(_.params))
+    assertEquals(List("A", "B", "C", "D").map(params(_)), e.asRequirement.scenarios.map(_.params))
   }
 
   it should "have childEngines with requirements that are identical to the folding engine's requirements" in {
@@ -124,8 +124,8 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     }
 
     val exceptionMap = e.buildExceptions
-    val sa = e.scenarios(0)
-    val sb = e.scenarios(1)
+    val sa = e.asRequirement.scenarios(0)
+    val sb = e.asRequirement.scenarios(1)
     assertEquals(params("A"), sa.params)
     val mapToListOfClasses = exceptionMap.map.mapValues((listE) => listE.map(_.getClass))
     val mapToListOfExceptions = exceptionMap.map.mapValues((listE) => listE.map(_.getCause))

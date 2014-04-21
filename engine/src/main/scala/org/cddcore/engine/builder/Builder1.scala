@@ -3,7 +3,7 @@ package org.cddcore.engine.builder
 import scala.reflect.macros.Context
 import org.cddcore.engine._
 import org.cddcore.utilities._
- import scala.language.experimental.macros
+import scala.language.experimental.macros
 
 object Builder1 {
   def bl[P, R, FullR]() = new FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]]
@@ -28,7 +28,7 @@ object Builder1 {
   }
 }
 case class Builder1[P, R, FullR](
-  nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[R, (P) => R]),
+  nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[P, (P) => Boolean, R, (P) => R]),
   buildExceptions: ExceptionMap = new ExceptionMap(),
   buildEngine: BuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
 
@@ -50,7 +50,7 @@ case class Builder1[P, R, FullR](
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[BuilderNode[R, (P) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine1[P, R, FullR] = nodes match {
-    case (r: BuilderNodeAndHolder[R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
+    case (r: EngineAsRequirement[P, (P) => Boolean, R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
     case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) =
@@ -66,7 +66,7 @@ class MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
 case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean, R, (P) => R, Engine1[P, R, R]](
   BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
   def constructEngine(
-    requirement: BuilderNodeAndHolder[R, (P) => R],
+    requirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],
     dt: DecisionTree[P, (P) => Boolean, R, (P) => R],
     exceptionMap: ExceptionMap): Engine1[P, R, R] =
     Engine1FromTests(requirement, dt, evaluateTree, exceptionMap)
@@ -76,7 +76,7 @@ class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) =
   BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
 
   def constructFoldingEngine(
-    requirement: BuilderNodeAndHolder[R, (P) => R],
+    requirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],
     engines: List[EngineFromTests[P, (P) => Boolean, R, (P) => R]],
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
@@ -86,23 +86,23 @@ class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) =
 trait Engine1[P, R, FullR] extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
 
 case class Engine1FromTests[P, R](
-  asRequirement: BuilderNodeAndHolder[R, (P) => R],
+  asRequirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],
   tree: DecisionTree[P, (P) => Boolean, R, (P) => R],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   buildExceptions: ExceptionMap,
-  val textOrder: Int = Reportable.count.getAndIncrement())
+  val textOrder: Int = Reportable.nextTextOrder)
   extends Engine1[P, R, R] with EngineFromTests[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
   def apply(p: P) = applyParams(p)
 
 }
 case class FoldingEngine1[P, R, FullR](
-  asRequirement: BuilderNodeAndHolder[R, (P) => R],
+  asRequirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],
   engines: List[EngineFromTests[P, (P) => Boolean, R, (P) => R]],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
   foldingFn: (FullR, R) => FullR,
-  val textOrder: Int = Reportable.count.getAndIncrement())
+  val textOrder: Int = Reportable.nextTextOrder)
   extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }

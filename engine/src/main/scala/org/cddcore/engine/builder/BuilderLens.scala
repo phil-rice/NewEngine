@@ -5,7 +5,7 @@ import org.cddcore.engine._
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.utilities.ExceptionMap
 
-class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
+class BuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
 
   def builderToCanCopyWithNewExceptionMapL = Lens[B, CanCopyWithNewExceptionMap[R, RFn]](
     (b) => b.asInstanceOf[CanCopyWithNewExceptionMap[R, RFn]],
@@ -42,34 +42,34 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     (b) => nextUseCaseHolderForHoldersL.get(b),
     (b, n) => nextUseCaseHolderForHoldersL.set(b, n).asInstanceOf[B])
 
-  val engineDescriptionL: Lens[BuilderNodeHolder[R, RFn], EngineDescription[R, RFn]] = Lens[BuilderNodeHolder[R, RFn], EngineDescription[R, RFn]](
+  val engineDescriptionL: Lens[BuilderNodeHolder[R, RFn], EngineDescription[Params, BFn, R, RFn]] = Lens[BuilderNodeHolder[R, RFn], EngineDescription[Params, BFn, R, RFn]](
     (b: BuilderNodeHolder[R, RFn]) => {
       (b, b.nodes) match {
-        case (ed: EngineDescription[R, RFn], _) => ed
+        case (ed: EngineDescription[Params, BFn, R, RFn], _) => ed
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => engineDescriptionL.get(h)
         case x => throw new IllegalArgumentException(x.toString)
       }
     },
-    (enh: BuilderNodeHolder[R, RFn], n: EngineDescription[R, RFn]) => {
+    (enh: BuilderNodeHolder[R, RFn], n: EngineDescription[Params, BFn, R, RFn]) => {
       (enh, enh.nodes) match {
-        case (ed: EngineDescription[R, RFn], _) => n
+        case (ed: EngineDescription[Params, BFn, R, RFn], _) => n
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => enh.copyNodes(engineDescriptionL.set(h, n).asInstanceOf[BuilderNode[R, RFn]] :: tail)
         case x => throw new IllegalArgumentException(x.toString)
-        
+
       }
     })
 
   protected val nextUseCaseHolderForHoldersL: Lens[BuilderNodeHolder[R, RFn], BuilderNodeHolder[R, RFn]] = Lens[BuilderNodeHolder[R, RFn], BuilderNodeHolder[R, RFn]](
     (b: BuilderNodeHolder[R, RFn]) => {
       (b, b.nodes) match {
-        case (ed: EngineDescription[R, RFn], _) => ed
+        case (ed: EngineDescription[Params, BFn, R, RFn], _) => ed
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => nextUseCaseHolderForHoldersL.get(h)
         case x => throw new IllegalArgumentException(x.toString)
       }
     },
     (enh: BuilderNodeHolder[R, RFn], n: BuilderNodeHolder[R, RFn]) => {
       (enh, enh.nodes) match {
-        case (ed: EngineDescription[R, RFn], _) => n
+        case (ed: EngineDescription[Params, BFn, R, RFn], _) => n
         case (_, (h: BuilderNodeHolder[R, RFn]) :: tail) => enh.copyNodes(nextUseCaseHolderForHoldersL.set(h, n).asInstanceOf[BuilderNode[R, RFn]] :: tail)
         case x => throw new IllegalArgumentException(x.toString)
       }
@@ -131,20 +131,20 @@ class BuilderLens[R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     (old, v) => CannotDefineCodeTwiceException(old, v),
     Some("codeL"),
     Some(validate))
-  val toFoldingEngineDescription = Lens[B, FoldingEngineDescription[R, RFn, FullR]](
+  val toFoldingEngineDescription = Lens[B, FoldingEngineDescription[Params, BFn, R, RFn, FullR]](
     (b) => b.nodes.head match {
-      case f: FoldingEngineDescription[R, RFn, FullR] => f
+      case f: FoldingEngineDescription[Params, BFn,R, RFn, FullR] => f
       case _ => throw new CannotHaveChildEnginesWithoutFolderException
     },
     (b, n) => b.copyNodes(nodes = List(n)).asInstanceOf[B],
     Some("toFoldEngine"))
-  val foldEngineNodesL = Lens[FoldingEngineDescription[R, RFn, FullR], List[BuilderNode[R, RFn]]](
+  val foldEngineNodesL = Lens[FoldingEngineDescription[Params, BFn, R, RFn, FullR], List[BuilderNode[R, RFn]]](
     (b) => b.nodes,
     (b, n) => b.copyNodes(nodes = n),
     Some("nodesL"))
 }
 
-class FullBuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] extends BuilderLens[R, RFn, FullR, B] {
+class FullBuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] extends BuilderLens[Params, BFn, R, RFn, FullR, B] {
   type S = Scenario[Params, BFn, R, RFn]
   val toScenarioL = Lens[BuilderNode[R, RFn], S](
     (b) => b match { case s: S => s },

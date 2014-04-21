@@ -73,7 +73,7 @@ class FewSmokeTest extends AbstractTest {
       scenario(1).expected(1).code { _ + 0 }.priority(1).
       scenario(2).expected(2).
       build
-    assertEquals(List(0, 1, 2), engine.scenarios.map(_.params).toList)
+    assertEquals(List(0, 1, 2), engine.asRequirement.scenarios.map(_.params).toList)
   }
   it should "remember an exception in the because, even if a later exception is thrown" in {
     val engine = Engine.test {
@@ -82,7 +82,7 @@ class FewSmokeTest extends AbstractTest {
         scenario(1).because((x) => throw new RuntimeException).
         build
     }
-    val s1 = engine.scenarios(1)
+    val s1 = engine.asRequirement.scenarios(1)
     val actual = engine.buildExceptions.map.mapValues((list) => list.map(_.getClass()))
     assertEquals(Map(s1.textOrder -> List(
       classOf[NoExpectedException],

@@ -4,9 +4,9 @@ import org.cddcore.utilities._
 import org.cddcore.engine._
 
 object BuildEngine {
-  def initialNodes[R, RFn] = List(new EngineDescription[R, RFn]())
+  def initialNodes[Params, BFn, R, RFn] = List(new EngineDescription[Params, BFn, R, RFn]())
   def initialNodes[Params, BFn, R, RFn, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR) =
-    List(FoldingEngineDescription[R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = foldingFn))
+    List(FoldingEngineDescription[Params, BFn, R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = foldingFn))
 
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) = Conclusion[Params, BFn, R, RFn](code, List())
   def defaultRootCode1[P, R]: CodeHolder[(P) => R] = new CodeHolder((p: P) => throw new UndecidedException, "throws Undecided Exception")
@@ -51,10 +51,10 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(asRequirement: BuilderNodeAndHolder[R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap:ExceptionMap): E
-  def buildEngine(requirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap) = {
+  def constructEngine(asRequirement: EngineAsRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap): E
+  def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
     requirement match {
-      case ed: EngineDescription[R, RFn] =>
+      case ed: EngineAsRequirement[Params, BFn, R, RFn] =>
         val (dt, exceptionMap, modifiedRequirement) = buildTree(ed, buildExceptions)
         constructEngine(modifiedRequirement, dt, exceptionMap)
     }
@@ -77,9 +77,9 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
   val validator = evaluateTree.validator
   implicit def ldp: LoggerDisplayProcessor
 
-  def buildEngine(requirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap): E
+  def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap): E
 
-  protected def buildTree(asRequirement: BuilderNodeAndHolder[R, RFn], buildExceptions: ExceptionMap): (DT, ExceptionMap, BuilderNodeAndHolder[R, RFn]) = {
+  protected def buildTree[ED <: BuilderNodeAndHolder[R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)
     val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), x.textOrder)))
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
@@ -112,7 +112,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] 
     val actual = actualFromNewScenario(oldConclusion)
     val expected = scenario.expected.get
     val comesToSameConclusion = Reportable.compare(actual, expected)
-    def newConclusion = Conclusion(code = scenario.actualCode(expectedToCode), List(scenario))
+    def newConclusion = Conclusion(code = scenario.actualCode(expectedToCode), scenarios = List(scenario))
     def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => c.copy(scenarios = c.scenarios :+ scenario))
     def addOrRule = {
       val newConclusion = oldConclusion.copy(scenarios = oldConclusion.scenarios :+ scenario)
