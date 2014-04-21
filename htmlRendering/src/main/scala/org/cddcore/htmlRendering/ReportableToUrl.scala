@@ -91,8 +91,13 @@ trait ReportableToUrl {
   /** This walks down reports/projects/engines and also decision trees => decisions/conclusions. When it gets to an engine, it will then do a second tree of requirements*/
   def makeUrlMap(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap(), initialPath: List[Reportable] = List()): UrlMap = {
     val fromBasicReportables = r.pathsIncludingSelf(initialPath).foldLeft(urlMap)(add)
-    //    documentsIn(r).map(List(_, r)).foldLeft(fromBasicReportables)(add)
-    fromBasicReportables
+    val result = r.all(classOf[Requirement]).foldLeft(fromBasicReportables)((acc, ref) => ref.references.flatMap(_.document).foldLeft(acc)((acc, d) => {
+      r match {
+        case r: Reportable => add(acc, List(d, r))
+        case _ => add(acc, List(d))
+      }
+    }))
+    result
   }
 
   def makeUrlMapWithDecisionsAndConclusions(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap()): UrlMap = {
@@ -102,7 +107,7 @@ trait ReportableToUrl {
       path.head match {
         case f: FoldingEngine[Params, BFn, R, RFn, FullR] =>
           f.engines.foldLeft(urlMap)((acc, e) => add(acc, e :: path))
-        case e: EngineFromTests[Params, BFn, R, RFn] => 
+        case e: EngineFromTests[Params, BFn, R, RFn] =>
           e.tree.pathsFrom[Reportable](path).foldLeft(withU) { add(_, _) }
         case _ => urlMap
       }
