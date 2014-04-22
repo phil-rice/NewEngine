@@ -1,6 +1,7 @@
 package org.cddcore.htmlRendering
 
 import org.cddcore.utilities._
+
 import org.cddcore.engine._
 
 class SimpleReportableToUrl extends ReportableToUrl {
@@ -15,29 +16,35 @@ trait ReportableToUrl {
   def url(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): Option[String]
 
   protected def findAndAddToCacheIfNeed(r: Reportable)(implicit conv: TemplateLike[Reportable]): String = {
+    def newName = {
+      def makeNewName: String = {
+        val templateName = conv(r)
+        reqId += 1;
+        val default = templateName + reqId;
+        val result = Strings.urlClean(r match {
+          case report: Report => { val result = report.titleOrDescription(default); if (result.length > 120) default else result }
+          case project: Project => { val result = project.titleOrDescription(default); if (result.length > 120) default else result }
+          case req: Requirement => { val result = req.titleOrDescription(default); if (result.length > 40) default else result }
+          case _ => default;
+        }).replace(" ", "_")
+        result match {
+          case "" => default
+          case _ if seen.contains(result) => default
+          case _ => result
+        }
+      }
+      var result: String = null
+      do {
+        result = makeNewName
+      } while (seen.contains(result))
+      cache += (r -> result)
+      seen += result
+      result
+    }
     val existing = cache.get(r)
-    val templateName = conv(r)
     existing match {
       case Some(s) => s;
-      case _ => {
-        def makeNewName: String = {
-          reqId += 1; val default = templateName + reqId;
-          val result = Strings.urlClean(r match {
-            case report: Report => { val result = report.titleOrDescription(default); if (result.length > 120) default else result }
-            case project: Project => { val result = project.titleOrDescription(default); if (result.length > 120) default else result }
-            case req: Requirement => { val result = req.titleOrDescription(default); if (result.length > 40) default else result }
-            case _ => default;
-          }).replace(" ", "_")
-          if (seen.contains(result)) default else result
-        }
-        var result: String = null
-        do {
-          result = makeNewName
-        } while (seen.contains(result))
-        cache += (r -> result)
-        seen += result
-        result
-      }
+      case _ => newName
     }
   }
 
@@ -63,18 +70,21 @@ trait ReportableToUrl {
    *  there are any engines in the original path, they need to be added, then added as their requirements and all their child requirements added
    */
   protected def add[Params, BFn, R, RFn, FullR](urlMap: UrlMap, path: List[Reportable]): UrlMap = {
-    def justAdd(urlMap: UrlMap, path: List[Reportable]) = { val u = url(path); if (u.isDefined) urlMap + (path -> u.get) else urlMap }
-    def addEngine(urlMap: UrlMap, e: Engine[Params, BFn, R, RFn], tail: List[Reportable]) = { //the engine itself has already been added
-      val withEd = makeUrlMapForBuilderNodeHolder(e.asRequirement, urlMap, tail) // so this adds the ed and all children under the tail.  
-      e match {
-        case f: FoldingEngine[Params, BFn, R, RFn, FullR] =>
-          val withEnginesAndEd = f.engines.foldLeft(justAdd(withEd, f :: tail))((urlMap, e) => add(urlMap, e :: f :: tail))
+    def justAdd(urlMap: UrlMap, path: List[Reportable]): UrlMap = { val u = url(path); if (u.isDefined) urlMap + (path -> u.get) else urlMap }
+    def addEngine(urlMap: UrlMap, path: List[Reportable]): UrlMap = { //the engine itself has not been added at this point
+      path match {
+        case (f: FoldingEngine[Params, BFn, R, RFn, FullR]) :: tail =>
+          val withFoldingEngine = justAdd(urlMap, f :: tail)
+          val fed = f.asRequirement
+          val withfed = makeUrlMapForBuilderNodeHolder(fed, withFoldingEngine, tail) // so this adds the fed and all children under the tail.  
+          val withEnginesAndEd = f.engines.foldLeft(withfed)((urlMap, e) => justAdd(urlMap, e :: f :: tail))
           withEnginesAndEd
-        case e: Engine[Params, BFn, R, RFn] => withEd
+        case (e: Engine[Params, BFn, R, RFn]) :: tail => makeUrlMapForBuilderNodeHolder(e.asRequirement, urlMap, tail) // so this adds the ed and all children under the tail.
+        case _ => throw new IllegalStateException
       }
     }
     path match {
-      case (e: Engine[Params, BFn, R, RFn]) :: tail => addEngine(justAdd(urlMap, path), e, tail)
+      case (e: Engine[Params, BFn, R, RFn]) :: tail => addEngine(justAdd(urlMap, path), path)
       case _ => justAdd(urlMap, path)
     }
   }
@@ -100,19 +110,24 @@ trait ReportableToUrl {
     result
   }
 
-  def makeUrlMapWithDecisionsAndConclusions(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap()): UrlMap = {
-    def add[Params, BFn, R, RFn, FullR](urlMap: UrlMap, path: List[Reportable]): UrlMap = {
-      val u = url(path);
-      val withU = if (u.isDefined) urlMap + (path -> u.get) else urlMap
-      path.head match {
-        case f: FoldingEngine[Params, BFn, R, RFn, FullR] =>
-          f.engines.foldLeft(urlMap)((acc, e) => add(acc, e :: path))
-        case e: EngineFromTests[Params, BFn, R, RFn] =>
-          e.tree.pathsFrom[Reportable](path).foldLeft(withU) { add(_, _) }
-        case _ => urlMap
+  def makeUrlMapWithDecisionsAndConclusions(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap(), initialPath: List[Reportable] = List()): UrlMap = {
+    val afterMostStuff = makeUrlMap(r, urlMap, initialPath)
+    def addEngines[Params, BFn, R, RFn, FullR] = {
+      def addEngine(urlMap: UrlMap, e: EngineFromTests[Params, BFn, R, RFn], initialPath: List[Reportable]) = {
+        e.tree.pathsFrom(initialPath).foldLeft(urlMap)((acc, path) => {
+          add(acc, path)
+        })
       }
+      val result = r.pathsIncludingSelf(initialPath).foldLeft(afterMostStuff)((acc, path) => {
+        path match {
+          case (e: EngineFromTests[Params, BFn, R, RFn]) :: _ => addEngine(acc, e, path)
+          case (f: FoldingEngine[Params, BFn, R, RFn, FullR]) :: _ => f.engines.foldLeft(acc)((acc, e) => addEngine(acc, e, e :: path))
+          case _ => acc
+        }
+      })
+      result
     }
-    r.pathsIncludingSelf.foldLeft(urlMap) { add(_, _) }
+    addEngines
   }
 }
 

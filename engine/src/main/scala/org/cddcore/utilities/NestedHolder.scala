@@ -44,7 +44,7 @@ trait NestedHolder[T] extends Traversable[T] {
 
   def pathsIncludingSelf[X >: T](initialPath: List[X]) = new PathTraversable(initialPath) {
     def foreach[U](f: List[X] => U): Unit = {
-      val initialValue = List(NestedHolder.this.asInstanceOf[T])
+      val initialValue = NestedHolder.this.asInstanceOf[T] :: initialPath
       f(initialValue)
       foreachPrim[U](nodes, f, initialValue)
     }

@@ -10,8 +10,12 @@ import java.util.NoSuchElementException
 class UrlMapTest extends AbstractTest with SomeHoldersForTest {
 
   val emptyMap = new UrlMap()
+
+  def checkNoSuchElementException(e: RuntimeException) {
+    assert { e.getCause.isInstanceOf[NoSuchElementException] }
+  }
   "An empty UrlMap" should "throw exceptions or return none if things aren't found in it" in {
-    evaluating { emptyMap(en1) } should produce[NoSuchElementException]
+    checkNoSuchElementException(evaluating { emptyMap(en1) } should produce[RuntimeException])
     assertEquals(None, emptyMap.get(en1))
     evaluating { emptyMap("") } should produce[NoSuchElementException]
     assertEquals(None, emptyMap.get(""))
@@ -34,6 +38,5 @@ class UrlMapTest extends AbstractTest with SomeHoldersForTest {
     assertEquals(false, urlMap.contains(en2))
     assertEquals(false, urlMap.contains(holderEn1))
   }
-  
 
 }

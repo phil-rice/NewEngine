@@ -49,6 +49,12 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
     assertEquals("Req3:rep1", reportableToUrl(List(rep1, rep1b), separator = ":"))
   }
 
+  it should "give things with an empty string for a name (after cleaning) an sensible name" in {
+    val reportableToUrl = new SimpleReportableToUrl
+    val name = reportableToUrl(repEmpty);
+    assertEquals("Req1", name)
+  }
+
   it should "make a urlId from the template name, human readable name with optional suffix" in {
     val reportableToUrl = new SimpleReportableToUrl
     assertEquals("Req_rep1", reportableToUrl.urlId(rep1))
@@ -95,26 +101,80 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
       build
     val reportableToUrl = new SimpleReportableToUrl
 
-    val urlMap = reportableToUrl.makeUrlMapWithDecisionsAndConclusions(Holder("EngineHolder", List(e)))
+    val holder = Holder("EngineHolder", List(e))
+    val urlMap = reportableToUrl.makeUrlMapWithDecisionsAndConclusions(holder)
     val uc1 = e.asRequirement.useCases(0)
     val uc2 = e.asRequirement.useCases(1)
     val s1 = e.asRequirement.scenarios(0)
     val s2 = e.asRequirement.scenarios(1)
-    val tree =  e.asInstanceOf[EngineFromTests[Int, (Int) =>Boolean, String, (Int)=>String]].tree
+    val tree = e.asInstanceOf[EngineFromTests[Int, (Int) => Boolean, String, (Int) => String]].tree
     import tree._
-    val d = tree.root.asInstanceOf[Decision[Int, (Int) =>Boolean, String, (Int)=>String]]
+    val d = tree.root.asInstanceOf[Decision[Int, (Int) => Boolean, String, (Int) => String]]
     val c1 = d.yes
     val c2 = d.no
-    assertEquals(8, urlMap.size)
-    checkUrl(reportableToUrl, urlMap, e)
-    checkUrl(reportableToUrl, urlMap, uc1, e)
-    checkUrl(reportableToUrl, urlMap, s1, uc1, e)
-    checkUrl(reportableToUrl, urlMap, uc2, e)
-    checkUrl(reportableToUrl, urlMap, s2, uc2, e)
-    checkUrl(reportableToUrl, urlMap, d, e)
-    checkUrl(reportableToUrl, urlMap, c1, e)
-    checkUrl(reportableToUrl, urlMap, c2, e)
+    val ed = e.asRequirement
+    checkUrl(reportableToUrl, urlMap, holder)
+    checkUrl(reportableToUrl, urlMap, e, holder)
+    checkUrl(reportableToUrl, urlMap, d, e, holder)
+    checkUrl(reportableToUrl, urlMap, c1, d, e, holder)
+    checkUrl(reportableToUrl, urlMap, c2, d, e, holder)
 
+    checkUrl(reportableToUrl, urlMap, ed, holder)
+    checkUrl(reportableToUrl, urlMap, uc1, ed, holder)
+    checkUrl(reportableToUrl, urlMap, s1, uc1, ed, holder)
+    checkUrl(reportableToUrl, urlMap, uc2, ed, holder)
+    checkUrl(reportableToUrl, urlMap, s2, uc2, ed, holder)
+    assertEquals(10, urlMap.size)
+  }
+
+  it should "make a urlMap for folding engines" in {
+    implicit def toFoldingEngine[Params, BFn, R, RFn, Full](e: Engine[Params, BFn, R, RFn]) = e.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, Full]]
+    val f = Engine.foldList[Int, String].
+      childEngine("").useCase("uc1").scenario(1).expected("x").scenario(2).expected("y"). because((x: Int) => x == 2).
+      childEngine("").
+      scenario(1).expected("x").scenario(2).expected("y"). because((x: Int) => x == 2).
+      build
+    val reportableToUrl = new SimpleReportableToUrl
+
+    val holder = Holder("EngineHolder", List(f))
+    val urlMap = reportableToUrl.makeUrlMapWithDecisionsAndConclusions(holder)
+    val ce1 = f.engines(0)
+    val ce2 = f.engines(1)
+    val uc1 = f.asRequirement.useCases(0)
+    val s11 = ce1.asRequirement.scenarios(0)
+    val s12 = ce1.asRequirement.scenarios(1)
+    val s21 = ce2.asRequirement.scenarios(0)
+    val s22 = ce2.asRequirement.scenarios(1)
+    val d1 = ce1.tree.root.asInstanceOf[Decision[Int, (Int) => Boolean, String, (Int) => String]]
+    val c11 = d1.yes
+    val c12 = d1.no
+    val d2 = ce2.tree.root.asInstanceOf[Decision[Int, (Int) => Boolean, String, (Int) => String]]
+    val c21 = d2.yes
+    val c22 = d2.no
+
+    val fed = f.asRequirement
+    val ed1 = ce1.asRequirement
+    val ed2 = ce2.asRequirement
+    checkUrl(reportableToUrl, urlMap, holder)
+    checkUrl(reportableToUrl, urlMap, f, holder)
+    checkUrl(reportableToUrl, urlMap, ce1, f, holder)
+    checkUrl(reportableToUrl, urlMap, d1, ce1, f, holder)
+    checkUrl(reportableToUrl, urlMap, c11, d1, ce1, f, holder)
+    checkUrl(reportableToUrl, urlMap, c12, d1, ce1, f, holder)
+    checkUrl(reportableToUrl, urlMap, ce2, f, holder)
+    checkUrl(reportableToUrl, urlMap, d2, ce2, f, holder)
+    checkUrl(reportableToUrl, urlMap, c21, d2, ce2, f, holder)
+    checkUrl(reportableToUrl, urlMap, c22, d2, ce2, f, holder)
+
+    checkUrl(reportableToUrl, urlMap, fed, holder)
+    checkUrl(reportableToUrl, urlMap, ed1, fed, holder)
+    checkUrl(reportableToUrl, urlMap, uc1, ed1, fed, holder)
+    checkUrl(reportableToUrl, urlMap, s11, uc1, ed1, fed, holder)
+    checkUrl(reportableToUrl, urlMap, s12, uc1, ed1, fed, holder)
+    checkUrl(reportableToUrl, urlMap, ed2, fed, holder)
+    checkUrl(reportableToUrl, urlMap, s21, ed2, fed, holder)
+    checkUrl(reportableToUrl, urlMap, s22, ed2, fed, holder)
+    assertEquals(18, urlMap.size)
   }
 
   def checkUrl(reportableToUrl: ReportableToUrl, urlMap: UrlMap, r: Reportable*) {

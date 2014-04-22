@@ -18,11 +18,13 @@ object KeyLike {
 }
 
 class KeyedMap[V](val map: Map[Int, V] = Map[Int, V]()) {
-  def apply[T](t: T)(implicit conv: KeyLike[T]) = map(conv(t))
-  def get[T](t: T)(implicit conv: KeyLike[T]) = map.get(conv(t))
-  def +[T](kv: (T, V))(implicit conv: KeyLike[T]) = kv match { case (t, v) => new KeyedMap[V](map + (conv(t) -> v)) }
+  def wrap[X](stuff: => X, error: (Exception) => Exception): X = try { stuff } catch { case e: Exception => throw error(e) }
+  def wrapKey[X](key: Any, stuff: => X): X = try { stuff } catch { case e: Exception => throw new RuntimeException(s"Key was: $key", e) }
+  def apply[T](t: T)(implicit conv: KeyLike[T]) = wrapKey(t, map(conv(t)))
+  def get[T](t: T)(implicit conv: KeyLike[T]) = wrapKey(t, map.get(conv(t)))
+  def +[T](kv: (T, V))(implicit conv: KeyLike[T]) = kv match { case (t, v) => wrapKey(t, new KeyedMap[V](map + (conv(t) -> v))) }
   def ++(em: KeyedMap[V]) = new KeyedMap[V](em.map.foldLeft(map) { _ + _ })
-  def contains[T](t: T)(implicit conv: KeyLike[T]) = map.contains(conv(t))
+  def contains[T](t: T)(implicit conv: KeyLike[T]) = wrapKey(t, map.contains(conv(t)))
   def size = map.size
   override def hashCode() = map.hashCode
   override def equals(other: Any) = other match { case e: ExceptionMap => e.map == map; case _ => false }

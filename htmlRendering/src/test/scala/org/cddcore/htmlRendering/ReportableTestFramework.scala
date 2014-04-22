@@ -28,6 +28,7 @@ trait ReportableTestFramework {
 
   }
 
+  val repEmpty = Req("", "")
   val rep1 = Req("rep1", "d1")
   val rep2 = Req("rep2", "d2")
   val rep3 = Req("rep3", "d3")
