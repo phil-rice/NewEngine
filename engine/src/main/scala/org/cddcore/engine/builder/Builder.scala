@@ -10,6 +10,7 @@ trait HasExceptionMap[R, RFn] {
 trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
   def copyWithNewExceptions(buildExceptions: ExceptionMap): CanCopyWithNewExceptionMap[R, RFn]
 }
+
 trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends BuilderNodeHolder[R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
@@ -33,23 +34,25 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
       }
     }
   }
-
+  protected def makeClosures: MakeClosures[Params, BFn, R, RFn]
+  
   def title(title: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(titleL).set(this, Some(title)))
   def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
   def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
 
   def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) =>
     new UseCase[R, RFn](Some(title), description = Option(description)) :: nodes))
+  def becauseHolder(becauseHolder: CodeHolder[BFn]):B =
+    wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
-
   def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
   def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))
 
   def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
   def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
-    mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params,BFn,R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
+    mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params, BFn, R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
 }
 
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {

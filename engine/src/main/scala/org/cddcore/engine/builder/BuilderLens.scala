@@ -133,7 +133,7 @@ class BuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
     Some(validate))
   val toFoldingEngineDescription = Lens[B, FoldingEngineDescription[Params, BFn, R, RFn, FullR]](
     (b) => b.nodes.head match {
-      case f: FoldingEngineDescription[Params, BFn,R, RFn, FullR] => f
+      case f: FoldingEngineDescription[Params, BFn, R, RFn, FullR] => f
       case _ => throw new CannotHaveChildEnginesWithoutFolderException
     },
     (b, n) => b.copyNodes(nodes = List(n)).asInstanceOf[B],
@@ -147,8 +147,8 @@ class BuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] {
 class FullBuilderLens[Params, BFn, R, RFn, FullR, B <: BuilderNodeHolder[R, RFn]] extends BuilderLens[Params, BFn, R, RFn, FullR, B] {
   type S = Scenario[Params, BFn, R, RFn]
   val toScenarioL = Lens[BuilderNode[R, RFn], S](
-    (b) => b match { case s: S => s },
-    (b, s) => b match { case _: S => s })
+    (b) => b match { case s: S => s; case _ => throw NeedScenarioException() },
+    (b, s) => b match { case _: S => s; case _ => throw NeedScenarioException() })
   def becauseL(validate: (S, S, CodeHolder[BFn]) => Unit) = Lens.option[S, CodeHolder[BFn]](
     (s) => s.because,
     (s, bCodeHolder) => s.copyScenario(because = bCodeHolder),

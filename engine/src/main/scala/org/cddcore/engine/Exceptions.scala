@@ -23,6 +23,11 @@ class CannotHaveChildEnginesWithoutFolderException extends EngineException
 
 class UndecidedException extends EngineException
 
+object NeedScenarioException {
+  def apply() = new NeedScenarioException("This operation needed a scenario")
+}
+class NeedScenarioException(msg: String) extends EngineException(msg)
+
 class ScenarioException(msg: String, val scenario: Scenario[_, _, _, _], cause: Throwable = null) extends EngineException(msg, cause)
 
 object DuplicateScenarioException {

@@ -26,6 +26,14 @@ object Builder1 {
       thisObject.codeHolder(ch)
     }
   }
+  def matchOnImpl[P: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P), R]]): c.Expr[Builder1[P, R, FullR]] = {
+    import c.universe._
+    reify {
+      val thisObject: Builder1[P, R, FullR] = (c.Expr[Builder1[P, R, FullR]](c.prefix.tree)).splice
+      val literal = c.literal(show(pf.tree)).splice
+      thisObject.matchOnPrim(pf.splice, literal, literal)
+    }
+  }
 }
 case class Builder1[P, R, FullR](
   nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[P, (P) => Boolean, R, (P) => R]),
@@ -41,8 +49,12 @@ case class Builder1[P, R, FullR](
 
   def because(because: (P) => Boolean): Builder1[P, R, FullR] = macro Builder1.becauseImpl[P, R, FullR]
   def code(code: (P) => R): Builder1[P, R, FullR] = macro Builder1.codeImpl[P, R, FullR]
-
-  def becauseHolder(becauseHolder: CodeHolder[P => Boolean]) = wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
+  def matchOn(pf: PartialFunction[P, R]) = macro Builder1.matchOnImpl[P, R, FullR]
+  def matchOnPrim(pf: PartialFunction[(P), R], becauseToString: String, resultToString: String) = {
+    val chBecause = CodeHolder[(P) => Boolean]((p) => pf.isDefinedAt(p), becauseToString)
+    val chResult = CodeHolder[(P) => R](p => pf.apply(p), resultToString)
+    becauseHolder(chBecause).codeHolder(chResult)
+  }
   def scenario(p: P, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
     checkDuplicateScenario(bl, this, new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =

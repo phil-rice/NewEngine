@@ -90,15 +90,40 @@ class FewSmokeTest extends AbstractTest {
       classOf[BecauseClauseScenarioException])), actual)
   }
 
-  //  it should "allow the match with syntax" in {
-  //    val builder = Engine[Int, Int, String]().
-  //      title("engine").description("description").
-  //      useCase("useCase1").
-  //      matchWith { case (0, 0) => "love - all" }
-  //
-  //    val engine = builder.build
-  //    assertEquals(builder, engine.asRequirement)
-  //    assertEquals("love - all", engine(0, 0))
-  //
-  //  }
+  "An engine1" should "allow the match on syntax" in {
+    val builder = Engine[Int, String]().
+      title("engine").description("description").
+      useCase("useCase1").
+      scenario(0).expected("love - all").matchOn { case (0) => "love - all" }.
+      scenario(1).expected("fifteen - all").matchOn { case (1) => "fifteen - all" }
+
+    val engine = builder.build
+    assertEquals("love - all", engine(0))
+    assertEquals("fifteen - all", engine(1))
+
+  }
+  "An engine2" should "allow the match on syntax" in {
+    val builder = Engine[Int, Int, String]().
+      title("engine").description("description").
+      useCase("useCase1").
+      scenario(0, 0).expected("love - all").matchOn { case (0, 0) => "love - all" }.
+      scenario(1, 1).expected("fifteen - all").matchOn { case (1, 1) => "fifteen - all" }
+
+    val engine = builder.build
+    assertEquals("love - all", engine(0, 0))
+    assertEquals("fifteen - all", engine(1, 1))
+
+  }
+  "An engine3" should "allow the match on syntax" in {
+    val builder = Engine[Int, Int, Int, String]().
+      title("engine").description("description").
+      useCase("useCase1").
+      scenario(0, 0, 0).expected("love - all").matchOn { case (0, 0, 0) => "love - all" }.
+      scenario(1, 1, 1).expected("fifteen - all").matchOn { case (1, 1, 1) => "fifteen - all" }
+
+    val engine = builder.build
+    assertEquals("love - all", engine(0, 0, 0))
+    assertEquals("fifteen - all", engine(1, 1, 1))
+
+  }
 }

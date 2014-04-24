@@ -21,7 +21,6 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     evaluating { update(_.title("X")) } should produce[CannotDefineTitleTwiceException]
   }
 
- 
   it should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
     scenario("A")
     update(_.description("X"))
@@ -37,7 +36,10 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     because("A")
     evaluating { because("A") } should produce[CannotDefineBecauseTwiceException]
   }
-
+  it should "throw 'NeedScenarioExceptions'" in {
+    evaluating { because("A") } should produce[NeedScenarioException]
+    evaluating { matchOn("A", result("X")) } should produce[NeedScenarioException]
+  }
   it should "throw BecauseClauseException if an exception is thrown by the because" in {
     val e = new RuntimeException
     scenario("A")

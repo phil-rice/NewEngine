@@ -26,15 +26,13 @@ object Builder3 {
       thisObject.codeHolder(ch)
     }
   }
-  def matchWithImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2, P3), R]]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
+  def matchOnImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2, P3), R]]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
     import c.universe._
     reify {
-      val l = bl[P1, P2, P3, R, FullR]()
-      val chBecause = CodeHolder[(P1, P2, P3) => Boolean]((p1, p2, p3) => pf.splice.isDefinedAt((p1, p2, p3)), c.literal(show(pf.tree)).splice)
-      val chResult = CodeHolder[(P1, P2, P3) => R]((p1, p2, p3) => pf.splice.apply((p1, p2, p3)), c.literal(show(pf.tree)).splice)
       val thisObject: Builder3[P1, P2, P3, R, FullR] = (c.Expr[Builder3[P1, P2, P3, R, FullR]](c.prefix.tree)).splice
-
-      thisObject.becauseHolder(chBecause).codeHolder(chResult)
+      val l = bl[P1, P2, P3, R, FullR]()
+      val literal = c.literal(show(pf.tree)).splice
+      thisObject.matchOnPrim(pf.splice, literal, literal)
     }
   }
 }
@@ -52,12 +50,15 @@ case class Builder3[P1, P2, P3, R, FullR](
 
   def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(bl, this, new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title))) :: nodes))
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R, FullR]
-  def becauseHolder(becauseHolder: CodeHolder[(P1, P2, P3) => Boolean]) =
-    wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2, P3), Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R, FullR]
-  def matchWith(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchWithImpl[P1, P2, P3, R, FullR]
+  def matchOn(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchOnImpl[P1, P2, P3, R, FullR]
+  def matchOnPrim(pf: PartialFunction[(P1, P2, P3), R], becauseToString: String, resultToString: String) = {
+    val chBecause = CodeHolder[(P1, P2, P3) => Boolean]((p1, p2, p3) => pf.isDefinedAt((p1, p2, p3)), becauseToString)
+    val chResult = CodeHolder[(P1, P2, P3) => R]((p1, p2, p3) => pf.apply((p1, p2, p3)), resultToString)
+    becauseHolder(chBecause).codeHolder(chResult)
+  }
   def configurator(cfg: (P1, P2, P3) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ ((params: (P1, P2, P3)) => cfg(params._1, params._2, params._3))))
 
   def copyNodes(nodes: List[BuilderNode[R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
