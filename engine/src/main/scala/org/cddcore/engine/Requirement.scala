@@ -1,9 +1,11 @@
 package org.cddcore.engine
 
 import java.util.concurrent.atomic.AtomicInteger
+import scala.language.implicitConversions
 import org.cddcore.utilities.Maps
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.utilities.NestedHolder
+import org.cddcore.utilities.StartChildEndType
 trait Reportable {
   val textOrder: Int
 }
@@ -69,6 +71,64 @@ trait FoldingBuilderNodeAndHolder[R, RFn, FullR] extends BuilderNodeAndHolder[R,
 }
 
 trait BuilderNodeAndHolder[R, RFn] extends BuilderNode[R, RFn] with BuilderNodeHolder[R, RFn]
+
+object ReportableHelper {
+  implicit def toReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with Reportable) = new ReportableHelper[Params, BFn, R, RFn](r)
+  implicit def toReportableHelper[Params, BFn, R, RFn](r: BuilderNodeHolder[R, RFn] with Reportable) = new ReportableHelper[Params, BFn, R, RFn](r.asInstanceOf[NestedHolder[Reportable] with Reportable])
+}
+
+case class DocumentHolder(val nodes: List[Document], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
+case class EngineHolder(val nodes: List[Engine[_, _, _, _]], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
+
+class ReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with Reportable) {
+  lazy val scenarios = r.all(classOf[Scenario[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
+  lazy val useCases = r.all(classOf[UseCase[R, RFn]]).toList.sortBy(_.textOrder)
+  lazy val engines = r.all(classOf[Engine[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
+  lazy val documents = r.foldLeft(Set[Document]())((acc, r) =>
+    r match { case r: Requirement => acc ++ r.references.flatMap(_.document); case _ => acc }).toList.sortBy((x) => x.titleString)
+
+  trait DocumentAndEngineHolder {
+    val documentHolder = DocumentHolder(documents)
+    val engineHolder = EngineHolder(r.all(classOf[Engine[_, _, _, _]]).toList.sortBy(_.textOrder))
+  }
+  
+  /** path(thisObject) then a document holder with all the documents under this object are called followed by an EngineHolder with all the engines under it (nested as needed) */
+  def documentsAndEnginePaths = new DocumentAndEngineHolder with Traversable[List[Reportable]] {
+    def foreach[U](fn: List[Reportable] => U): Unit = {
+      val initialPath = List(r)
+      val engineHolderPath = engineHolder :: initialPath
+      fn(initialPath)
+      fn(documentHolder :: initialPath)
+      documents.map(_ :: initialPath).foreach(fn)
+      fn(engineHolderPath)
+      for (e <- engineHolder) e match {
+        case f: FoldingEngine[_, _, _, _, _] =>
+          fn(f :: engineHolderPath); for (e <- f.engines) fn(e :: f :: engineHolderPath)
+        case _ => fn(e :: engineHolderPath)
+      }
+    }
+  }
+  import StartChildEndType._
+  def documentsAndEngineStartChildEndPaths = new DocumentAndEngineHolder with Traversable[(List[Reportable], StartChildEndType)] {
+    def foreach[U](fn: ((List[Reportable], StartChildEndType)) => U): Unit = {
+      val initialPath = List(r)
+      val engineHolderPath = engineHolder :: initialPath
+      fn((initialPath, Start))
+      fn((documentHolder :: initialPath, Start))
+      documents.map((d) => (d :: initialPath, Child)).foreach(fn)
+      fn((documentHolder :: initialPath, End))
+      fn((engineHolderPath, Start))
+      for (e <- engineHolder) e match {
+        case f: FoldingEngine[_, _, _, _, _] =>
+          val fPath = f :: engineHolderPath
+          fn((fPath, Start)); for (e <- f.engines) fn((e :: fPath, Child)); fn((fPath, End))
+        case _ => fn((e :: engineHolderPath, Child))
+      }
+      fn((engineHolderPath, End))
+      fn((initialPath, End))
+    }
+  }
+}
 
 case class Project(
   val title: Option[String] = None,

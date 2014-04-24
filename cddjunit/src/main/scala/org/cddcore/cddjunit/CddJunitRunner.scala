@@ -7,27 +7,12 @@ import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import scala.Array.canBuildFrom
-import org.cddcore.engine.BuilderNodeHolder
-import org.cddcore.engine.Engine
-import org.cddcore.engine.Engine.test
-import org.cddcore.engine.EngineFromTests
-import org.cddcore.engine.FoldingEngine
-import org.cddcore.engine.Reportable
-import org.cddcore.engine.Requirement
-import org.cddcore.engine.Scenario
-import org.cddcore.utilities.ExceptionMap
-import org.cddcore.utilities.LoggerDisplayProcessor
-import org.cddcore.utilities.MapToUniqueName
-import org.cddcore.utilities.Reflection
-import org.cddcore.utilities.Strings
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.RunNotifier
 import org.junit.runner.notification.Failure
-import org.cddcore.engine.builder.Engine1
-import org.cddcore.utilities.KeyedMap
-import org.cddcore.utilities.KeyLike
-import org.cddcore.engine.MultipleScenarioExceptions
+import org.cddcore.engine._ 
+import org.cddcore.utilities._
 
 object CddRunner {
   val separator = "\n#########\n"

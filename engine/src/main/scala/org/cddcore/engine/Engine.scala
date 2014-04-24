@@ -23,9 +23,6 @@ trait Engine[Params, BFn, R, RFn] extends Reportable {
 }
 
 trait EngineAsRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[R, RFn] {
-  lazy val scenarios = all(classOf[Scenario[Params, BFn, R, RFn]])
-  lazy val useCases = all(classOf[UseCase[R, RFn]]).toList.sortBy(_.textOrder)
-  lazy val documents = foldLeft(Set[Document]())((acc, r) => acc ++ r.references.flatMap(_.document))
 }
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with Engine[Params, BFn, R, RFn] {

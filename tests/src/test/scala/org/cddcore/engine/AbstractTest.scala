@@ -56,6 +56,7 @@ trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B <: 
   extends BuilderTest[Params, BFn, R, RFn, FullR, B, E]
   with BuilderBeingTested[Params, BFn, R, RFn, FullR, B, E]
   with DecisionTreeBuilder[Params, BFn, R, RFn] {
+  import ReportableHelper._
   def s(seed: Seed, title: Option[String] = None, description: Option[String] = None, because: Option[Seed] = None,
     code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[ResultSeed] = None,
     references: Set[Reference] = Set()) =

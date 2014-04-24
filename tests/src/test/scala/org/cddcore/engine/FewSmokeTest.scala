@@ -2,6 +2,7 @@ package org.cddcore.engine
 
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import ReportableHelper._
 
 @RunWith(classOf[JUnitRunner])
 class FewSmokeTest extends AbstractTest {

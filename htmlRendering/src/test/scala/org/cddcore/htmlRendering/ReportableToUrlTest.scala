@@ -1,11 +1,14 @@
 package org.cddcore.htmlRendering
 
-import org.junit.runner.RunWith
-import org.cddcore.engine._
-import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
-import org.cddcore.engine.builder.DecisionTreeNode
+
+import org.cddcore.engine._
 import org.cddcore.engine.builder.Decision
+import org.cddcore.engine.builder.DecisionTreeNode
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+import ReportableHelper._
 
 @RunWith(classOf[JUnitRunner])
 class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with ReportableTestFramework {

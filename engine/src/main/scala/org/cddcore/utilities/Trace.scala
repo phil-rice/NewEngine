@@ -1,11 +1,13 @@
 package org.cddcore.utilities
 
+import org.cddcore.engine.Reportable
+
 object StartChildEndType extends Enumeration {
   type StartChildEndType = Value
   val Start, Child, End = Value
 }
-
 import StartChildEndType._
+
 /** Warning using this for a case class will require overriding toString */
 trait StartChildEndTraversable[T <: StartChildEndTraversable[T]] extends Traversable[(StartChildEndTraversable[T], StartChildEndType)] {
   def children: Traversable[T]
@@ -16,15 +18,17 @@ trait StartChildEndTraversable[T <: StartChildEndTraversable[T]] extends Travers
     }
 }
 
-case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params, result: Either[Exception, Result], evidence: Option[Evidence], children: List[TraceItem[Main, Params, Result, Evidence]], took: Long)
-  extends StartChildEndTraversable[TraceItem[Main, Params, Result, Evidence]] {
+case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params, result: Either[Exception, Result],
+  evidence: Option[Evidence], children: List[TraceItem[Main, Params, Result, Evidence]], took: Long,
+  textOrder: Int = Reportable.nextTextOrder)
+  extends StartChildEndTraversable[TraceItem[Main, Params, Result, Evidence]] with Reportable {
 
   override def hashCode = main.hashCode() / 2 + params.hashCode / 2
   override def equals(other: Any) =
     other match {
       case t: TraceItem[Main, Params, Result, Evidence] => t.main == main && t.params == params && t.children == children && t.result == result;
       case _ => false
-    } 
+    }
   override def toString = s"TraceItem($main,$params,$result,children=(${children.mkString(",")}))"
 }
 

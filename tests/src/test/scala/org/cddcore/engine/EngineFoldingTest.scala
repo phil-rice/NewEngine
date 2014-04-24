@@ -4,7 +4,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
 import org.cddcore.engine.builder._
-
+import ReportableHelper._
 abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] with FoldingBuilderTest[R, FullR] {
   implicit def toSome[X](x: X) = Some(x)
