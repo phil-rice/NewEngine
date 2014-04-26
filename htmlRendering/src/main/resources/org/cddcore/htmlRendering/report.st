@@ -1,0 +1,410 @@
+<!DOCTYPE html><html><head><title>CDD Report: Project: org.corecdd.example.ExampleContinuousIntegrationTest</title><style>html {
+	font-family: Arial, Helvetica, sans-serif;
+	vertical-align: top;
+	word-wrap: break-word;
+	box-sizing: border-box;
+}
+
+img {
+	padding-top: 0px;
+	padding-bottom: 0px;
+	padding-right: 3px;
+	padding-left: 3px;
+}
+
+div {
+	position: relative;
+	padding: 5px;
+	width: auto;
+	overflow: auto;
+}
+
+span {
+	position: relative;
+	padding: 0px;
+	margin: 0px;
+}
+
+label {
+	display: inline-block;
+	width: 99px;
+}
+
+table {
+	table-layout: fixed;
+	width: 100%;
+	background-color: #ffffff;
+	position: relative;
+	border-collapse: collapse;
+	margin: 0px;
+	padding: 4px;
+	border: 0px;
+	background-color: #ffffff;
+}
+
+td {
+	vertical-align: top;
+	margin: 0px;
+	padding: 0px;
+	border: 1px solid black;
+}
+
+hr {
+	margin: 0px;
+}
+
+br {
+	clear: both;
+}
+
+.report {
+	margin: 6px;
+	padding: 0px;
+}
+
+.topLine {
+	padding: 0px;
+}
+
+.cddLogo {
+	position: relative;
+	float: left;
+	padding: 0px;
+}
+
+.cddBox {
+	position: relative;
+	float: left;
+}
+
+.kindlySupportedBy {
+	font-size: 50%;
+	padding: 0px;
+	margin: 0px;
+}
+
+.reportTopBox {
+	position: relative;
+	width: 58%;
+	border: 1px solid gray;
+	padding: 0px;
+	margin: 0px;
+	float: right;
+}
+
+.reportTitle {
+	
+}
+
+.reportText {
+	
+}
+
+.reportTitle {
+	width: 100%;
+	background-color: #b29f8c;
+	padding: 0px;
+	background-color: #b29f8c;
+}
+
+.reportText {
+	padding: 2px;
+	font-weight: bold;
+}
+
+.reportDate {
+	padding: 2px;
+}
+
+.project {
+	position: relative;
+	margin: 4px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.projectText {
+	background-color: #b29f8c;
+	padding: 2px;
+}
+
+.engine {
+	width: auto;
+	margin: 0px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.traceItem {
+	width: 98%%;
+	float: left;
+	margin: 10px;
+	padding: 2px;
+	border: 1px solid #d0d0d0;
+}
+
+.traceItemEngine{
+	float: left;
+	width: 98%%;
+	padding: 2px;
+}
+.traceItemTable {
+	margin: 0px;
+	padding: 5px;
+	border: 1px solid gray;
+}
+
+.traceItemTable {
+	margin: 0px;
+	padding: 5px;
+	border: 1px solid gray;
+	width: 40%;
+	float: left;
+}
+
+.childEngine {
+	width: auto;
+	margin: 0px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.engineWithChildren {
+	width: 100%;
+	margin: 0px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.engineSummary {
+	float: left;
+	width: 35%;
+	margin: 0px;
+	margin: 6px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.engineWithChildrenSummary {
+	float: left;
+	width: 100%;
+	margin: 0px;
+	margin: 6px;
+	padding: 0px;
+}
+
+.engineText {
+	background-color: #d6c6c4;
+	padding: 2px;
+}
+
+.decisionTree {
+	width: 58%;
+	height: 100%;
+	float: right;
+	font-family: monospace;
+}
+
+.decisionTreeForTraceItem {
+	width: 58%;
+	height: 100%;
+	float: right;
+	padding: 0px;
+	font-family: monospace;
+}
+
+.usecase {
+	position: relative;
+	margin: 6px;
+	padding: 0px;
+	border: 1px solid gray;
+}
+
+.usecaseSummary {
+	margin: 6px;
+	padding: 0px;
+	width: 95%;
+}
+
+.usecaseText {
+	background-color: #cbc8be;
+	border: 0px;
+	margin: 0px;
+	padding: 2px;
+}
+
+.scenario {
+	padding: 0px;
+	margin: 6px;
+	border: 1px solid gray;
+	position: relative;
+}
+
+.scenarioText {
+	background-color: #d1c2a4;
+	border: 1px;
+	margin: 0px;
+	padding: 2px;
+}
+
+.scenarioValue {
+	background-color: #d0efd0;
+	margin: 10px;
+}
+
+.merged {
+	margin: 10px;
+}
+
+.title {
+	width: 125px;
+}
+
+.engineTitle {
+	width: 125px;
+	background-color: #b29f8c;
+	padding: 2px;
+}
+
+
+.input {
+	width: 100%
+}
+
+.value {
+	
+}
+.engineValue {
+	background-color: #b29f8c;
+	padding: 2px;
+}
+
+.indent {
+	float: left;
+	width: auto;
+	padding: 0px;
+}
+
+.keyword {
+	padding: 0px;
+	font-weight: 900;
+	color: #7f0055;
+	float: left;
+	width: auto;
+}
+
+.decision {
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+	width: 100%;
+	clear: both;
+}
+
+.if {
+	margin: 0px;
+	padding: 0px;
+	width: 100%;
+	clear: both;
+	width: 100%;
+}
+
+.ifTrue {
+	margin: 0px;
+	padding: 0px;
+	width: 90%;
+	clear: both;
+	width: 100%;
+	border: 2px solid #FF7E00;
+}
+
+.ifTrueOnPath {
+	margin: 0px;
+	padding: 0px;
+	width: 90%;
+	clear: both;
+	width: 100%;
+	border: 2px solid green;
+}
+
+.ifFalseOnPath {
+	margin: 0px;
+	padding: 0px;
+	width: 90%;
+	clear: both;
+	width: 100%;
+	border: 2px solid red;
+}
+
+.because {
+	/*	background-color: #dfdfdf; */
+	padding: 0px;
+	float: left;
+}
+
+.result {
+	padding: 0px;
+	width: 100%;
+	clear: both;
+}
+
+.resultWithTest {
+	padding: 0px;
+	width: 100%;
+	float: left;
+	border: 2px solid green;
+}
+
+.conclusion {
+	padding: 0px;
+	width: 80%;
+	float: left;
+	float: left;
+}
+
+.else {
+	padding: 0px;
+	margin: 2px;
+	clear: both;
+}
+
+.tests {
+	float: left;
+	width: auto;
+}
+
+.scenarioLink {
+	float: left;
+}
+
+.useCaseAndScenario {
+	border: 1px solid gray;
+	padding: 0px;
+	margin: 5px;
+	width: 38%;
+	height: 100%;
+	float: right;
+}
+
+.XmlTitle {
+	font-weight: bold;
+}
+
+.legacyTR {
+	background-color: #d6c6c4;
+}
+</style></head>
+<body><div class='report'><div class='topLine'><div class='cddLogo'><a id='cddLogo' href='file:///C:\Users\Phil\.cdd\Junit\org.corecdd.example.ExampleContinuousIntegrationTest.Project.html'><img src='http://img32.imageshack.us/img32/8151/xy9u.png'  alt='Report Home Page'/></a></div>
+<div class='cddBox'><div class='kindlySupportedBy'>Kindly supported by</div><br />
+<!-- <a href="http://atos.net" ><img src="http://img546.imageshack.us/img546/5209/a4jz.png" alt="Atos"/></a><br />
+<a href="http://www.cassidian.com/en_US" ><img src="http://img89.imageshack.us/img89/1244/wzeh.png" alt="Cassidian"/></a><br /> 
+ <a href="http://www.codelmark.co.uk/" ><img src="http://img28.imageshack.us/img28/8836/xswx.png" alt="Codel"/></a> -->
+<a href="http://www.theagileconsultancy.com/" ><img src="http://img208.imageshack.us/img208/6593/p8a2.png" alt="The Agile Consultancy"/></a></div>
+<div class='reportTopBox'>
+<div class='reportTitle'>Report name</div>
+<div class='reportText'>$reportName$</div>
+<div class='reportTitle'>Report date</div>
+<div class='reportDate'>$reportDate$</div>
+</div><!--Report Top Box-->
+</div><!-- top Line -->
+"

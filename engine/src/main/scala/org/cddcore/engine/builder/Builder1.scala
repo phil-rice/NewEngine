@@ -118,4 +118,6 @@ case class FoldingEngine1[P, R, FullR](
   extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }
-
+trait DecisionTreeBuilderForTests1[P, R] extends DecisionTreeBuilderForTests[P, (P) => Boolean, R, (P) => R]{
+    def expectedToCode = BuildEngine.expectedToCode1[P, R]
+}

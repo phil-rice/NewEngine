@@ -57,11 +57,11 @@ trait SomeHoldersForTest {
 
   type EN = BuilderNodeForTest[String, (String) => String]
   type ENH = BuilderNodeAndHolderForTest[String, (String) => String]
-  val en1: EN = BuilderNodeForTest(title = "1")
-  val en2: EN = BuilderNodeForTest(title = "2")
-  val holderEn1: ENH = BuilderNodeAndHolderForTest(nodes = List(en1))
-  val holderEn12: ENH = BuilderNodeAndHolderForTest(nodes = List(en1, en2))
-  val holderHolderEn12: ENH = BuilderNodeAndHolderForTest(nodes = List(holderEn12))
+  val en1: EN = BuilderNodeForTest(title = "en1")
+  val en2: EN = BuilderNodeForTest(title = "en2")
+  val holderEn1: ENH = BuilderNodeAndHolderForTest(title = "holder1", nodes = List(en1))
+  val holderEn12: ENH = BuilderNodeAndHolderForTest(title = "holder12", nodes = List(en1, en2))
+  val holderHolderEn12: ENH = BuilderNodeAndHolderForTest(title = "holderHolder12", nodes = List(holderEn12))
 }
 
 @RunWith(classOf[JUnitRunner])

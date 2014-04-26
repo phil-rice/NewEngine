@@ -6,6 +6,7 @@ import org.cddcore.utilities.Maps
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.utilities.NestedHolder
 import org.cddcore.utilities.StartChildEndType
+import scala.collection.Traversable
 trait Reportable {
   val textOrder: Int
 }
@@ -91,7 +92,7 @@ class ReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with Rep
     val documentHolder = DocumentHolder(documents)
     val engineHolder = EngineHolder(r.all(classOf[Engine[_, _, _, _]]).toList.sortBy(_.textOrder))
   }
-  
+
   /** path(thisObject) then a document holder with all the documents under this object are called followed by an EngineHolder with all the engines under it (nested as needed) */
   def documentsAndEnginePaths = new DocumentAndEngineHolder with Traversable[List[Reportable]] {
     def foreach[U](fn: List[Reportable] => U): Unit = {

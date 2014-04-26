@@ -167,3 +167,19 @@ trait EvaluateTree[Params, BFn, R, RFn] {
     }
 }
 
+trait DecisionTreeBuilderForTests[Params, BFn, R, RFn] {
+  def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
+  def scen(params: Params, title: String = null, description: Option[String] = None, because: Option[CodeHolder[BFn]] = None,
+    code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Either[Exception, R]] = None,
+    references: Set[Reference] = Set()) =
+    new Scenario[Params, BFn, R, RFn](params, Option(title), description, because, code, priority, expected, references)
+  def uc(title: String = null) = new UseCase[R, RFn](Option(title))
+  def conc(scenario: Scenario[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*) =
+    new Conclusion[Params, BFn, R, RFn](scenario.actualCode(expectedToCode), List(scenario) ++ scenarios)
+  def dec(scenarioThatCausedNode: Scenario[Params, BFn, R, RFn], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn]) =
+    new Decision(List(scenarioThatCausedNode.because.get), yes, no, scenarioThatCausedNode)
+  def dec(scenariosWithBecause: List[Scenario[Params, BFn, R, RFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn]) =
+    new Decision(scenariosWithBecause.map(_.because).collect { case Some(b) => b }, yes, no, scenariosWithBecause.head)
+}
+
+

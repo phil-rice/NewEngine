@@ -3,16 +3,17 @@ package org.cddcore.cddjunit
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.Array.canBuildFrom
+
+import org.cddcore.engine._
+import org.cddcore.utilities._
 import org.junit.runner.Description
 import org.junit.runner.Runner
-import org.junit.runner.notification.RunNotifier
 import org.junit.runner.notification.Failure
-import org.cddcore.engine._ 
-import org.cddcore.utilities._
+import org.junit.runner.notification.RunNotifier
 
 object CddRunner {
   val separator = "\n#########\n"
@@ -36,6 +37,7 @@ trait EngineWalker {
 
 trait CddRunner extends Runner {
   def ldp: LoggerDisplayProcessor = implicitly[LoggerDisplayProcessor]
+  val templateLike = implicitly[TemplateLike[Reportable]]
   def clazz: Class[_ <: Any]
   val rootEngines: List[Engine[_, _, _, _]]
   var allEngines = List[Engine[_, _, _, _]]()
@@ -50,11 +52,12 @@ trait CddRunner extends Runner {
     description
   }
   var names = new MapToUniqueName[Requirement]((r: Requirement, count: Int) => {
+    val default = templateLike(r) + r.textOrder
     val name = Strings.clean(r match {
       case t: Scenario[_, _, _, _] =>
-        val result = t.titleString + " => " + ldp(t.expected.getOrElse(""))
+        val result = t.titleString + " => " + ldp(t.expected.getOrElse(default))
         result
-      case r: Requirement => r.title.getOrElse("")
+      case r: Requirement => r.title.getOrElse(default)
       case _ => throw new IllegalStateException(r.getClass() + "/" + r)
     })
     val result = count match { case 1 => name; case _ => name + "_" + count }

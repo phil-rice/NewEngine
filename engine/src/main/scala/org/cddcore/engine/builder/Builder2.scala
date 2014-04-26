@@ -25,10 +25,10 @@ object Builder2 {
       thisObject.codeHolder(ch)
     }
   }
-   def matchOnImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2), R]]): c.Expr[Builder2[P1, P2, R, FullR]] = {
+  def matchOnImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2), R]]): c.Expr[Builder2[P1, P2, R, FullR]] = {
     import c.universe._
     reify {
-      val thisObject: Builder2[P1, P2,  R, FullR] = (c.Expr[Builder2[P1, P2, R, FullR]](c.prefix.tree)).splice
+      val thisObject: Builder2[P1, P2, R, FullR] = (c.Expr[Builder2[P1, P2, R, FullR]](c.prefix.tree)).splice
       val literal = c.literal(show(pf.tree)).splice
       thisObject.matchOnPrim(pf.splice, literal, literal)
     }
@@ -50,7 +50,7 @@ case class Builder2[P1, P2, R, FullR](
   def code(code: (P1, P2) => R): Builder2[P1, P2, R, FullR] = macro Builder2.codeImpl[P1, P2, R, FullR]
   def because(because: (P1, P2) => Boolean): Builder2[P1, P2, R, FullR] = macro Builder2.becauseImpl[P1, P2, R, FullR]
   def matchOn(pf: PartialFunction[(P1, P2), R]) = macro Builder2.matchOnImpl[P1, P2, R, FullR]
-   def matchOnPrim(pf: PartialFunction[(P1, P2), R], becauseToString: String, resultToString: String) = {
+  def matchOnPrim(pf: PartialFunction[(P1, P2), R], becauseToString: String, resultToString: String) = {
     val chBecause = CodeHolder[(P1, P2) => Boolean]((p1, p2) => pf.isDefinedAt((p1, p2)), becauseToString)
     val chResult = CodeHolder[(P1, P2) => R]((p1, p2) => pf.apply((p1, p2)), resultToString)
     becauseHolder(chBecause).codeHolder(chResult)
@@ -115,4 +115,6 @@ case class FoldingEngine2[P1, P2, R, FullR](
   extends Engine2[P1, P2, R, FullR] with FoldingEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR] {
   def apply(p1: P1, p2: P2) = applyParams(p1, p2)
 }
-
+trait DecisionTreeBuilderForTests2[P1, P2, R] extends DecisionTreeBuilderForTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]{
+    def expectedToCode = BuildEngine.expectedToCode2[P1, P2, R]
+}

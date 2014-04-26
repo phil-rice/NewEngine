@@ -4,130 +4,100 @@ import org.cddcore.utilities._
 
 import org.cddcore.engine._
 
-class SimpleReportableToUrl extends ReportableToUrl {
-  def url(path: List[Reportable])(implicit conv: TemplateLike[Reportable]) = Some("/" + apply(path) + "." + conv(path.head) + ".html")
+trait UrlMap {
+  def rootUrl: String
+  def rToName: KeyedMap[String]
+  def toUrl: KeyedMap[String]
+  def fromUrl: Map[String, List[Reportable]]
+  def seen: Set[String]
+
+  /** From a reportable to the Url representing it */
+  def apply(r: Reportable): String = toUrl(r)
+  /** From a reportable to the optional Url representing it */
+  def get(r: Reportable): Option[String] = toUrl.get(r)
+
+  /** From a url to the reportable that should be at that url */
+  def apply(url: String) = fromUrl(url)
+  /** From a url to the optional reportable that should be at that url */
+  def get(url: String) = fromUrl.get(url)
+
+  def getName(r: Reportable): String = rToName(r)
+  /** Has the reportable got a url? */
+  def contains(r: Reportable) = toUrl.contains(r)
+  def containsName(s: String) = seen.contains(s)
+  def reportableCount = toUrl.size
+  def urlId(r: Reportable)(implicit conv: TemplateLike[Reportable]) = s"${conv(r)}_${rToName(r)}_${r.textOrder}"
 }
-trait ReportableToUrl {
-  import Reportable._
-  protected var reqId = 0
-  protected var cache = Map[Reportable, String]()
-  protected var seen = Set[String]()
 
-  def url(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): Option[String]
+trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
+  def copy(rootUrl: String, rToName: KeyedMap[String], toUrl: KeyedMap[String], fromUrl: Map[String, List[Reportable]], seen: Set[String]): RU
+  private def asRu = this.asInstanceOf[RU]
+  def addPath(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): (RU, String) = { val result = this + path; (result, result(path.head)) }
 
-  protected def findAndAddToCacheIfNeed(r: Reportable)(implicit conv: TemplateLike[Reportable]): String = {
-    def newName = {
-      def makeNewName: String = {
-        val templateName = conv(r)
-        reqId += 1;
-        val default = templateName + reqId;
-        val result = Strings.urlClean(r match {
-          case report: Report => { val result = report.titleOrDescription(default); if (result.length > 120) default else result }
-          case project: Project => { val result = project.titleOrDescription(default); if (result.length > 120) default else result }
-          case req: Requirement => { val result = req.titleOrDescription(default); if (result.length > 40) default else result }
-          case _ => default;
-        }).replace(" ", "_")
-        result match {
-          case "" => default
-          case _ if seen.contains(result) => default
-          case _ => result
-        }
-      }
-      var result: String = null
-      do {
-        result = makeNewName
-      } while (seen.contains(result))
-      cache += (r -> result)
-      seen += result
-      result
-    }
-    val existing = cache.get(r)
-    existing match {
-      case Some(s) => s;
-      case _ => newName
-    }
-  }
+  def +(holder: Traversable[List[Reportable]]): RU = holder.foldLeft(asRu) { _ + _ }
+  def +(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): RU = {
+    def url(ru: RU, rToName: KeyedMap[String], path: List[Reportable]) =
+      (ru.rootUrl :: path.reverse.map((r) => rToName(r))).mkString("/") + "." + conv(path.head) + ".html"
 
-  /** Will return a human readable name for the reportable. Will allways return the same name for the reportable */
-  def apply(r: Reportable): String = {
-    r match {
-      case r: ReportableWrapper => findAndAddToCacheIfNeed(r.delegate.getOrElse(r))
-      case _ => findAndAddToCacheIfNeed(r)
-    }
-  }
+    def addOnePath(ru: RU, path: List[Reportable]) = {
+      val head = path.head
 
-  /** Will return a human readable name for each reportable in the reversed list. Typically this is used to make a path */
-  def apply(path: List[Reportable], separator: String = "/"): String =
-    path.reverse.map(apply(_)).mkString(separator)
+      ru.toUrl.get(head) match {
+        case Some(oldUrl) if oldUrl == url(asRu, ru.rToName, path) => ru
+        case Some(oldUrl) => throw new IllegalStateException(s"Existing path oldUrl\nNew path $path")
+        case _ =>
+          {
+            val (newSeen, newRToName) = path.foldLeft((ru.seen, ru.rToName))((acc, r) => acc match {
+              case (accSeen, accRToName) =>
+                accRToName.contains(r) match {
+                  case true => acc
+                  case false => {
+                    val n = ru.newName(accSeen, r)(conv);
+                    (accSeen + n, accRToName + (r -> n))
+                  }
+                }
+            })
 
-  import TemplateLike._
-  /** We give each reportable a unique id, so that if it occurs once in an html document, we can reference it by id */
-  def urlId(r: Reportable, suffix: Option[String] = None)(implicit conv: TemplateLike[Reportable]): String =
-    conv(r) + "_" + apply(r) + suffix.collect { case s => "_" + s }.getOrElse("")
-
-  /**
-   * this is called from makeUrl. Everything passed to it will have all of it's descendants added. So this should add the item, and then any 'off piste items'. Specifically if
-   *  there are any engines in the original path, they need to be added, then added as their requirements and all their child requirements added
-   */
-  protected def add[Params, BFn, R, RFn, FullR](urlMap: UrlMap, path: List[Reportable]): UrlMap = {
-    def justAdd(urlMap: UrlMap, path: List[Reportable]): UrlMap = { val u = url(path); if (u.isDefined) urlMap + (path -> u.get) else urlMap }
-    def addEngine(urlMap: UrlMap, path: List[Reportable]): UrlMap = { //the engine itself has not been added at this point
-      path match {
-        case (f: FoldingEngine[Params, BFn, R, RFn, FullR]) :: tail =>
-          val withFoldingEngine = justAdd(urlMap, f :: tail)
-          val fed = f.asRequirement
-          val withfed = makeUrlMapForBuilderNodeHolder(fed, withFoldingEngine, tail) // so this adds the fed and all children under the tail.  
-          val withEnginesAndEd = f.engines.foldLeft(withfed)((urlMap, e) => justAdd(urlMap, e :: f :: tail))
-          withEnginesAndEd
-        case (e: Engine[Params, BFn, R, RFn]) :: tail => makeUrlMapForBuilderNodeHolder(e.asRequirement, urlMap, tail) // so this adds the ed and all children under the tail.
-        case _ => throw new IllegalStateException
+            val newUrl = url(ru, newRToName, path);
+            if (ru.fromUrl.contains(newUrl))
+              throw new IllegalStateException
+            val newToUrl = ru.toUrl + (head -> newUrl)
+            val newFromUrl = ru.fromUrl + (newUrl -> path)
+            ru.copy(ru.rootUrl, newRToName, newToUrl, newFromUrl, newSeen)
+          }
       }
     }
-    path match {
-      case (e: Engine[Params, BFn, R, RFn]) :: tail => addEngine(justAdd(urlMap, path), path)
-      case _ => justAdd(urlMap, path)
+    Lists.decreasingList(path).foldLeft(this.asInstanceOf[RU])((acc, p) => addOnePath(acc, p))
+  }
+
+  protected def newName(seen: Set[String], r: Reportable)(implicit conv: TemplateLike[Reportable]) = {
+    val calculatedName = Strings.urlClean(r match {
+      case report: Report => { val result = report.titleOrDescription(""); if (result.length > 120) "" else result }
+      case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
+      case req: Requirement => { val result = req.titleOrDescription(""); if (result.length > 40) "" else result }
+      case _ => "";
+    }).replace(" ", "_")
+
+    var reqId = r.textOrder
+    def makeNewName: String = {
+      val templateName = conv(r)
+      val name = templateName + reqId;
+      reqId += 1
+      if (seen.contains(name))
+        makeNewName
+      else
+        name
     }
+    if (calculatedName == "" || seen.contains(calculatedName))
+      makeNewName
+    else
+      calculatedName
   }
 
-  def makeUrlMapFor(r: Reportable, urlMap: UrlMap = UrlMap()): UrlMap =
-    add(urlMap, List(r))
+}
 
-  /** This walks down engine descriptions / use cases/ scenarios */
-  def makeUrlMapForBuilderNodeHolder[R, RFn](r: BuilderNodeHolder[R, RFn], urlMap: UrlMap = UrlMap(), initialPath: List[Reportable] = List()): UrlMap = {
-    val result = r.pathsIncludingSelf(initialPath).foldLeft(urlMap)(add)
-    result
-  }
-
-  /** This walks down reports/projects/engines and also decision trees => decisions/conclusions. When it gets to an engine, it will then do a second tree of requirements*/
-  def makeUrlMap(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap(), initialPath: List[Reportable] = List()): UrlMap = {
-    val fromBasicReportables = r.pathsIncludingSelf(initialPath).foldLeft(urlMap)(add)
-    val result = r.all(classOf[Requirement]).foldLeft(fromBasicReportables)((acc, ref) => ref.references.flatMap(_.document).foldLeft(acc)((acc, d) => {
-      r match {
-        case r: Reportable => add(acc, List(d, r))
-        case _ => add(acc, List(d))
-      }
-    }))
-    result
-  }
-
-  def makeUrlMapWithDecisionsAndConclusions(r: NestedHolder[Reportable], urlMap: UrlMap = UrlMap(), initialPath: List[Reportable] = List()): UrlMap = {
-    val afterMostStuff = makeUrlMap(r, urlMap, initialPath)
-    def addEngines[Params, BFn, R, RFn, FullR] = {
-      def addEngine(urlMap: UrlMap, e: EngineFromTests[Params, BFn, R, RFn], initialPath: List[Reportable]) = {
-        e.tree.pathsFrom(initialPath).foldLeft(urlMap)((acc, path) => {
-          add(acc, path)
-        })
-      }
-      val result = r.pathsIncludingSelf(initialPath).foldLeft(afterMostStuff)((acc, path) => {
-        path match {
-          case (e: EngineFromTests[Params, BFn, R, RFn]) :: _ => addEngine(acc, e, path)
-          case (f: FoldingEngine[Params, BFn, R, RFn, FullR]) :: _ => f.engines.foldLeft(acc)((acc, e) => addEngine(acc, e, e :: path))
-          case _ => acc
-        }
-      })
-      result
-    }
-    addEngines
-  }
+case class SimpleReportableToUrl(rootUrl: String = "", rToName: KeyedMap[String] = new KeyedMap[String](), toUrl: KeyedMap[String] = new KeyedMap[String](), fromUrl: Map[String, List[Reportable]] = Map(), seen: Set[String] = Set()) extends ReportableToUrl[SimpleReportableToUrl] {
+  def copy(rootUrl: String, rToName: KeyedMap[String], toUrl: KeyedMap[String], fromUrl: Map[String, List[Reportable]], seen: Set[String]) =
+    new SimpleReportableToUrl(rootUrl, rToName, toUrl, fromUrl, seen)
 }
 

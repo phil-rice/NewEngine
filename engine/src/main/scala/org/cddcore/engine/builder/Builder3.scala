@@ -120,3 +120,7 @@ case class FoldingEngine3[P1, P2, P3, R, FullR](
   with FoldingEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR] with Function3[P1, P2, P3, FullR] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)
 }
+trait DecisionTreeBuilderForTests3[P1, P2, P3, R] extends DecisionTreeBuilderForTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]{
+   def expectedToCode = BuildEngine.expectedToCode3[P1, P2, P3, R]
+}
+

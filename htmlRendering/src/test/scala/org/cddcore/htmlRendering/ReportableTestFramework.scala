@@ -30,6 +30,9 @@ trait ReportableTestFramework {
 
   val repEmpty = Req("", "")
   val rep1 = Req("rep1", "d1")
+  val rep1a = Req("rep1", "d1a")
+  val rep1b = Req("rep1", "d1b")
+
   val rep2 = Req("rep2", "d2")
   val rep3 = Req("rep3", "d3")
   val rep4 = Req("rep4", "d4")
@@ -43,15 +46,16 @@ trait ReportableTestFramework {
   val doc1 = Document(Some("name1"))
   val doc2 = Document(Some("name2"))
 
-  val ref0 = Reference("0", None)
-  val ref1 = Reference("1", Some(doc1))
-  val ref2 = Reference("2", Some(doc2))
+  val ref0 = Reference("r0", None)
+  val ref1 = Reference("r1", Some(doc1))
+  val ref2 = Reference("r2", Some(doc2))
 
-  val rd0 = Req("rd0", "d1", Set(ref0))
+  val rd0 = Req("rd", "d1", Set(ref0))
   val rd1 = Req("rd1", "d1", Set(ref1))
   val rd2 = Req("rd2", "d2", Set(ref2))
   val rd12 = Req("rd12", "d12", Set(ref1, ref2))
   val holderD12 = Holder("holder12", List(rd1, rd2))
+  val reqHolderD12 = ReqAndHolder("reqHolderD12", List(rd1, rd2))
 
   val reqHolder12 = ReqAndHolder("reqHolder12", List(rep1, rep2))
   val reqHolder345 = ReqAndHolder("reqHolder345", List(rep3, rep4, rep5))
