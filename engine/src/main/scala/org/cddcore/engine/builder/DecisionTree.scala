@@ -49,6 +49,7 @@ sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]
 }
 
+
 case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] {
   override def hashCode = textOrder
   override def equals(other: Any) = other match {

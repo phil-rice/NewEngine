@@ -95,7 +95,7 @@ class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) =
     foldingFn: (FullR, R) => FullR): FoldingEngine1[P, R, FullR] =
     FoldingEngine1(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)
 }
-trait Engine1[P, R, FullR] extends Engine[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
+trait Engine1[P, R, FullR] extends EngineTools[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
 
 case class Engine1FromTests[P, R](
   asRequirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],

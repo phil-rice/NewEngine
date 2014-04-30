@@ -73,11 +73,11 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
     assertEquals(s"Req${repEmpty.textOrder}", name)
   }
 
-  it should "make a urlId from the template name, human readable name with text order as suffix" in {
+  it should "make a urlId from the template name with text order as suffix" in {
     val reportableToUrl = emptyR2U + List(rep1) + List(rep1a)
-    assertEquals(s"Req_rep1_${rep1.textOrder}", reportableToUrl.urlId(rep1))
+    assertEquals(s"Req_rep1_${rep1.textOrder}", UrlMap.urlId(rep1))
     val name = reportableToUrl.getName(rep1a)
-    assertEquals(s"Req_${name}_${rep1a.textOrder}", reportableToUrl.urlId(rep1a))
+    assertEquals(s"Req_${name}_${rep1a.textOrder}", UrlMap.urlId(rep1a))
   }
 
   it should "make a url from the template name of the head with path" in {
@@ -90,8 +90,19 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
     checkUrl("rootUrl/rep1/reqHolder12.ReqAndHolder.html", reqHolder12, rep1)
   }
 
+  it should "make a urlMap from all the reportables in the path" in {
+    val ru = emptyR2U ++ reqHolder12.pathsIncludingSelf
+    def checkUrl(expected: String, r: Reportable) = {
+      assertEquals(expected, ru(r));
+      assertEquals(Some(expected), ru.get(r))
+    }
+    checkUrl("rootUrl/reqHolder12.ReqAndHolder.html", reqHolder12);
+    checkUrl("rootUrl/reqHolder12/rep1.Req.html", rep1);
+    checkUrl("rootUrl/reqHolder12/rep2.Req.html", rep2);
+    assertEquals(3, ru.reportableCount)
+  }
   it should "make a urlMap from all the reportables in the container" in {
-    val ru = emptyR2U + reqHolder12.pathsIncludingSelf
+    val ru = emptyR2U ++ reqHolder12
     def checkUrl(expected: String, r: Reportable) = {
       assertEquals(expected, ru(r));
       assertEquals(Some(expected), ru.get(r))
@@ -102,30 +113,18 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
     assertEquals(3, ru.reportableCount)
   }
 
-  it should "amalgamate all the referenced documents" in {
-    import ReportableHelper._
-    val ru = emptyR2U + reqHolderD12.documentsAndEnginePaths
-    assert(!ru.contains(doc0))
-    assert(ru.contains(doc1))
-    assert(ru.contains(doc2))
-    assert(ru.contains(reqHolderD12))
-
-    assertEquals("rootUrl/reqHolderD12/name1.Document.html", ru(doc1))
-    assertEquals("rootUrl/reqHolderD12/name2.Document.html", ru(doc2))
-  }
-  it should "make a urlMap from engine " in {
-	  import ReportableHelper._
-    val e = Engine[Int, String]().useCase("").scenario(1).expected("x").build
-    val ed = e.asRequirement
-    val urlMap = emptyR2U + ed...makeUrlMapFor(e)
-    val uc1 = e.asRequirement.all(classOf[UseCase[String, (Int) => String]])(0)
-    val s1 = e.asRequirement.scenarios(0)
-    assertEquals(4, urlMap.size)
-    checkUrl(reportableToUrl, urlMap, e)
-    checkUrl(reportableToUrl, urlMap, ed)
-    checkUrl(reportableToUrl, urlMap, uc1, ed)
-    checkUrl(reportableToUrl, urlMap, s1, uc1, ed)
-  }
+  //  it should "amalgamate all the referenced documents" in {
+  //    import ReportableHelper._
+  //    val ru = emptyR2U + reqHolderD12.documentsAndEngines
+  //    assert(!ru.contains(doc0))
+  //    assert(ru.contains(doc1))
+  //    assert(ru.contains(doc2))
+  //    assert(ru.contains(reqHolderD12))
+  //
+  //    assertEquals("rootUrl/reqHolderD12/name1.Document.html", ru(doc1))
+  //    assertEquals("rootUrl/reqHolderD12/name2.Document.html", ru(doc2))
+  //  }
+  //
   //
   //  it should "make a urlMap from reportables and decision / conclusions " in {
   //    val e = Engine[Int, String]().

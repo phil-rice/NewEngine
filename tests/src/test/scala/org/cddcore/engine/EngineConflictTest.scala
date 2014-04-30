@@ -5,9 +5,9 @@ import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 import org.cddcore.engine.builder._
 
-abstract class EngineConflictTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with ConflictMessages {
+abstract class EngineConflictTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: EngineTools[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with ConflictMessages {
   implicit def toSome[X](x: X) = Some(x)
-  implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: Engine[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
+  implicit def toDecisionTreeDecisionTree[Params, BFn, R, RFn](x: EngineTools[Params, BFn, R, RFn]) = x.asInstanceOf[DecisionTree[Params, BFn, R, RFn]]
 
   builderName should "throw ScenarioConflictingWithDefaultAndNoBecauseException if comes to different conclusion when there is decision node" in {
     scenario("A"); because("A"); expected("X")

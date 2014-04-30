@@ -7,7 +7,7 @@ import org.cddcore.engine.builder._
 import org.cddcore.utilities.NestedHolder
 import ReportableHelper._
 
-abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with ConflictMessages {
+abstract class EngineInTestModeTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: EngineTools[Params, BFn, R, RFn]] extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] with ConflictMessages {
   implicit def toSome[X](x: X) = Some(x)
 
   def checkExceptions(doIt: => Unit, scenarioClassMessage: (Scenario[Params, BFn, R, RFn], List[(Class[_], Option[String])])*) = {

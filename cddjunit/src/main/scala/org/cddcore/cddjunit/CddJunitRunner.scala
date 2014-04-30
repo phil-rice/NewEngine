@@ -20,8 +20,8 @@ object CddRunner {
   val userHome = System.getProperty("user.home");
   var directory = new File(userHome, ".cdd")
   val needToAddListener = new AtomicBoolean(true)
-  val enginesInTest = new AtomicReference(List[Engine[_, _, _, _]]())
-  def addToEngines(l: List[Engine[_, _, _, _]]) {
+  val enginesInTest = new AtomicReference(List[Engine]())
+  def addToEngines(l: List[Engine]) {
     while (true) {
       val original = enginesInTest.get()
       val next = original ::: l
@@ -39,8 +39,8 @@ trait CddRunner extends Runner {
   def ldp: LoggerDisplayProcessor = implicitly[LoggerDisplayProcessor]
   val templateLike = implicitly[TemplateLike[Reportable]]
   def clazz: Class[_ <: Any]
-  val rootEngines: List[Engine[_, _, _, _]]
-  var allEngines = List[Engine[_, _, _, _]]()
+  val rootEngines: List[EngineTools[_,_,_,_]]
+  var allEngines = List[Engine]()
   var reportableToDescription = new KeyedMap[Description]()
   var exceptionMap: ExceptionMap = new ExceptionMap()
   /** Descriptions should have unique names as JUnit has defined equals on it.  This helps avoid subtle bugs*/
@@ -66,7 +66,7 @@ trait CddRunner extends Runner {
 
   def title: String
 
-  def addEngine(e: Engine[_, _, _, _]) {
+  def addEngine(e: EngineTools[_,_,_,_]) {
     exceptionMap = exceptionMap ++ e.buildExceptions
     allEngines = e :: allEngines
   }
@@ -126,7 +126,7 @@ trait CddRunner extends Runner {
         case holder: BuilderNodeHolder[R, RFn] => for (child <- holder.nodes) runReportableAndChildren(child, e)
         case scenario: Scenario[Params, BFn, R, RFn] => import e._; evaluator.validator.checkCorrectValue(evaluator, tree, scenario)
       })
-    def runEngine[Params, BFn, R, RFn, FullR](e: Engine[Params, BFn, R, RFn]): Unit = e match {
+    def runEngine[Params, BFn, R, RFn, FullR](e: EngineTools[Params, BFn, R, RFn]): Unit = e match {
       case f: FoldingEngine[Params, BFn, R, RFn, FullR] => runReportable(f.asRequirement, for (e <- f.engines) runEngine(e))
       case e: EngineFromTests[Params, BFn, R, RFn] => runReportableAndChildren(e.asRequirement, e)
     }
@@ -141,8 +141,8 @@ class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
   def title = "CDD: " + clazz.getName
   lazy val instance = test { Reflection.instantiate(clazz) };
 
-  lazy val methodRootEngines = clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => m.invoke(instance).asInstanceOf[Engine[_, _, _, _]])
-  lazy val variableRootEngines = clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => f.get(instance).asInstanceOf[Engine[_, _, _, _]])
+  lazy val methodRootEngines = clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => m.invoke(instance).asInstanceOf[EngineTools[_,_,_,_]])
+  lazy val variableRootEngines = clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => f.get(instance).asInstanceOf[EngineTools[_,_,_,_]])
   lazy val rootEngines = test { methodRootEngines ++ variableRootEngines }.sortBy((e) => e.asRequirement.textOrder).toList
   CddRunner.addToEngines(rootEngines.toList)
 
@@ -157,7 +157,7 @@ class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
   }
 
   def isEngine(rt: Class[_]): Boolean = {
-    val c = classOf[Engine[_, _, _, _]]
+    val c = classOf[Engine]
     if (c.isAssignableFrom(rt))
       return true;
     for (t <- rt.getInterfaces())
@@ -168,15 +168,15 @@ class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
 }
 
 trait HasEngines {
-  def engines: List[Engine[_, _, _, _]]
+  def engines: List[Engine]
 }
 
 class CddContinuousIntegrationRunner(val clazz: Class[Any]) extends CddRunner {
   def title = "Constraint Driven Development"
   lazy val instance = Engine.test { Reflection.instantiate(clazz) }.asInstanceOf[HasEngines];
-  lazy val rootEngines = instance.engines
+  lazy val rootEngines = instance.engines.collect{case e: EngineTools[_,_,_,_] => e}
 }
 
 trait CddContinuousIntegrationTest extends HasEngines {
-  def engines: List[Engine[_, _, _, _]]
+  def engines: List[Engine]
 }

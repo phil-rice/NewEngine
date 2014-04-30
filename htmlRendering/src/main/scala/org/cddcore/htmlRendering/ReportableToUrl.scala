@@ -1,8 +1,8 @@
 package org.cddcore.htmlRendering
 
 import org.cddcore.utilities._
-
 import org.cddcore.engine._
+import org.apache.xalan.templates.TemplateList
 
 trait UrlMap {
   def rootUrl: String
@@ -26,7 +26,11 @@ trait UrlMap {
   def contains(r: Reportable) = toUrl.contains(r)
   def containsName(s: String) = seen.contains(s)
   def reportableCount = toUrl.size
-  def urlId(r: Reportable)(implicit conv: TemplateLike[Reportable]) = s"${conv(r)}_${rToName(r)}_${r.textOrder}"
+}
+
+object UrlMap {
+  def apply(rootUrl: String = "") = new SimpleReportableToUrl(rootUrl)
+  def urlId(r: Reportable)(implicit conv: TemplateLike[Reportable]) = s"${conv(r)}_${r.textOrder}"
 }
 
 trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
@@ -34,7 +38,8 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
   private def asRu = this.asInstanceOf[RU]
   def addPath(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): (RU, String) = { val result = this + path; (result, result(path.head)) }
 
-  def +(holder: Traversable[List[Reportable]]): RU = holder.foldLeft(asRu) { _ + _ }
+  def ++(holder: NestedHolder[Reportable] with Reportable): RU = this ++ holder.pathsIncludingSelf
+  def ++(paths: Traversable[List[Reportable]])(implicit conv: TemplateLike[Reportable]): RU = paths.foldLeft(asRu) { _ + _ }
   def +(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): RU = {
     def url(ru: RU, rToName: KeyedMap[String], path: List[Reportable]) =
       (ru.rootUrl :: path.reverse.map((r) => rToName(r))).mkString("/") + "." + conv(path.head) + ".html"
@@ -74,6 +79,7 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
     val calculatedName = Strings.urlClean(r match {
       case report: Report => { val result = report.titleOrDescription(""); if (result.length > 120) "" else result }
       case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
+      case engine: EngineTools[_,_,_,_] => { val result = engine.asRequirement.titleOrDescription(""); if (result.length > 120) "" else result }
       case req: Requirement => { val result = req.titleOrDescription(""); if (result.length > 40) "" else result }
       case _ => "";
     }).replace(" ", "_")

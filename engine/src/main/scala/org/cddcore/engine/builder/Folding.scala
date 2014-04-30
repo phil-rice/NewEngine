@@ -3,7 +3,7 @@ package org.cddcore.engine.builder
 import org.cddcore.engine._
 import org.cddcore.utilities._
 
-trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: Engine[Params, BFn, R, RFn], E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, F] {
+trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BFn, R, RFn], E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, F] {
   def constructFoldingEngine(
     requirement: EngineAsRequirement[Params, BFn, R, RFn],
     engines: List[EngineFromTests[Params, BFn, R, RFn]],
@@ -32,7 +32,7 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: Engine[Params, BFn, R,
   }
 }
 
-abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, F <: Engine[Params, BFn, R, RFn], E <: Engine[Params, BFn, R, RFn]](
+abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BFn, R, RFn], E <: EngineTools[Params, BFn, R, RFn]](
   val root: DecisionTreeNode[Params, BFn, R, RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn],

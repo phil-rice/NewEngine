@@ -39,27 +39,15 @@ trait NestedHolder[T] extends Traversable[T] {
     def foreach[U](f: List[X] => U) = foreachPrim[U](nodes, f, initialPath)
   }
   lazy val paths = pathsFrom[T](List())
+  lazy val pathsWithStartChildEnd = Lists.pathToStartChildEnd(paths)
+  lazy val pathsincludingSelfWithStartChildEnd = Lists.pathToStartChildEnd(pathsIncludingSelf)
 
   lazy val pathsIncludingSelf: Traversable[List[T]] = pathsIncludingSelf(List())
-
   def pathsIncludingSelf[X >: T](initialPath: List[X]) = new PathTraversable[T, X](initialPath) {
     def foreach[U](f: List[X] => U): Unit = {
       val initialValue = NestedHolder.this.asInstanceOf[T] :: initialPath
       f(initialValue)
       foreachPrim[U](nodes, f, initialValue)
-    }
-  }
-
-  def pathWithStartChildEnd[T]: Traversable[(List[T], StartChildEndType)] = new Traversable[(List[T], StartChildEndType)] {
-    def foreach[U](fn: ((List[T], StartChildEndType)) => U): Unit = foreachPrim(this, fn, List())
-    def foreachPrim[U](parent: Any, fn: ((List[T], StartChildEndType)) => U, path: List[T]): Unit = parent match {
-      case holder: NestedHolder[T] with T => {
-        val newPath = holder :: path
-        fn((newPath, Start));
-        for (c <- holder.nodes) foreachPrim[U](c, fn, newPath)
-        fn((newPath, End));
-      }
-      case t: T => fn((t :: path, Child));
     }
   }
 

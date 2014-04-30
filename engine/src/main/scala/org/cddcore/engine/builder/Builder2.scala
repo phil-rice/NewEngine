@@ -92,7 +92,7 @@ case class SimpleBuildEngine2[P1, P2, R] extends SimpleBuildEngine[(P1, P2), (P1
     Engine2FromTests(requirement, dt, evaluateTree, exceptionMap)
 }
 
-trait Engine2[P1, P2, R, FullR] extends Engine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, FullR]
+trait Engine2[P1, P2, R, FullR] extends EngineTools[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, FullR]
 
 case class Engine2FromTests[P1, P2, R](
   asRequirement: EngineAsRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],

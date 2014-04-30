@@ -5,7 +5,7 @@ import org.cddcore.engine.builder._
 import scala.language.implicitConversions
 import org.scalatest.junit.JUnitRunner
 
-abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]] 
+abstract class BuilderLensTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: EngineTools[Params, BFn, R, RFn]] 
 extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)
 

@@ -10,7 +10,7 @@ object AbstractTestTest {
   }
 }
 
-abstract class AbstractTestTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: Engine[Params, BFn, R, RFn]]
+abstract class AbstractTestTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
 
   "The abstractTest class" should "allow becauses to be specified and the because means 'all these letters are in the result'" in {

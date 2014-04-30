@@ -9,9 +9,12 @@ object BuildEngine {
     List(FoldingEngineDescription[Params, BFn, R, RFn, FullR](initialValue = new CodeHolder(() => initialValue, initialValue.toString), foldingFn = foldingFn))
 
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) = Conclusion[Params, BFn, R, RFn](code, List())
-  def defaultRootCode1[P, R]: CodeHolder[(P) => R] = new CodeHolder((p: P) => throw new UndecidedException, "throws Undecided Exception")
-  def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] = new CodeHolder((p1: P1, p2: P2) => throw new UndecidedException, "throws Undecided Exception")
-  def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) => throw new UndecidedException, "throws Undecided Exception")
+  def defaultRootCode1[P, R]: CodeHolder[(P) => R] = new CodeHolder((p: P) =>
+    throw new UndecidedException, "throws Undecided Exception")
+  def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] = new CodeHolder((p1: P1, p2: P2) =>
+    throw new UndecidedException, "throws Undecided Exception")
+  def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) =>
+    throw new UndecidedException, "throws Undecided Exception")
 
   private def expectedValue[R](x: Either[Exception, R]): R = x match {
     case Left(e) =>
@@ -39,7 +42,7 @@ object BuildEngine {
   def validateScenario[Params, BFn, R, RFn] = new SimpleValidateScenario[Params, BFn, R, RFn]
 }
 
-abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]](
+abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]](
   val root: DecisionTreeNode[Params, BFn, R, RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
@@ -50,7 +53,7 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: Engine[Params, BFn, R
   lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
 }
 
-trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
+trait BuildEngineFromTests[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
   def constructEngine(asRequirement: EngineAsRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap): E
   def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
     requirement match {
@@ -61,7 +64,7 @@ trait BuildEngineFromTests[Params, BFn, R, RFn, E <: Engine[Params, BFn, R, RFn]
   }
 }
 
-trait BuildEngine[Params, BFn, R, RFn, FullR, E <: Engine[Params, BFn, R, RFn]] {
+trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, RFn]] {
   type DT = DecisionTree[Params, BFn, R, RFn]
   type DN = DecisionTreeNode[Params, BFn, R, RFn]
   type Dec = Decision[Params, BFn, R, RFn]

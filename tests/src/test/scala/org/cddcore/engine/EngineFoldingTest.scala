@@ -5,10 +5,10 @@ import org.scalatest.junit.JUnitRunner
 import scala.language.implicitConversions
 import org.cddcore.engine.builder._
 import ReportableHelper._
-abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
+abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] with FoldingBuilderTest[R, FullR] {
   implicit def toSome[X](x: X) = Some(x)
-  implicit def toFoldingEngine(e: Engine[Params, BFn, R, RFn]) = e.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, FullR]]
+  implicit def toFoldingEngine(e: EngineTools[Params, BFn, R, RFn]) = e.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, FullR]]
   type FD = FoldingEngineDescription[Params, BFn, R, RFn, FullR]
   type ED = EngineDescription[Params, BFn, R, RFn]
   implicit def toFullR(seed: String): FullR

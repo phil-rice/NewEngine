@@ -11,7 +11,7 @@ trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
   def copyWithNewExceptions(buildExceptions: ExceptionMap): CanCopyWithNewExceptionMap[R, RFn]
 }
 
-trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
+trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends BuilderNodeHolder[R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
   with WhileBuildingValidateScenario[Params, BFn, R, RFn] {

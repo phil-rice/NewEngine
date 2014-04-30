@@ -8,9 +8,9 @@ object Lists {
       case _ => List(List(t))
     }).reverse
   }
-  def decreasingList[T](list: List[T]): List[List[T]] = list match {
+  def decreasingList[T](list: Iterable[T]): List[List[T]] = list.toList match {
     case Nil => Nil;
-    case _ => decreasingListPrim(List(list), list).reverse
+    case l => decreasingListPrim(List(l), l).reverse
   }
 
   private def decreasingListPrim[T](acc: List[List[T]], list: List[T]): List[List[T]] =
@@ -19,5 +19,24 @@ object Lists {
       case h :: t => decreasingListPrim(t :: acc, t)
       case _ => acc
     }
+
+  /** this is only of value on paths. So paths are generated from things like the NestedHolder and have properties. They are a depth first traversal of a structure*/
+  def pathToStartChildEnd[T](traversable: Traversable[List[T]]) = {
+    import StartChildEndType._
+    def closing(a: List[T], b: List[T]) = {
+      val (prefixSameCount, _) = a.zip(b).foldLeft((0, true))((acc, lr) => (acc, lr) match {
+        case ((value, true), (l, r)) if l == r => (value + 1, true)
+        case _ => acc
+      })
+      (a, Child) :: ((prefixSameCount + 1) to (a.size - 1)).map((i) => (a.take(i), End)).reverse.toList
+    }
+    val list = traversable.toList
+    list.zipAll(list.tail, null, List()).flatMap {
+      case (a, b) if a.size == b.size => List((a, Child))
+      case (a, b) if a.size < b.size => List((a, Start))
+      case (a, b) => closing(a, b)
+    }
+
+  }
 
 }

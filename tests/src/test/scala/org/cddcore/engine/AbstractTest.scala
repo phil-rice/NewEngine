@@ -38,7 +38,7 @@ trait AssertEquals {
   }
 }
 
-trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
+trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends BuilderTest[Params, BFn, R, RFn, FullR, B, E]
   with BuilderBeingTested[Params, BFn, R, RFn, FullR, B, E]
   with DecisionTreeBuilderForTests[Params, BFn, R, RFn] {
@@ -53,7 +53,7 @@ trait DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, FullR, B <: 
 
 trait AbstractTest extends FlatSpecLike with Matchers with AssertEquals
 
-trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]] {
+trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]] {
   type Seed
   type ResultSeed
   private var builder: B = initializeBuilder()
@@ -87,7 +87,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def becauseBfn(seed: Seed): BFn
 }
 
-trait BuilderTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: Engine[Params, BFn, R, RFn]]
+trait BuilderTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends AbstractTest
   with BeforeAndAfter
   with BuilderBeingTested[Params, BFn, R, RFn, FullR, B, E] {

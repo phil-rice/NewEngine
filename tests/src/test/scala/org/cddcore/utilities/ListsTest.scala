@@ -6,18 +6,81 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class ListsTest extends AbstractTest {
-
   "The increasingList method" should "return a gradually increasing list of the items in the original list" in {
     assertEquals(List(), Lists.increasingList(List()))
     assertEquals(List(List("a")), Lists.increasingList(List("a")))
     assertEquals(List(List("a"), List("a", "b")), Lists.increasingList(List("a", "b")))
     assertEquals(List(List("a"), List("a", "b"), List("a", "b", "c")), Lists.increasingList(List("a", "b", "c")))
   }
+  
   "The decreasingList method" should "return a gradually decreasing list of the items in the original list" in {
     assertEquals(List(List("a")), Lists.decreasingList(List("a")))
     assertEquals(List(List("a", "b"), List("b")), Lists.decreasingList(List("a", "b")))
     assertEquals(List(List("a", "b", "c"), List("b", "c"), List("c")), Lists.decreasingList(List("a", "b", "c")))
     assertEquals(List(), Lists.decreasingList(List()))
   }
-
+  
+  "The toStartChildEnd method" should "turn a list of lists into a list of lists with a start / child or end marker" in {
+    import StartChildEndType._
+    def l[T](ts: T*) = ts.toList
+    assertEquals(l(
+      (l(1), Child),
+      (l(2), Child),
+      (l(3), Child)),
+      Lists.pathToStartChildEnd(l(
+        l(1),
+        l(2),
+        l(3))))
+    assertEquals(l(
+      (l(1), Start),
+      (l(1, 2), Start),
+      (l(1, 2, 3), Child),
+      (l(1, 2), End),
+      (l(1), End)),
+      Lists.pathToStartChildEnd(List(List(1), List(1, 2), List(1, 2, 3))))
+    assertEquals(l(
+      (l(1), Start),
+      (l(1, 2), Start),
+      (l(1, 2, 3), Child),
+      (l(1, 2), End),
+      (l(1), End)),
+      Lists.pathToStartChildEnd(List(List(1), List(1, 2), List(1, 2, 3))))
+    assertEquals(l(
+      (l(1), Start),
+      (l(1, 2), Start),
+      (l(1, 2, 3), Child),
+      (l(1, 2, 4), Start),
+      (l(1, 2, 4, 5), Child),
+      (l(1, 2, 4, 6), Child),
+      (l(1, 2, 4), End),
+      (l(1, 2), End),
+      (l(1, 3), Start),
+      (l(1, 3, 7), Child),
+      (l(1, 3), End),
+      (l(1), End)),
+      Lists.pathToStartChildEnd(List(
+        List(1),
+        List(1, 2),
+        List(1, 2, 3),
+        List(1, 2, 4),
+        List(1, 2, 4, 5),
+        List(1, 2, 4, 6),
+        List(1, 3),
+        List(1, 3, 7))))
+    assertEquals(l(
+      (l(1), Start),
+      (l(1, 2), Start),
+      (l(1, 2, 3), Start),
+      (l(1, 2, 3, 4), Child),
+      (l(1, 2, 3), End),
+      (l(1, 2), End),
+      (l(1, 5), Child),
+      (l(1), End)),
+      Lists.pathToStartChildEnd(List(
+        List(1),
+        List(1, 2),
+        List(1, 2, 3),
+        List(1, 2, 3, 4),
+        List(1, 5))))
+  }
 }
