@@ -75,9 +75,8 @@ class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with Repo
 
   it should "make a urlId from the template name with text order as suffix" in {
     val reportableToUrl = emptyR2U + List(rep1) + List(rep1a)
-    assertEquals(s"Req_rep1_${rep1.textOrder}", UrlMap.urlId(rep1))
-    val name = reportableToUrl.getName(rep1a)
-    assertEquals(s"Req_${name}_${rep1a.textOrder}", UrlMap.urlId(rep1a))
+    assertEquals(s"Req_${rep1.textOrder}", UrlMap.urlId(rep1))
+    assertEquals(s"Req_${rep1a.textOrder}", UrlMap.urlId(rep1a))
   }
 
   it should "make a url from the template name of the head with path" in {

@@ -5,7 +5,6 @@ import org.cddcore.engine._
 import java.util.Date
 
 
-
 case class Report(
   val title: Option[String] = None,
   val date: Date = new Date(),

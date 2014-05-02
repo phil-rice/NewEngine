@@ -10,11 +10,11 @@ object BuildEngine {
 
   def defaultRoot[Params, BFn, R, RFn](code: CodeHolder[RFn]) = Conclusion[Params, BFn, R, RFn](code, List())
   def defaultRootCode1[P, R]: CodeHolder[(P) => R] = new CodeHolder((p: P) =>
-    throw new UndecidedException, "throws Undecided Exception")
+    throw UndecidedException(p), "throws Undecided Exception")
   def defaultRootCode2[P1, P2, R]: CodeHolder[(P1, P2) => R] = new CodeHolder((p1: P1, p2: P2) =>
-    throw new UndecidedException, "throws Undecided Exception")
+    throw UndecidedException(p1, p2), "throws Undecided Exception")
   def defaultRootCode3[P1, P2, P3, R]: CodeHolder[(P1, P2, P3) => R] = new CodeHolder((p1: P1, p2: P2, p3: P3) =>
-    throw new UndecidedException, "throws Undecided Exception")
+    throw UndecidedException(p1, p2, p3), "throws Undecided Exception")
 
   private def expectedValue[R](x: Either[Exception, R]): R = x match {
     case Left(e) =>

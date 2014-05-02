@@ -115,6 +115,24 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     val actual = evaluating { e.applyParams("A") } should produce[RuntimeException]
     assertEquals(ex, actual)
   }
+
+  it should "throw CodeDoesntProduceExpectedException if there is a code block that produces the wrong expected" in {
+    scenario("A")
+    expected("X")
+    code("Y")
+    val e = evaluating { build } should produce[CodeDoesntProduceExpectedException]
+    assertEquals("" +
+      "Code block doesn't produce expected.\n" +
+      "Expected result: Right(X)\n" +
+      "Actual result: Right(Y)\n" +
+      "Code:\n" +
+      "CodeHolder((p)=>resultY)\n" +
+      "Scenario:\n" +
+      "Scenario(A,None,None,None,Some(CodeHolder((p)=>resultY)),None,Some(Right(X)),Set(),List(),List())\n" +
+      "Parameters:\n" +
+      "A", e.getMessage)
+
+  }
   //  it should "Add scenario to root if adding with same conclusion, different reason" in {
   //    val b = builderWithDefault.scenario("B").because("B").expected("Z")
   //    val e1 = builderWithDefault.build

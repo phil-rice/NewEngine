@@ -35,14 +35,14 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
     }
   }
   protected def makeClosures: MakeClosures[Params, BFn, R, RFn]
-  
+
   def title(title: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(titleL).set(this, Some(title)))
   def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
   def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
 
   def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) =>
     new UseCase[R, RFn](Some(title), description = Option(description)) :: nodes))
-  def becauseHolder(becauseHolder: CodeHolder[BFn]):B =
+  def becauseHolder(becauseHolder: CodeHolder[BFn]): B =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
@@ -82,6 +82,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
     checkHasExpected(s)
   }
   def postValidateScenario(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    checkCodeComesToExpected(evaluateTree, s)
     checkAssertions(evaluateTree, tree, s)
     checkCorrectValue(evaluateTree, tree, s)
   }
@@ -90,6 +91,16 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
     if (s.expected.isEmpty) throw NoExpectedException(s)
     s
   }
+  def checkCodeComesToExpected(evaluateTree: EvaluateTree[Params, BFn, R, RFn], s: S) {
+    (s.code, s.expected) match {
+      case (Some(code), Some(expected)) =>
+        val actual = evaluateTree.makeClosures.safeEvaluateResult(code.fn, s)
+        if (!Reportable.compare(actual, expected))
+          throw CodeDoesntProduceExpectedException(s, actual)
+      case _ =>
+    }
+  }
+
   def checkAssertions(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
     s.assertions.foreach((a) => {
       val result = evaluateTree.safeEvaluate(tree, s)

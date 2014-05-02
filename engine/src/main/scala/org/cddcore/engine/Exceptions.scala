@@ -21,7 +21,15 @@ class EngineException(msg: String, cause: Throwable) extends Exception(msg, caus
 }
 class CannotHaveChildEnginesWithoutFolderException extends EngineException
 
-class UndecidedException extends EngineException
+object UndecidedException {
+  protected def params(ps: Any*)(implicit ldp: LoggerDisplayProcessor) =
+    (ps.size match { case 0 => "Param: "; case _ => "Params:\n  " }) + ps.zipWithIndex.map { case (p, i) => s"Param${i + 1}: ${ldp(p)}" }.mkString("\n  ")
+  def apply[P](p: P)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p), p)
+  def apply[P1, P2](p1: P1, p2: P2)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2), (p1, p2))
+  def apply[P1, P2, P3](p1: P1, p2: P2, p3: P3)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2, p3), (p1, p2, p3))
+}
+
+class UndecidedException(msg: String, val params: Any) extends EngineException(msg)
 
 object NeedScenarioException {
   def apply() = new NeedScenarioException("This operation needed a scenario")
@@ -74,6 +82,13 @@ object NoExpectedException {
     new NoExpectedException(s"No expected in ${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)
 }
 class NoExpectedException(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
+
+object CodeDoesntProduceExpectedException {
+  def apply(scenario: Scenario[_, _, _, _], actual: Either[Exception, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =
+    new CodeDoesntProduceExpectedException(s"Code block doesn't produce expected.\nExpected result: ${scenario.expected.get}\nActual result: $actual\nCode:\n${scenario.code.get}\n${ExceptionScenarioPrinter.full(scenario)}", scenario, actual, cause)
+}
+class CodeDoesntProduceExpectedException(msg: String, scenario: Scenario[_, _, _, _], val actual: Either[Exception, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
+
 
 object ScenarioBecauseException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =

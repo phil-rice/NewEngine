@@ -1,5 +1,7 @@
 package org.cddcore.utilities
 
+import StartChildEndType._
+
 object Lists {
 
   def increasingList[T](list: List[T]) = {
@@ -20,23 +22,37 @@ object Lists {
       case _ => acc
     }
 
+  def suffixSameCount[T](a: List[T], b: List[T]) = {
+    val (suffixSameCount, _) = a.reverse.zip(b.reverse).foldLeft((0, true))((acc, lr) => (acc, lr) match {
+      case ((value, true), (l, r)) if l == r => (value + 1, true)
+      case _ => acc
+    })
+    suffixSameCount
+  }
+
   /** this is only of value on paths. So paths are generated from things like the NestedHolder and have properties. They are a depth first traversal of a structure*/
   def pathToStartChildEnd[T](traversable: Traversable[List[T]]) = {
-    import StartChildEndType._
     def closing(a: List[T], b: List[T]) = {
-      val (prefixSameCount, _) = a.zip(b).foldLeft((0, true))((acc, lr) => (acc, lr) match {
-        case ((value, true), (l, r)) if l == r => (value + 1, true)
-        case _ => acc
-      })
-      (a, Child) :: ((prefixSameCount + 1) to (a.size - 1)).map((i) => (a.take(i), End)).reverse.toList
+      val result = (a, Child) :: (1 to (a.size - suffixSameCount(a, b) -1) ).map((i) => (a.drop(i), End)).toList
+      result
     }
     val list = traversable.toList
     list.zipAll(list.tail, null, List()).flatMap {
-      case (a, b) if a.size == b.size => List((a, Child))
-      case (a, b) if a.size < b.size => List((a, Start))
-      case (a, b) => closing(a, b)
+      case (a, b) if a.size == b.size =>
+        List((a, Child))
+      case (a, b) if a.size < b.size =>
+        List((a, Start))
+      case (a, b) =>
+        closing(a, b)
     }
+  }
 
+  def dumpPathsWithStartChildEnd[T](l: Traversable[(List[T], StartChildEndType)], fn: (T) => String = (t: T) => t.toString, pathSeparator: String = ",", separator: String = "\n"): String = {
+    l.map { (x: (List[T], StartChildEndType)) =>
+      x match {
+        case (list, sce) => s"(${list.map(fn).mkString(pathSeparator)},$sce)"
+      }
+    }.mkString(separator)
   }
 
 }
