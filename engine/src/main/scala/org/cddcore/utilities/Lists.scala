@@ -31,13 +31,28 @@ object Lists {
   }
 
   /** this is only of value on paths. So paths are generated from things like the NestedHolder and have properties. They are a depth first traversal of a structure*/
-  def pathToStartChildEnd[T](traversable: Traversable[List[T]]) = {
+  def traversableToStartChildEnd[T](traversable: Traversable[List[T]]) = {
+    val paths = traversable.toList
+    pathToStartChildEnd(paths)
+    //    def closing(a: List[T], b: List[T]) = {
+    //      val result = (a, Child) :: (1 to (a.size - suffixSameCount(a, b) - 1)).map((i) => (a.drop(i), End)).toList
+    //      result
+    //    }
+    //    list.zipAll(list.tail, null, List()).flatMap {
+    //      case (a, b) if a.size == b.size =>
+    //        List((a, Child))
+    //      case (a, b) if a.size < b.size =>
+    //        List((a, Start))
+    //      case (a, b) =>
+    //        closing(a, b)
+    //    }
+  }
+  def pathToStartChildEnd[T](paths: List[List[T]]) = {
     def closing(a: List[T], b: List[T]) = {
-      val result = (a, Child) :: (1 to (a.size - suffixSameCount(a, b) -1) ).map((i) => (a.drop(i), End)).toList
+      val result = (a, Child) :: (1 to (a.size - suffixSameCount(a, b) - 1)).map((i) => (a.drop(i), End)).toList
       result
     }
-    val list = traversable.toList
-    list.zipAll(list.tail, null, List()).flatMap {
+    paths.zipAll(paths.tail, null, List()).flatMap {
       case (a, b) if a.size == b.size =>
         List((a, Child))
       case (a, b) if a.size < b.size =>
@@ -46,7 +61,6 @@ object Lists {
         closing(a, b)
     }
   }
-
   def dumpPathsWithStartChildEnd[T](l: Traversable[(List[T], StartChildEndType)], fn: (T) => String = (t: T) => t.toString, pathSeparator: String = ",", separator: String = "\n"): String = {
     l.map { (x: (List[T], StartChildEndType)) =>
       x match {

@@ -46,7 +46,7 @@ trait ConflictMessages1 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
-    "Left(org.cddcore.engine.UndecidedException: )\n" +
+    "Left(org.cddcore.engine.UndecidedException: \nParams:\n  Param1: B)\n" +
     "Expected\n" +
     "Right(Z)\n" +
     "Scenario:\n" +
@@ -84,7 +84,7 @@ trait ConflictMessages2 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
-    "Left(org.cddcore.engine.UndecidedException: )\n" +
+    "Left(org.cddcore.engine.UndecidedException: \nParams:\n  Param1: B\n  Param2: B)\n" +
     "Expected\n" +
     "Right(Z)\n" +
     "Scenario:\n" +
@@ -122,7 +122,7 @@ trait ConflictMessages3 extends ConflictMessages {
   protected val expectedMessageForComesToDifferentConclusionWhenThereIsADecisionNode = "\n" +
     "Lens(rootL.toDecisionL.noL)\n" +
     "Actual Result:\n" +
-    "Left(org.cddcore.engine.UndecidedException: )\n" +
+    "Left(org.cddcore.engine.UndecidedException: \nParams:\n  Param1: B\n  Param2: B\n  Param3: B)\n" +
     "Expected\n" +
     "Right(Z)\n" +
     "Scenario:\n" +

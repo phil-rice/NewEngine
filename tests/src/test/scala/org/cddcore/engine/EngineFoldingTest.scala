@@ -76,6 +76,18 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     assertEquals(expectedValue, e.applyParams(params("a")))
   }
 
+  it should "add the references to the childengines" in {
+    val doc = new Document(Some("doc"))
+    val ref1 = Reference("ref1")
+    val ref2 = Reference("ref2", doc)
+    update(_.childEngine("").reference("ref1").reference("ref2", doc))
+    val e = build.asInstanceOf[FoldingEngine[Params, BFn, R, RFn, FullR]]
+    val ce = e.engines.head
+    import ReportableHelper._
+    assertEquals(Set(ref1, ref2), ce.asRequirement.references)
+    assertEquals(List(doc), e.asRequirement.documents)
+  }
+
   it should "have it's scenarios in text order" in {
     update(_.childEngine("ce1"))
     scenario("A"); expected("1")

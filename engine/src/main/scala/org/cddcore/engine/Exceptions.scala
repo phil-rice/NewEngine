@@ -23,7 +23,7 @@ class CannotHaveChildEnginesWithoutFolderException extends EngineException
 
 object UndecidedException {
   protected def params(ps: Any*)(implicit ldp: LoggerDisplayProcessor) =
-    (ps.size match { case 0 => "Param: "; case _ => "Params:\n  " }) + ps.zipWithIndex.map { case (p, i) => s"Param${i + 1}: ${ldp(p)}" }.mkString("\n  ")
+    (ps.size match { case 0 => "Param: "; case _ => "\nParams:\n  " }) + ps.zipWithIndex.map { case (p, i) => s"Param${i + 1}: ${ldp(p)}" }.mkString("\n  ")
   def apply[P](p: P)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p), p)
   def apply[P1, P2](p1: P1, p2: P2)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2), (p1, p2))
   def apply[P1, P2, P3](p1: P1, p2: P2, p3: P3)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2, p3), (p1, p2, p3))

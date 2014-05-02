@@ -14,7 +14,7 @@ trait NestedHolderLike[H, T] {
 
 abstract class PathTraversable[T, X >: T](initialPath: List[X]) extends Traversable[List[X]] {
   protected def foreachPrim[U](nodes: List[T], f: List[X] => U, path: List[X]): Unit = {
-    println(s"Path$path Nodes$nodes")
+//    println(s"Path$path Nodes$nodes")
     for (c <- nodes) {
       val cPath = c :: path
       f(cPath)
@@ -39,8 +39,8 @@ trait NestedHolder[T] extends Traversable[T] {
     def foreach[U](f: List[X] => U) = foreachPrim[U](nodes, f, initialPath)
   }
   lazy val paths = pathsFrom[T](List())
-  lazy val pathsWithStartChildEnd = Lists.pathToStartChildEnd(paths)
-  lazy val pathsincludingSelfWithStartChildEnd = Lists.pathToStartChildEnd(pathsIncludingSelf)
+  lazy val pathsWithStartChildEnd = Lists.traversableToStartChildEnd(paths)
+  lazy val pathsincludingSelfWithStartChildEnd = Lists.traversableToStartChildEnd(pathsIncludingSelf)
 
   lazy val pathsIncludingSelf: Traversable[List[T]] = pathsIncludingSelf(List())
   def pathsIncludingSelf[X >: T](initialPath: List[X]) = new PathTraversable[T, X](initialPath) {
@@ -50,5 +50,6 @@ trait NestedHolder[T] extends Traversable[T] {
       foreachPrim[U](nodes, f, initialValue)
     }
   }
-
 }
+
+case class SimpleNestedHolder[T](nodes: List[T]) extends NestedHolder[T]

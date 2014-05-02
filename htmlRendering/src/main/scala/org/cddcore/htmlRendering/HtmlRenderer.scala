@@ -38,61 +38,44 @@ case class RenderContext(urlMap: UrlMap, reportDate: Date, reportDetails: Report
 case class DocumentHolder(val nodes: List[Document], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
 case class EngineHolder(val nodes: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
 
-object DocumentAndEngineHolder {
-  import EngineTools._
-  import ReportableHelper._
-  def apply(es: Iterable[Engine]) = {
-    val documents = es.flatMap(_.asRequirement.documents).toList.removeDuplicates.sortBy(_.textOrder)
-    val engines = es.toList.sortBy(_.textOrder)
-    new DocumentAndEngineHolder(documents, engines)
-  }
-  def apply(e: Engine) = new DocumentAndEngineHolder(e.asRequirement.documents, List(e))
-}
-
-case class DocumentAndEngineHolder(documents: List[Document], val engines: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable {
-  val documentHolder = DocumentHolder(documents)
-  val engineHolder = EngineHolder(engines)
-  val nodes = List(documentHolder, engineHolder)
-  override def toString() = s"DocumentAndEngineHolder(docs=${documents.map(_.titleString).mkString(",")},engines=${engines.map(_.titleString).mkString(",")}"
-}
 object SampleContexts {
 
   val testDate = new Date(2000, 1, 1)
   val rootUrl = "RootUrl"
   val emptyUrlMap = UrlMap(rootUrl)
-  def documentAndEngineReport(e: Engine) = {
-    import ReportableHelper._
-    import EngineTools._
-    val ed = e.asRequirement
-    val dAndE = DocumentAndEngineHolder(ed.documents, ed.engines)
-    (Report(Some("reportTitle"), nodes = List(dAndE)), dAndE)
-
-  }
+  //  def documentAndEngineReport(e: Engine) = {
+  //    import ReportableHelper._
+  //    import EngineTools._
+  //    val ed = e.asRequirement
+  //    val dAndE = DocumentAndEngineReport(testDate, List(e))
+  //    (Report(Some("reportTitle"), nodes = List(dAndE)), dAndE)
+  //
+  //  }
   def context(rs: Reportable*) = {
     val c = RenderContext(Lists.decreasingList(rs).foldLeft(emptyUrlMap) { _ + _ }, testDate)
     c
   }
 
   def documentContext(d: Document, ds: Document*): (RenderContext, List[Reportable]) = {
-    val dAndE = DocumentAndEngineHolder(List(d), List())
-    val report = Report(Some("reportTitle"), nodes = List(dAndE))
-    (RenderContext(emptyUrlMap ++ report, testDate), List(d, dAndE, report))
+    val e = (d :: ds.toList).foldLeft(Engine[Int, Int]())((builder, doc) => builder.reference("", doc)).build
+    val report = Report.documentAndEngineReport(Some("documentAndEngineReportTitle"), testDate, List(e))
+    (RenderContext(emptyUrlMap ++ report.urlMapPaths, testDate), List(d, report.documentHolder, report))
   }
+  val doc1 = Document(title = Some("doc1title"), url = Some("doc1Url"))
+  val docWithoutTitle = Document(url = Some("doc1Url"))
+  val docHolderWithDoc1 = DocumentHolder(List(doc1), textOrder = 333)
 
   val eBlank = Engine[Int, Int]().build
   val engineHolderWithBlank = EngineHolder(List(eBlank), textOrder = 111)
 
   val eBlankWithTitle = Engine[Int, Int]().title("EBlankTitle").build
+  val eBlankWithTitleAndDoc1 = Engine[Int, Int]().title("EBlankTitle").reference("", doc1).build
   val engineHolderWithBlankAndTitle = EngineHolder(List(eBlankWithTitle), textOrder = 222)
 
   val reqNoTitle = RequirementForTest(textOrder = 666)
   val reqWithTitle = RequirementForTest(title = Some("ReqTitle"))
 
-  val doc1 = Document(title = Some("doc1title"), url = Some("doc1Url"))
-  val docWithoutTitle = Document(url = Some("doc1Url"))
-  val docHolderWithDoc1 = DocumentHolder(List(doc1), textOrder = 333)
-
-  val documentAndEngineHolder = new DocumentAndEngineHolder(List(doc1), List(eBlankWithTitle), textOrder = 444)
+  val documentAndEngineReport = Report.documentAndEngineReport(Some("documentAndEngineReportTitle"), testDate, List(eBlankWithTitleAndDoc1))
 }
 
 @RunWith(classOf[CddJunitRunner])
@@ -102,15 +85,15 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
   private def formatter = new SimpleDateFormat("dd MMM yyyy")
 
   type PathAndTag = (List[Reportable], StartChildEndType)
-  def documentsAndEngine(title: String, engines: List[Engine], date: Date) = {
-    val dAndE = DocumentAndEngineHolder(engines)
-    val report = Report(Some(title), nodes = List(dAndE))
-    val urlMap = UrlMap() ++ report
-    val renderContext = RenderContext(urlMap, date)
-    val css = Files.getFromClassPath(classOf[ReportDetails], "cdd.css")
-    val html = Lists.pathToStartChildEnd(report.pathsIncludingSelf).foldLeft("") { case (acc, (path, tag)) => acc + engineAndDocumentsSingleItemRenderer(renderContext, path, tag) }
-    html
-  }
+  //  def documentsAndEngine(title: String, engines: List[Engine], date: Date) = {
+  //    val dAndE = DocumentAndEngineHolder(engines)
+  //    val report = Report(Some(title), nodes = List(dAndE))
+  //    val urlMap = UrlMap() ++ report.paths
+  //    val renderContext = RenderContext(urlMap, date)
+  //    val css = Files.getFromClassPath(classOf[ReportDetails], "cdd.css")
+  //    val html = Lists.pathToStartChildEnd(report.paths).foldLeft("") { case (acc, (path, tag)) => acc + engineAndDocumentsSingleItemRenderer(renderContext, path, tag) }
+  //    html
+  //  }
   import TemplateLike._
 
   def builderWithReport(title: String) = Engine[RenderContext, List[Reportable], StartChildEndType, String]().title(title).
@@ -142,14 +125,14 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     build
 
   val engineAndDocumentsSingleItemRenderer = builderWithReport("Engine and Documents Single Item Renderer").
-    useCase("A Document And Engine Holder has a div").
-    scenario(context(documentAndEngineHolder), List(documentAndEngineHolder), Start).
-    expected("\n<div class='documentAndEngineHolder'>\n").
-    because { case (_, (r: DocumentAndEngineHolder) :: _, Start) => true; case _ => false }.
-
-    scenario(context(documentAndEngineHolder), List(documentAndEngineHolder), End).
-    expected("\n</div> <!-- documentAndEngineHolder -->\n").
-    because { case (_, (r: DocumentAndEngineHolder) :: _, End) => true; case _ => false }.
+    //    useCase("A Document And Engine Holder has a div").
+    //    scenario(context(documentAndEngineHolder), List(documentAndEngineHolder), Start).
+    //    expected("\n<div class='documentAndEngineHolder'>\n").
+    //    because { case (_, (r: DocumentAndEngineHolder) :: _, Start) => true; case _ => false }.
+    //
+    //    scenario(context(documentAndEngineHolder), List(documentAndEngineHolder), End).
+    //    expected("\n</div> <!-- documentAndEngineHolder -->\n").
+    //    because { case (_, (r: DocumentAndEngineHolder) :: _, End) => true; case _ => false }.
 
     useCase("Engine Holders have a div, and hold the items as an unorder list").
     scenario(context(engineHolderWithBlank), List(engineHolderWithBlank), Start).
@@ -207,7 +190,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
   def main(args: Array[String]) {
     println(ReportDetails())
-    val html = documentsAndEngine("Some title", List(eBlankWithTitle), new Date)
+    val html = Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankWithTitle)), engineAndDocumentsSingleItemRenderer)
     println("------------------Start----------------------")
     println(html)
     println("------------------End----------------------")

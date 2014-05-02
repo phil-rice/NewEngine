@@ -67,12 +67,12 @@ trait SomeHoldersForTest {
 @RunWith(classOf[JUnitRunner])
 class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
 
-  "An engine holder foreach  method" should "return all the engine nodes" in {
+  "An builder node  holder foreach  method" should "return all the engine nodes" in {
     assertEquals(List(en1), holderEn1.toList)
     assertEquals(List(en1, en2), holderEn12.toList)
     assertEquals(List(holderEn12, en1, en2), holderHolderEn12.toList)
   }
-  "An engine holder all method" should "return all the engine nodes of the requested class" in {
+  "An builder node  holder all method" should "return all the engine nodes of the requested class" in {
     assertEquals(List(en1), holderEn1.all(classOf[EN]))
     assertEquals(List(en1), holderEn1.all(classOf[BuilderNode[String, (String) => String]]))
     assertEquals(List(en1, en2), holderEn12.all(classOf[EN]))
@@ -81,7 +81,7 @@ class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
     assertEquals(List(en1, en2), holderHolderEn12.all(classOf[EN]))
   }
 
-  "An engine holders paths method" should "return all the nodes in a path" in {
+  "An builder node  holders paths method" should "return all the nodes in a path" in {
     assertEquals(List(
       List(en1)), holderEn1.paths.toList)
     assertEquals(List(
@@ -90,5 +90,6 @@ class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
       List(en2, holderEn12)),
       holderHolderEn12.paths.toList)
   }
+  
 }
 

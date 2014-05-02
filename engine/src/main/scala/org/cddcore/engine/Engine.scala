@@ -131,7 +131,7 @@ class TraceEngineMonitor extends EngineMonitor {
 }
 
 object Engine {
-  var logging = true
+  var logging = false
   /** returns a builder for an engine that implements Function[P,R] */
   def apply[P, R]()(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine1)(ldp)
   /** returns a builder for an engine that implements Function2[P1,P2,R] */

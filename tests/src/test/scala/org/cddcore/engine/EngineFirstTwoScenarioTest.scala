@@ -85,6 +85,36 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     evaluating { e.applyParams("B") } should produce[UndecidedException]
   }
 
+  val doc = new Document(Some("doc"))
+  val ref1 = Reference("ref1")
+  val ref2 = Reference("ref2", doc)
+
+  it should "add the references to the engine" in {
+    update(_.reference("ref1").reference("ref2", doc))
+    val e = build
+    assertEquals(Set(ref1, ref2), e.asRequirement.references)
+  }
+
+  it should "add the references to the usecases" in {
+
+    update(_.useCase("").reference("ref1").reference("ref2", doc))
+    val e = build
+    import ReportableHelper._
+    val uc = e.asRequirement.useCases(0)
+    assertEquals(Set(ref1, ref2), uc.references)
+    assertEquals(List(doc), e.asRequirement.documents)
+  }
+  it should "add the references to the scenarios" in {
+    scenario("A")
+    expected("Something")
+    update(_.reference("ref1").reference("ref2", doc))
+    val e = build
+    import ReportableHelper._
+    val s = e.asRequirement.scenarios(0)
+    assertEquals(Set(ref1, ref2), s.references)
+    assertEquals(List(doc), e.asRequirement.documents)
+  }
+
   it should "throw a DuplicateScenarioException if the same scenario is added" in {
     scenario("A")
     evaluating { scenario("A") } should produce[DuplicateScenarioException]
@@ -120,17 +150,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     scenario("A")
     expected("X")
     code("Y")
-    val e = evaluating { build } should produce[CodeDoesntProduceExpectedException]
-    assertEquals("" +
-      "Code block doesn't produce expected.\n" +
-      "Expected result: Right(X)\n" +
-      "Actual result: Right(Y)\n" +
-      "Code:\n" +
-      "CodeHolder((p)=>resultY)\n" +
-      "Scenario:\n" +
-      "Scenario(A,None,None,None,Some(CodeHolder((p)=>resultY)),None,Some(Right(X)),Set(),List(),List())\n" +
-      "Parameters:\n" +
-      "A", e.getMessage)
+    evaluating { build } should produce[CodeDoesntProduceExpectedException]
 
   }
   //  it should "Add scenario to root if adding with same conclusion, different reason" in {

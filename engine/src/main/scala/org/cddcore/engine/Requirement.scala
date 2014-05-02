@@ -78,15 +78,17 @@ object ReportableHelper {
   implicit def toReportableHelper[Params, BFn, R, RFn](r: BuilderNodeHolder[R, RFn] with Reportable) = new ReportableHelper[Params, BFn, R, RFn](r.asInstanceOf[NestedHolder[Reportable] with Reportable])
 }
 
-
-
 class ReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with Reportable) {
   lazy val scenarios = r.all(classOf[Scenario[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
   lazy val useCases = r.all(classOf[UseCase[R, RFn]]).toList.sortBy(_.textOrder)
   lazy val engines = r.all(classOf[Engine]).toList.sortBy(_.textOrder)
-  lazy val documents = r.foldLeft(Set[Document]())((acc, r) =>
-    r match { case r: Requirement => acc ++ r.references.flatMap(_.document); case _ => acc }).toList.sortBy((x) => x.titleString)
-  
+  lazy val documents =
+    (r :: r.toList).foldLeft(Set[Document]())((acc, r) =>
+      r match {
+        case r: Requirement => acc ++ r.references.flatMap(_.document);
+        case _ => acc
+      }).toList.sortBy((x) => x.textOrder) 
+
 }
 
 case class Project(
