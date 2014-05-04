@@ -28,7 +28,7 @@ trait Engine extends Reportable {
 object EngineTools {
   implicit def toEngineTools[Params, BFn, R, RFn](e: Engine) = e.asInstanceOf[EngineTools[Params, BFn, R, RFn]]
 }
-trait EngineTools[Params, BFn, R, RFn] extends Engine {
+trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] {
   def titleString = asRequirement.titleString
   def asRequirement: EngineAsRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
@@ -36,8 +36,7 @@ trait EngineTools[Params, BFn, R, RFn] extends Engine {
 
 }
 
-trait EngineAsRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[R, RFn] with Requirement {
-}
+trait EngineAsRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn]
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with EngineTools[Params, BFn, R, RFn] {
   def engines: List[EngineFromTests[Params, BFn, R, RFn]]
@@ -140,7 +139,7 @@ object Engine {
   def apply[P1, P2, P3, R]()(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine3)(ldp)
 
   def folding[P, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
-    Builder1[P, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine1[P, R, FullR])(ldp)
+    Builder1[P, R, FullR](BuildEngine.initialNodes[P, (P) => Boolean, R, (P) => R, FullR](initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine1[P, R, FullR])(ldp)
   def foldList[P, R] = folding[P, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
   def foldSet[P, R] = folding[P, R, Set[R]](Set(), { _ + _ })
 

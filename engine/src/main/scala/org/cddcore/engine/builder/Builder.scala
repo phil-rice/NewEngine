@@ -12,7 +12,7 @@ trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
 }
 
 trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
-  extends BuilderNodeHolder[R, RFn]
+  extends BuilderNodeHolder[Params, BFn, R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
   with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   implicit def ldp: LoggerDisplayProcessor
@@ -40,8 +40,8 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   def description(description: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(descriptionL).set(this, Some(description)))
   def priority(priority: Int): B = wrap(currentNodeL.andThen(asRequirementL).andThen(priorityL).set(this, Some(priority)))
 
-  def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[R, RFn]]) =>
-    new UseCase[R, RFn](Some(title), description = Option(description)) :: nodes))
+  def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[Params, BFn, R, RFn]]) =>
+    new UseCase[Params, BFn, R, RFn](Some(title), description = Option(description)) :: nodes))
   def becauseHolder(becauseHolder: CodeHolder[BFn]): B =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
@@ -49,7 +49,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
   def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))
 
-  def copyNodes(nodes: List[BuilderNode[R, RFn]]): B
+  def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
   def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
     mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params, BFn, R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
@@ -58,7 +58,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
   type S = Scenario[Params, BFn, R, RFn]
   type MC = MakeClosures[Params, BFn, R, RFn]
-  def checkDuplicateScenario[FullR, B <: BuilderNodeHolder[R, RFn]](lens: BuilderLens[Params, BFn, R, RFn, FullR, B], rootRequirement: BuilderNodeHolder[R, RFn], s: S) = {
+  def checkDuplicateScenario[FullR, B <: BuilderNodeHolder[Params, BFn, R, RFn]](lens: BuilderLens[Params, BFn, R, RFn, FullR, B], rootRequirement: BuilderNodeHolder[Params, BFn, R, RFn], s: S) = {
     val scenarios = lens.engineDescriptionL.get(rootRequirement).all(classOf[Scenario[Params, BFn, R, RFn]]).toList;
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
     s
@@ -113,27 +113,29 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
     s.expected match {
       case Some(ex) => if (!Reportable.compare(ex, actual))
         actual match {
-          case Left(cause) => throw CameToWrongConclusionScenarioException(ex, actual, s, cause)
-          case _ => throw CameToWrongConclusionScenarioException(ex, actual, s, null)
+          case Left(cause) =>
+            throw CameToWrongConclusionScenarioException(ex, actual, s, cause)
+          case _ =>
+            throw CameToWrongConclusionScenarioException(ex, actual, s, null)
         }
       case _ => throw NoExpectedException(s)
     }
   }
 }
 
-class SimpleBuilderWithModifyChildrenForBuild[R, RFn] extends BuilderWithModifyChildrenForBuild[R, RFn]
+class SimpleBuilderWithModifyChildrenForBuild[Params, BFn, R, RFn] extends BuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
 
-trait BuilderWithModifyChildrenForBuild[R, RFn] {
-  def modifyChildrenForBuild[ED <: BuilderNodeAndHolder[R, RFn]](requirement: ED): ED = {
-    def modifyChildAsNode(path: List[Reportable], child: BuilderNode[R, RFn]) = {
+trait BuilderWithModifyChildrenForBuild[Params, BFn, R, RFn] {
+  def modifyChildrenForBuild[ED <: BuilderNodeAndHolder[Params, BFn, R, RFn]](requirement: ED): ED = {
+    def modifyChildAsNode(path: List[Reportable], child: BuilderNode[Params, BFn, R, RFn]) = {
       child
     }
-    def firstOption[X](path: List[Reportable], fn: (BuilderNode[R, RFn]) => Option[X]): Option[X] = {
-      path.collect { case e: BuilderNode[R, RFn] => fn(e) }.find((r) => r.isDefined).getOrElse(None)
+    def firstOption[X](path: List[Reportable], fn: (BuilderNode[Params, BFn, R, RFn]) => Option[X]): Option[X] = {
+      path.collect { case e: BuilderNode[Params, BFn, R, RFn] => fn(e) }.find((r) => r.isDefined).getOrElse(None)
     }
-    def modifyChild(path: List[Reportable]): BuilderNode[R, RFn] = {
+    def modifyChild(path: List[Reportable]): BuilderNode[Params, BFn, R, RFn] = {
       val nodeModified = path.head match {
-        case node: BuilderNode[R, RFn] => node.copyBuilderNode(
+        case node: BuilderNode[Params, BFn, R, RFn] => node.copyBuilderNode(
           expected = firstOption(path, _.expected),
           code = firstOption(path, _.code)).
           copyRequirement(
@@ -141,12 +143,12 @@ trait BuilderWithModifyChildrenForBuild[R, RFn] {
         case x => x
       }
       val withChildren = nodeModified match {
-        case holder: BuilderNodeHolder[R, RFn] => holder.copyNodes(nodes = modifyChildren(path, holder))
-        case x: BuilderNode[R, RFn] => x
+        case holder: BuilderNodeAndHolder[Params, BFn, R, RFn] => holder.copyNodes(nodes = modifyChildren(path, holder))
+        case x: BuilderNode[Params, BFn, R, RFn] => x
       }
-      withChildren.asInstanceOf[BuilderNode[R, RFn]]
+      withChildren.asInstanceOf[BuilderNode[Params, BFn, R, RFn]]
     }
-    def modifyChildren(path: List[Reportable], holder: BuilderNodeHolder[R, RFn]): List[BuilderNode[R, RFn]] =
+    def modifyChildren(path: List[Reportable], holder: BuilderNodeAndHolder[Params, BFn, R, RFn]): List[BuilderNode[Params, BFn, R, RFn]] =
       holder.nodes.map((x) => modifyChild(x :: path)).sortBy(_.textOrder)
     modifyChild(List(requirement)).asInstanceOf[ED]
   }

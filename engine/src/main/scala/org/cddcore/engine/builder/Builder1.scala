@@ -36,7 +36,7 @@ object Builder1 {
   }
 }
 case class Builder1[P, R, FullR](
-  nodes: List[BuilderNode[R, (P) => R]] = List(new EngineDescription[P, (P) => Boolean, R, (P) => R]),
+  nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]] = List(new EngineDescription[P, (P) => Boolean, R, (P) => R]),
   buildExceptions: ExceptionMap = new ExceptionMap(),
   buildEngine: BuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
 
@@ -60,7 +60,7 @@ case class Builder1[P, R, FullR](
   def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
-  def copyNodes(nodes: List[BuilderNode[R, (P) => R]]) = wrap(copy(nodes = nodes))
+  def copyNodes(nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine1[P, R, FullR] = nodes match {
     case (r: EngineAsRequirement[P, (P) => Boolean, R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
     case _ => throw new IllegalArgumentException(nodes.toString)
@@ -118,6 +118,6 @@ case class FoldingEngine1[P, R, FullR](
   extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }
-trait DecisionTreeBuilderForTests1[P, R] extends DecisionTreeBuilderForTests[P, (P) => Boolean, R, (P) => R]{
-    def expectedToCode = BuildEngine.expectedToCode1[P, R]
+trait DecisionTreeBuilderForTests1[P, R] extends DecisionTreeBuilderForTests[P, (P) => Boolean, R, (P) => R] {
+  def expectedToCode = BuildEngine.expectedToCode1[P, R]
 }

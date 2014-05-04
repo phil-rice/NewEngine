@@ -36,10 +36,12 @@ trait EngineWalker {
 }
 
 trait CddRunner extends Runner {
+  type ExceptionOrEngine = Either[(Exception, String), EngineTools[_, _, _, _]]
+  def instance: Either[Exception, Any]
   def ldp: LoggerDisplayProcessor = implicitly[LoggerDisplayProcessor]
   val templateLike = implicitly[TemplateLike[Reportable]]
   def clazz: Class[_ <: Any]
-  val rootEngines: List[EngineTools[_,_,_,_]]
+  val rootEngines: List[ExceptionOrEngine]
   var allEngines = List[Engine]()
   var reportableToDescription = new KeyedMap[Description]()
   var exceptionMap: ExceptionMap = new ExceptionMap()
@@ -66,18 +68,28 @@ trait CddRunner extends Runner {
 
   def title: String
 
-  def addEngine(e: EngineTools[_,_,_,_]) {
-    exceptionMap = exceptionMap ++ e.buildExceptions
-    allEngines = e :: allEngines
-  }
+  def addEngine(exceptionOrEngine: ExceptionOrEngine) =
+    exceptionOrEngine match {
+      case Right(e) =>
+        exceptionMap = exceptionMap ++ e.buildExceptions
+        allEngines = e :: allEngines
+      case _ =>
+    }
   for (e <- rootEngines)
     addEngine(e)
 
   lazy val getDescription = {
     val result = Description.createSuiteDescription(title);
-    if (Engine.logging) println("Running\n" + rootEngines.mkString("\n---------------------\n"))
-    for (engine <- rootEngines)
-      addRequirement(result, engine.asRequirement)
+    instance match {
+      case Left(e) =>
+      case _ =>
+        if (Engine.logging) println("Running\n" + rootEngines.mkString("\n---------------------\n"))
+        for (exceptionOrEngine <- rootEngines)
+          exceptionOrEngine match {
+            case Right(engine) => addRequirement(result, engine.asRequirement)
+            case Left((exception, msg)) =>
+          }
+    }
     result
   }
 
@@ -87,7 +99,7 @@ trait CddRunner extends Runner {
     val name = names(r)
     d.addChild(childDescription)
     r match {
-      case holder: BuilderNodeHolder[_, _] => for (c <- holder.nodes) addRequirement(childDescription, c)
+      case holder: BuilderNodeHolder[_, __, _, _] => for (c <- holder.nodes) addRequirement(childDescription, c)
       case _ =>
     }
   }
@@ -123,14 +135,27 @@ trait CddRunner extends Runner {
     }
     def runReportableAndChildren[Params, BFn, R, RFn](r: Requirement, e: EngineFromTests[Params, BFn, R, RFn]): Unit =
       runReportable(r, r match {
-        case holder: BuilderNodeHolder[R, RFn] => for (child <- holder.nodes) runReportableAndChildren(child, e)
+        case holder: BuilderNodeAndHolder[Params, BFn, R, RFn] => for (child <- holder.nodes) runReportableAndChildren(child, e)
         case scenario: Scenario[Params, BFn, R, RFn] => import e._; evaluator.validator.checkCorrectValue(evaluator, tree, scenario)
       })
     def runEngine[Params, BFn, R, RFn, FullR](e: EngineTools[Params, BFn, R, RFn]): Unit = e match {
       case f: FoldingEngine[Params, BFn, R, RFn, FullR] => runReportable(f.asRequirement, for (e <- f.engines) runEngine(e))
       case e: EngineFromTests[Params, BFn, R, RFn] => runReportableAndChildren(e.asRequirement, e)
     }
-    runDescription(getDescription, { for (e <- rootEngines) runEngine(e) })
+    val description = getDescription
+    instance match {
+      case Left(e) =>
+        notifier.fireTestStarted(description)
+        notifier.fireTestFailure(new Failure(description, e))
+      case Right(i) =>
+        runDescription(description, {
+          for (e <- rootEngines)
+            e match {
+              case Left(e) =>
+              case Right(e) => runEngine(e)
+            }
+        })
+    }
 
   }
 }
@@ -139,12 +164,19 @@ class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
   import org.cddcore.engine.Engine._
 
   def title = "CDD: " + clazz.getName
-  lazy val instance = test { Reflection.instantiate(clazz) };
+  lazy val instance = Exceptions(test { Reflection.instantiate(clazz) });
 
-  lazy val methodRootEngines = clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => m.invoke(instance).asInstanceOf[EngineTools[_,_,_,_]])
-  lazy val variableRootEngines = clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => f.get(instance).asInstanceOf[EngineTools[_,_,_,_]])
-  lazy val rootEngines = test { methodRootEngines ++ variableRootEngines }.sortBy((e) => e.asRequirement.textOrder).toList
-  CddRunner.addToEngines(rootEngines.toList)
+  lazy val methodRootEngines = test {
+    clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) =>
+      Exceptions(m.invoke(instance).asInstanceOf[EngineTools[_, _, _, _]], { (_, m.getName) }))
+  }
+  lazy val variableRootEngines = test {
+    clazz.getFields().filter((f) => typeIsEngine(f)).map((f) =>
+      Exceptions(f.get(instance).asInstanceOf[EngineTools[_, _, _, _]], { (_, f.getName) }))
+  }
+
+  lazy val rootEngines = { methodRootEngines ++ variableRootEngines }.sortBy { case (Right(e)) => e.asRequirement.textOrder; case Left(e) => 0 }.toList
+  CddRunner.addToEngines(rootEngines.collect { case Right(e) => e })
 
   def returnTypeIsEngine(m: Method): Boolean = {
     val rt = m.getReturnType()
@@ -173,8 +205,8 @@ trait HasEngines {
 
 class CddContinuousIntegrationRunner(val clazz: Class[Any]) extends CddRunner {
   def title = "Constraint Driven Development"
-  lazy val instance = Engine.test { Reflection.instantiate(clazz) }.asInstanceOf[HasEngines];
-  lazy val rootEngines = instance.engines.collect{case e: EngineTools[_,_,_,_] => e}
+  lazy val instance = Exceptions { Engine.test { Reflection.instantiate(clazz) }.asInstanceOf[HasEngines] };
+  lazy val rootEngines = Engine.test { instance match { case Right(i) => i.engines.collect { case e: EngineTools[_, _, _, _] => Right(e) }; case _ => List() } }
 }
 
 trait CddContinuousIntegrationTest extends HasEngines {

@@ -37,7 +37,7 @@ object Builder3 {
   }
 }
 case class Builder3[P1, P2, P3, R, FullR](
-  nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = List(new EngineDescription[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]),
+  nodes: List[BuilderNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]] = List(new EngineDescription[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]),
   buildExceptions: ExceptionMap = ExceptionMap(),
   buildEngine: BuildEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Engine3[P1, P2, P3, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R, FullR]] {
@@ -61,7 +61,7 @@ case class Builder3[P1, P2, P3, R, FullR](
   }
   def configurator(cfg: (P1, P2, P3) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ ((params: (P1, P2, P3)) => cfg(params._1, params._2, params._3))))
 
-  def copyNodes(nodes: List[BuilderNode[R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
+  def copyNodes(nodes: List[BuilderNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine3[P1, P2, P3, R, FullR] = nodes match {
     case (r: EngineAsRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
     case _ => throw new IllegalArgumentException(nodes.toString)
@@ -120,7 +120,7 @@ case class FoldingEngine3[P1, P2, P3, R, FullR](
   with FoldingEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR] with Function3[P1, P2, P3, FullR] {
   def apply(p1: P1, p2: P2, p3: P3) = applyParams(p1, p2, p3)
 }
-trait DecisionTreeBuilderForTests3[P1, P2, P3, R] extends DecisionTreeBuilderForTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]{
-   def expectedToCode = BuildEngine.expectedToCode3[P1, P2, P3, R]
+trait DecisionTreeBuilderForTests3[P1, P2, P3, R] extends DecisionTreeBuilderForTests[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] {
+  def expectedToCode = BuildEngine.expectedToCode3[P1, P2, P3, R]
 }
 

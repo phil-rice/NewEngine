@@ -10,6 +10,8 @@ object Report {
     new SimpleReport(title, date, description, nodes)
   def documentAndEngineReport(title: Option[String], date: Date, engines: Traversable[Engine], description: Option[String] = None) =
     new DocumentAndEngineReport(title, date, engines, description)
+  def engineReport(title: Option[String], date: Date, engine: Engine, description: Option[String] = None) =
+    new EngineReport(title, date, engine, description)
 
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = {
     val renderContext = RenderContext(UrlMap() ++ report.urlMapPaths, new Date())
@@ -63,6 +65,7 @@ case class DocumentAndEngineReport(title: Option[String],
   val engineHolder = EngineHolder(sortedEngines)
   val nodes = List(documentHolder, engineHolder)
   val reportPaths = pathsIncludingSelf.toList
+  override val urlMapPaths: List[List[Reportable]] = reportPaths.flatMap { case path @ ((engine: Engine) :: tail) => List(path, engine.asRequirement :: tail); case path => List(path) }
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new DocumentAndEngineReport(title, date, engines, description, textOrder)
@@ -70,6 +73,27 @@ case class DocumentAndEngineReport(title: Option[String],
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
     case de: DocumentAndEngineReport => Requirement.areRequirementFieldsEqual(this, de) && engines == de.engines
+    case _ => false
+  }
+}
+
+case class EngineReport(title: Option[String],
+  val date: Date,
+  val engine: Engine,
+  val description: Option[String] = None,
+  val textOrder: Int = Reportable.nextTextOrder) extends Report with NestedHolder[Reportable] {
+  import EngineTools._
+  import ReportableHelper._
+
+  val nodes = List(engine.asRequirement)
+  val reportPaths = pathsIncludingSelf.toList
+
+  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
+    new EngineReport(title, date, engine, description, textOrder)
+
+  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+  override def equals(other: Any) = other match {
+    case er: EngineReport => Requirement.areRequirementFieldsEqual(this, er) && engine == er.engine
     case _ => false
   }
 }

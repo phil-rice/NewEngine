@@ -14,7 +14,7 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
   implicit def toFullR(seed: String): FullR
   implicit def toR(seed: String): R = result(seed)
 
-  def compareFoldingEngineDescriptions(left: FD, nodes: List[BuilderNode[R, RFn]]) = {
+  def compareFoldingEngineDescriptions(left: FD, nodes: List[BuilderNode[Params,BFn, R, RFn]]) = {
     assertEquals(nodes.size, 1)
     val right = nodes.head.asInstanceOf[FD]
     val withDifferentFoldingStuff = left.copy(foldingFn = right.foldingFn, initialValue = right.initialValue)
@@ -40,7 +40,7 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     val actualCe3 = actualFr.nodes.head.asInstanceOf[EngineDescription[Params, BFn, R, RFn]]
     val actualUC32 = actualCe3.nodes.head
     val withDifferentFoldingStuff = actualFr.copy(foldingFn = fe.foldingFn, initialValue = fe.initialValue)
-    assertEquals(UseCase[R, RFn](title = "uc32"), actualUC32)
+    assertEquals(UseCase[Params, BFn,R, RFn](title = "uc32"), actualUC32)
     assertEquals(ce3, actualCe3)
     assertEquals(fe.nodes, withDifferentFoldingStuff.nodes)
     assertEquals(fe, withDifferentFoldingStuff)

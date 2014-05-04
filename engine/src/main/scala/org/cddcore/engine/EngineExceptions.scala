@@ -89,7 +89,6 @@ object CodeDoesntProduceExpectedException {
 }
 class CodeDoesntProduceExpectedException(msg: String, scenario: Scenario[_, _, _, _], val actual: Either[Exception, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
 
-
 object ScenarioBecauseException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =
     new ScenarioBecauseException(s"Because is not true. Because is\n${scenario.because.getOrElse(throw new IllegalStateException).description}\n${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)

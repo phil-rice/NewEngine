@@ -6,7 +6,9 @@ import scala.language.implicitConversions
 import org.cddcore.engine.builder._
 
 abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, R, B, E], E <: EngineTools[Params, BFn, R, RFn]] extends BuilderTest[Params, BFn, R, RFn, R, B, E] with DecisionTreeBuilderForTests[Params, BFn, R, RFn] {
-  implicit def toBuilderWithModifyChildrenForBuild[R, RFn](b: B) = b.asInstanceOf[BuilderWithModifyChildrenForBuild[R, RFn]]
+  implicit def toBuilderWithModifyChildrenForBuild[R, RFn](b: B) = b.asInstanceOf[BuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]]
+  implicit def toEngineFromTests[Params, BFn, R, RFn](x: EngineTools[Params, BFn, R, RFn]) = x.asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
+
   implicit def toSome[X](x: X) = Some(x)
 
   s"A blank $builderName " should "just have the default root" in {
@@ -21,6 +23,12 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     evaluating { update(_.title("X")) } should produce[CannotDefineTitleTwiceException]
   }
 
+  it should "use the code of the engine to replace the 'default' throw undecided exception" in {
+    code("A")
+    val e = build
+    assertEquals(result("A"), e.applyParams(params("a")))
+  }
+  
   it should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
     scenario("A")
     update(_.description("X"))
@@ -64,7 +72,6 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     evaluating { because("B") } should produce[ScenarioBecauseException]
 
   }
-
 
   "An builder that hasn't been set up as a folding builder" should "throw CannotHaveChildEnginesWithoutFolderException" in {
     evaluating { update(_.childEngine("some title")) } should produce[CannotHaveChildEnginesWithoutFolderException]

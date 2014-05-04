@@ -30,8 +30,8 @@ object Maps {
     val map2: Map[K2, List[V]] = map.getOrElse(key1, Map())
     map + (key1 -> (map2 + (key2 -> (value :: map2.getOrElse(key2, List())))))
   }
-//  def addMapsOfList[K, V](map1: Map[K, List[V]], map2: Map[K, List[V]]) =
-//    map2.foldLeft(map1)((acc, kv) => kv._2.foldLeft(acc)((acc, v) => addToList(acc, kv._1, v)))
+  //  def addMapsOfList[K, V](map1: Map[K, List[V]], map2: Map[K, List[V]]) =
+  //    map2.foldLeft(map1)((acc, kv) => kv._2.foldLeft(acc)((acc, v) => addToList(acc, kv._1, v)))
 
   def walkSelfAndChildrenPaths[KV](map: Map[KV, List[KV]])(root: KV) = {
     def fn(root: KV): Iterable[List[KV]] = {

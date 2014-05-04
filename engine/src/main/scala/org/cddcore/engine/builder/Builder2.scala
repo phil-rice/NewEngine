@@ -36,7 +36,7 @@ object Builder2 {
 }
 
 case class Builder2[P1, P2, R, FullR](
-  nodes: List[BuilderNode[R, (P1, P2) => R]] = List(new EngineDescription[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]),
+  nodes: List[BuilderNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]] = List(new EngineDescription[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]),
   buildExceptions: ExceptionMap = new ExceptionMap(),
   buildEngine: BuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, FullR]] {
@@ -55,12 +55,12 @@ case class Builder2[P1, P2, R, FullR](
     val chResult = CodeHolder[(P1, P2) => R]((p1, p2) => pf.apply((p1, p2)), resultToString)
     becauseHolder(chBecause).codeHolder(chResult)
   }
-  def scenario(p1: P1, p2: P2, title: String = null) =
+  def scenario(p1: P1, p2: P2, title: String = null): Builder2[P1, P2, R, FullR] =
     wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(bl, this, new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]((p1, p2), title = Option(title))) :: nodes))
   def assertionHolder(assertionHolder: CodeHolder[((P1, P2), Either[Exception, R]) => Boolean]) =
     wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
   def configurator(cfg: (P1, P2) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, (l) => l :+ ((params: (P1, P2)) => cfg(params._1, params._2))))
-  def copyNodes(nodes: List[BuilderNode[R, (P1, P2) => R]]) = wrap(copy(nodes = nodes))
+  def copyNodes(nodes: List[BuilderNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine2[P1, P2, R, FullR] = nodes match {
     case (r: EngineAsRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
     case _ => throw new IllegalArgumentException(nodes.toString)
@@ -115,6 +115,6 @@ case class FoldingEngine2[P1, P2, R, FullR](
   extends Engine2[P1, P2, R, FullR] with FoldingEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR] {
   def apply(p1: P1, p2: P2) = applyParams(p1, p2)
 }
-trait DecisionTreeBuilderForTests2[P1, P2, R] extends DecisionTreeBuilderForTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]{
-    def expectedToCode = BuildEngine.expectedToCode2[P1, P2, R]
+trait DecisionTreeBuilderForTests2[P1, P2, R] extends DecisionTreeBuilderForTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] {
+  def expectedToCode = BuildEngine.expectedToCode2[P1, P2, R]
 }

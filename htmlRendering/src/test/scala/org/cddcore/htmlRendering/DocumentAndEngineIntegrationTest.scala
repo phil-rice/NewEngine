@@ -16,7 +16,7 @@ import StartChildEndType._
 @RunWith(classOf[JUnitRunner])
 class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForTest {
 
-  "A documentAndEngineReport" should "" in {
+  "A documentAndEngineReport" should "have report paths that go down the documents then the engines" in {
     val report = documentAndEngineReport
     val docHolder = documentAndEngineReport.documentHolder
     assertEquals(List(doc1), docHolder.nodes)
@@ -50,13 +50,17 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
 
   "A documentAndEngineReport' urlMapPath" should "include the engine descriptions" in {
     val report = documentAndEngineReport
-    assertEquals(List(
+    val expected = List(
       List(documentAndEngineReport),
       List(documentAndEngineReport.documentHolder, documentAndEngineReport),
       List(doc1, documentAndEngineReport.documentHolder, documentAndEngineReport),
       List(documentAndEngineReport.engineHolder, documentAndEngineReport),
-      List(eBlankWithTitleAndDoc1, documentAndEngineReport.engineHolder, documentAndEngineReport)),
-      report.urlMapPaths)
+      List(eBlankWithTitleAndDoc1, documentAndEngineReport.engineHolder, documentAndEngineReport),
+      List(eBlankWithTitleAndDoc1.asRequirement, documentAndEngineReport.engineHolder, documentAndEngineReport))
+    val actual = report.urlMapPaths
+    for ((e, a) <- expected.zipAll(actual, null, null))
+      assertEquals(e, a)
+    assertEquals(expected, actual)
   }
 
 }

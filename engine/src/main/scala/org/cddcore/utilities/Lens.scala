@@ -39,5 +39,3 @@ class OptionLens[A, B](val get: A => Option[B], rawSet: (A, Option[B]) => A, exc
 
 }
 
-
-

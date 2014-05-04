@@ -6,15 +6,15 @@ import StartChildEndType._
 
 trait NestedHolderLike[H, T] {
   def children(h: H): List[T]
-  implicit def BuilderNodeAsHolderLike[R, RFn] =
-    new NestedHolderLike[BuilderNodeHolder[R, RFn], BuilderNode[R, RFn]] {
-      def children(r: BuilderNodeHolder[R, RFn]) = r.nodes
+  implicit def BuilderNodeAsHolderLike[Params, BFn, R, RFn] =
+    new NestedHolderLike[BuilderNodeAndHolder[Params, BFn, R, RFn], BuilderNode[Params, BFn, R, RFn]] {
+      def children(r: BuilderNodeAndHolder[Params, BFn, R, RFn]) = r.nodes
     }
 }
 
 abstract class PathTraversable[T, X >: T](initialPath: List[X]) extends Traversable[List[X]] {
   protected def foreachPrim[U](nodes: List[T], f: List[X] => U, path: List[X]): Unit = {
-//    println(s"Path$path Nodes$nodes")
+    //    println(s"Path$path Nodes$nodes")
     for (c <- nodes) {
       val cPath = c :: path
       f(cPath)

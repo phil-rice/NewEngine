@@ -50,7 +50,7 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, B
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)
   lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
-  lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[R, RFn]
+  lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
@@ -73,7 +73,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
 
   def evaluateTree: EvaluateTree[Params, BFn, R, RFn]
   def blankTree: DT
-  def builderWithModifyChildrenForBuild: BuilderWithModifyChildrenForBuild[R, RFn]
+  def builderWithModifyChildrenForBuild: BuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
   def decisionTreeLens: DecisionTreeLens[Params, BFn, R, RFn]
   val mc = evaluateTree.makeClosures
@@ -82,7 +82,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
 
   def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap): E
 
-  protected def buildTree[ED <: BuilderNodeAndHolder[R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
+  protected def buildTree[ED <: BuilderNodeAndHolder[Params, BFn, R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)
     val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), x.textOrder)))
     val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
@@ -100,9 +100,12 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
           }
       }
     })
+    val finalEMap = scenarios.foldLeft(newENap)((eMap, s) =>
+      try { validator.checkCodeComesToExpected(evaluateTree, s); eMap }
+      catch { case e: Exception => eMap + (s -> e) })
     if (!Engine.testing)
       scenarios.foreach((x) => validator.postValidateScenario(evaluateTree, newDecisionTree, x))
-    (newDecisionTree, newENap, modifiedRequirements)
+    (newDecisionTree, finalEMap, modifiedRequirements)
   }
   protected def addScenario(tree: DT, scenario: S): DT = {
     val lens = evaluateTree.lens
@@ -161,6 +164,4 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
     result
   }
 }
-
-
 

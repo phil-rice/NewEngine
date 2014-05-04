@@ -48,4 +48,4 @@ class ExceptionMap(val map: Map[Int, List[Exception]] = Map()) {
     map.map((kv) => kv match { case (to, le) => keyToT(to) -> le }).foldLeft(Map[T, List[Exception]]()) { _ + _ }
   }
   override def toString = map.toString
-} 
+}

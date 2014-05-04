@@ -12,7 +12,7 @@ class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Param
     (tree, root) => creator(root),
     Some("rootL"))
 
-  //  def exceptionMapL(asRequirement: BuilderNodeHolder[R, RFn]) =
+  //  def exceptionMapL(asRequirement: BuilderNodeAndHolder[Params, BFn,R, RFn] ) =
   //    Lens[DecisionTree[Params, BFn, R, RFn],ExceptionMap](
   //      (tree) => tree.buildExceptions,
   //      (tree, buildExceptions) => creator(asRequirement)(tree.root, buildExceptions),
@@ -48,7 +48,6 @@ case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params
 sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]
 }
-
 
 case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] {
   override def hashCode = textOrder
@@ -174,7 +173,7 @@ trait DecisionTreeBuilderForTests[Params, BFn, R, RFn] {
     code: Option[CodeHolder[RFn]] = None, priority: Option[Int] = None, expected: Option[Either[Exception, R]] = None,
     references: Set[Reference] = Set()) =
     new Scenario[Params, BFn, R, RFn](params, Option(title), description, because, code, priority, expected, references)
-  def uc(title: String = null) = new UseCase[R, RFn](Option(title))
+  def uc(title: String = null) = new UseCase[Params, BFn, R, RFn](Option(title))
   def conc(scenario: Scenario[Params, BFn, R, RFn], scenarios: Scenario[Params, BFn, R, RFn]*) =
     new Conclusion[Params, BFn, R, RFn](scenario.actualCode(expectedToCode), List(scenario) ++ scenarios)
   def dec(scenarioThatCausedNode: Scenario[Params, BFn, R, RFn], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn]) =
@@ -182,5 +181,4 @@ trait DecisionTreeBuilderForTests[Params, BFn, R, RFn] {
   def dec(scenariosWithBecause: List[Scenario[Params, BFn, R, RFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn]) =
     new Decision(scenariosWithBecause.map(_.because).collect { case Some(b) => b }, yes, no, scenariosWithBecause.head)
 }
-
 

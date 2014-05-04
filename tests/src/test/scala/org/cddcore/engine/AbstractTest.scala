@@ -68,7 +68,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def configurate(cfg: (Params) => Unit) = builder = configuratorPrim(cfg)
   def code(seed: ResultSeed) = update(_.codeHolder(resultCodeHolder(seed)))
   def currentBuilder: B = builder
-  def initializeBuilder(nodes: List[BuilderNode[R, RFn]] = List(new EngineDescription[Params, BFn, R, RFn])): B
+  def initializeBuilder(nodes: List[BuilderNode[Params, BFn, R, RFn]] = List(new EngineDescription[Params, BFn, R, RFn])): B
   protected def scenarioImpl(params: Params, title: String): B
   protected def becauseImpl(seed: Seed): B
   protected def becauseExceptionImpl(e: Exception): B
@@ -99,7 +99,7 @@ trait BuilderTest[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, 
   def builderName: String
   val buildEngine: BuildEngine[Params, BFn, R, RFn, FullR, E]
   def decisionTreeLens = buildEngine.decisionTreeLens
-  def modifiedChildrenForBuild = buildEngine.builderWithModifyChildrenForBuild.modifyChildrenForBuild(currentBuilder.nodes.head.asInstanceOf[BuilderNodeAndHolder[R, RFn]])
+  def modifiedChildrenForBuild = buildEngine.builderWithModifyChildrenForBuild.modifyChildrenForBuild(currentBuilder.nodes.head.asInstanceOf[BuilderNodeAndHolder[Params, BFn, R, RFn]])
 
 }
 
@@ -180,12 +180,12 @@ trait FoldingBuilderTest[R, FullR] {
 
 trait SimpleBuilder1Test[P, R] extends Builder1Test[P, R, R] {
   lazy val buildEngine = BuildEngine.builderEngine1[P, R]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P) => R]] = BuildEngine.initialNodes) = Builder1[P, R, R](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]] = BuildEngine.initialNodes) = Builder1[P, R, R](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder1[P, R, R]) = b.build
 }
 trait FoldingBuilder1Test[P, R, FullR] extends Builder1Test[P, R, FullR] with FoldingBuilderTest[R, FullR] {
   lazy val buildEngine = BuildEngine.folderBuilderEngine1[P, R, FullR]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder1[P, R, FullR](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder1[P, R, FullR](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder1[P, R, FullR]) = b.build
 }
 
@@ -206,12 +206,12 @@ trait Builder2Test[P1, P2, R, FullR]
 
 trait SimpleBuilder2Test[P1, P2, R] extends Builder2Test[P1, P2, R, R] {
   lazy val buildEngine = BuildEngine.builderEngine2[P1, P2, R]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P1, P2) => R]] = BuildEngine.initialNodes) = Builder2[P1, P2, R, R](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]] = BuildEngine.initialNodes) = Builder2[P1, P2, R, R](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder2[P1, P2, R, R]) = b.build
 }
 trait FoldingBuilder2Test[P1, P2, R, FullR] extends Builder2Test[P1, P2, R, FullR] with FoldingBuilderTest[R, FullR] {
   lazy val buildEngine = BuildEngine.folderBuilderEngine2[P1, P2, R, FullR]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P1, P2) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder2[P1, P2, R, FullR](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder2[P1, P2, R, FullR](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder2[P1, P2, R, FullR]) = b.build
 }
 
@@ -231,11 +231,11 @@ trait Builder3Test[P1, P2, P3, R, FullR]
 }
 trait SimpleBuilder3Test[P1, P2, P3, R] extends Builder3Test[P1, P2, P3, R, R] {
   lazy val buildEngine = BuildEngine.builderEngine3[P1, P2, P3, R]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = BuildEngine.initialNodes) = Builder3[P1, P2, P3, R, R](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]] = BuildEngine.initialNodes) = Builder3[P1, P2, P3, R, R](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder3[P1, P2, P3, R, R]) = b.build
 }
 trait FoldingBuilder3Test[P1, P2, P3, R, FullR] extends Builder3Test[P1, P2, P3, R, FullR] with FoldingBuilderTest[R, FullR] {
   lazy val buildEngine = BuildEngine.folderBuilderEngine3[P1, P2, P3, R, FullR]
-  def initializeBuilder(nodes: List[BuilderNode[R, (P1, P2, P3) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder3[P1, P2, P3, R, FullR](nodes, ExceptionMap(), buildEngine)
+  def initializeBuilder(nodes: List[BuilderNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]] = BuildEngine.initialNodes(initialValue, foldingFn)) = Builder3[P1, P2, P3, R, FullR](nodes, ExceptionMap(), buildEngine)
   protected def buildImpl(b: Builder3[P1, P2, P3, R, FullR]) = b.build
 }

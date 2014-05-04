@@ -41,8 +41,6 @@ object Strings {
   def firstCharacters(raw: String) = raw.split("\\s").filter(_.length > 0).map(_(0)).mkString("")
 }
 
-
-
 class StringCleaner(map: Map[Char, Char] = Map()) {
   def clean(raw: String): String = {
     val result = raw.flatMap(map.get(_))

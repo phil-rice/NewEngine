@@ -2,7 +2,7 @@ package org.cddcore.utilities
 
 object Reflection {
   def instantiate(clazz: Class[_]): Any = {
-    import scala.reflect.runtime.{universe => ru}
+    import scala.reflect.runtime.{ universe => ru }
     val rm = ru.runtimeMirror(clazz.getClassLoader())
     val declaredFields = clazz.getDeclaredFields().toList
     val moduleField = declaredFields.find(field => field.getName() == "MODULE$")
