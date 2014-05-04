@@ -125,7 +125,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     matchOn { case (e: EngineFromTests[_, _, _, _]) => s"<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='${e.titleString}' />" }.
 
     useCase("Engine Descriptions have icon and title equal to engine titleString").
-    scenario(eBlankWithTitle).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
+    scenario(eBlankWithTitle.asRequirement).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
     matchOn { case (e: EngineDescription[_, _, _, _]) => s"<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='${e.titleString}' />" }.
 
     useCase("Usescase  have icon and title equal to titleString").
@@ -146,16 +146,20 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     useCase("Items that are requirements with titles use their titles").
     scenario(context(reqWithTitle), reqWithTitle).
     expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
-    matchOn { case (RenderContext(urlMap, _, _), r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${r.titleString}${icon(r)}</a>" }.
+    matchOn { case (RenderContext(urlMap, _, _), r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${r.titleString}${icon(r)}</a>" }.
 
     useCase("Items that are requirements without titles are given template name and text order").
-    scenario(context(doc1), doc1).
-    expected(s"<a id='Document_${doc1.textOrder}' href='RootUrl/doc1title.Document.html'>doc1title</a>").
-    matchOn { case (RenderContext(urlMap, _, _), r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${r.titleString}${icon(r)}</a>" }.
+    scenario(context(docWithoutTitle), docWithoutTitle).
+    expected { val d = s"Document_${docWithoutTitle.textOrder}"; s"<a id='$d' href='RootUrl/Document${docWithoutTitle.textOrder}.Document.html'>$d${icon(docWithoutTitle)}</a>" }.
+    matchOn { case (RenderContext(urlMap, _, _), r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
 
     useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
-    scenario(context(eBlank), eBlank).
-    expected(s"<a id='EngineDescription_${eBlankD.textOrder}' href='RootUrl/EngineDescription${eBlankD.textOrder}.EngineDescription.html'></a>").
+    scenario(context(eBlankWithTitle), eBlankWithTitle).
+    expected {
+      val ed = eBlankWithTitle.asRequirement
+      val edTextOrder = ed.textOrder
+      s"<a id='EngineDescription_$edTextOrder' href='RootUrl/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankWithTitle)}</a>"
+    }.
     matchOn {
       case (RenderContext(urlMap, _, _), e: Engine) => {
         val ed = e.asInstanceOf[EngineTools[_, _, _, _]].asRequirement

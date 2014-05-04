@@ -166,14 +166,15 @@ class CddJunitRunner(val clazz: Class[_]) extends CddRunner {
   def title = "CDD: " + clazz.getName
   lazy val instance = Exceptions(test { Reflection.instantiate(clazz) });
 
-  lazy val methodRootEngines = test {
-    clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) =>
-      Exceptions(m.invoke(instance).asInstanceOf[EngineTools[_, _, _, _]], { (_, m.getName) }))
+  def instantiate(fn: (Any) => Array[ExceptionOrEngine]) = instance match {
+    case Left(_) => Array[ExceptionOrEngine]()
+    case Right(i) => fn(i)
   }
-  lazy val variableRootEngines = test {
-    clazz.getFields().filter((f) => typeIsEngine(f)).map((f) =>
-      Exceptions(f.get(instance).asInstanceOf[EngineTools[_, _, _, _]], { (_, f.getName) }))
-  }
+
+  lazy val methodRootEngines = instantiate((i) =>
+    test { clazz.getDeclaredMethods().filter((m) => returnTypeIsEngine(m)).map((m) => Exceptions(m.invoke(i).asInstanceOf[EngineTools[_, _, _, _]], { (_, m.getName) })) })
+  lazy val variableRootEngines = instantiate((i) =>
+    test { clazz.getFields().filter((f) => typeIsEngine(f)).map((f) => Exceptions(f.get(i).asInstanceOf[EngineTools[_, _, _, _]], { (_, f.getName) })) })
 
   lazy val rootEngines = { methodRootEngines ++ variableRootEngines }.sortBy { case (Right(e)) => e.asRequirement.textOrder; case Left(e) => 0 }.toList
   CddRunner.addToEngines(rootEngines.collect { case Right(e) => e })
