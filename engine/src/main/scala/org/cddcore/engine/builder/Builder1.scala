@@ -76,7 +76,7 @@ class MakeClosures1[P, R] extends MakeClosures[P, (P) => Boolean, R, (P) => R] {
   def makeResultClosure(params: P): ResultClosure = (rfn) => rfn(params)
 }
 case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean, R, (P) => R, Engine1[P, R, R]](
-  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1) {
+  BuildEngine.defaultRootCode1, new MakeClosures1, BuildEngine.expectedToCode1) {
   def constructEngine(
     requirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],
     dt: DecisionTree[P, (P) => Boolean, R, (P) => R],
@@ -85,7 +85,7 @@ case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean,
 
 }
 class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR], Engine1[P, R, R]](
-  BuildEngine.defaultRoot(BuildEngine.defaultRootCode1), new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
+ BuildEngine.defaultRootCode1, new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
 
   def constructFoldingEngine(
     requirement: EngineAsRequirement[P, (P) => Boolean, R, (P) => R],

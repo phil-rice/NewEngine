@@ -76,7 +76,7 @@ class MakeClosures2[P1, P2, R] extends MakeClosures[(P1, P2), (P1, P2) => Boolea
 }
 
 class FoldingBuildEngine2[P1, P2, R, FullR] extends SimpleFoldingBuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R, FullR], Engine2[P1, P2, R, R]](
-  BuildEngine.defaultRoot(BuildEngine.defaultRootCode2), new MakeClosures2, BuildEngine.expectedToCode2, BuildEngine.builderEngine2[P1, P2, R]) {
+  BuildEngine.defaultRootCode2, new MakeClosures2, BuildEngine.expectedToCode2, BuildEngine.builderEngine2[P1, P2, R]) {
   def constructFoldingEngine(
     requirement: EngineAsRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
     engines: List[EngineFromTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]],
@@ -86,7 +86,7 @@ class FoldingBuildEngine2[P1, P2, R, FullR] extends SimpleFoldingBuildEngine[(P1
     FoldingEngine2(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)
 }
 case class SimpleBuildEngine2[P1, P2, R] extends SimpleBuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Engine2[P1, P2, R, R]](
-  BuildEngine.defaultRoot(BuildEngine.defaultRootCode2), new MakeClosures2, BuildEngine.expectedToCode2) {
+  BuildEngine.defaultRootCode2, new MakeClosures2, BuildEngine.expectedToCode2) {
   def constructEngine(requirement: EngineAsRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R], dt: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
     exceptionMap: ExceptionMap) =
     Engine2FromTests(requirement, dt, evaluateTree, exceptionMap)

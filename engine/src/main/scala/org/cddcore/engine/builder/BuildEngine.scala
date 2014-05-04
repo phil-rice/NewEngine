@@ -43,13 +43,12 @@ object BuildEngine {
 }
 
 abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]](
-  val root: DecisionTreeNode[Params, BFn, R, RFn],
+  val defaultRoot: CodeHolder[RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
   extends BuildEngineFromTests[Params, BFn, R, RFn, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)
-  lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
   lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
 }
 
@@ -72,7 +71,8 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
   type S = Scenario[Params, BFn, R, RFn]
 
   def evaluateTree: EvaluateTree[Params, BFn, R, RFn]
-  def blankTree: DT
+  def defaultRoot: CodeHolder[RFn]
+  def blankTree(engineDescription: BuilderNode[Params, BFn, R, RFn]): DT = new SimpleDecisionTree(Conclusion(engineDescription.code.getOrElse(defaultRoot), List()), rootIsDefault = true)
   def builderWithModifyChildrenForBuild: BuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
   def decisionTreeLens: DecisionTreeLens[Params, BFn, R, RFn]
@@ -85,7 +85,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
   protected def buildTree[ED <: BuilderNodeAndHolder[Params, BFn, R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)
     val scenarios = modifiedRequirements.all(classOf[S]).toList.sorted(Ordering.by((x: S) => (-x.priority.getOrElse(0), x.textOrder)))
-    val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree, buildExceptions))((acc, s) => {
+    val (newDecisionTree, newENap) = scenarios.foldLeft((blankTree(asRequirement), buildExceptions))((acc, s) => {
       val (dt, exceptionMap) = acc
       try {
         validator.preValidateScenario(mc, s)

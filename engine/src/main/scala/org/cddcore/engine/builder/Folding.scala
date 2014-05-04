@@ -33,14 +33,13 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BF
 }
 
 abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BFn, R, RFn], E <: EngineTools[Params, BFn, R, RFn]](
-  val root: DecisionTreeNode[Params, BFn, R, RFn],
+  val defaultRoot: CodeHolder[RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn],
   val buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E])(implicit val ldp: LoggerDisplayProcessor)
   extends BuildFoldingEngine[Params, BFn, R, RFn, FullR, F, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)
-  lazy val blankTree = new SimpleDecisionTree[Params, BFn, R, RFn](root, rootIsDefault = true)
   lazy val builderWithModifyChildrenForBuild = new SimpleBuilderWithModifyChildrenForBuild[Params, BFn, R, RFn]
 }
 
