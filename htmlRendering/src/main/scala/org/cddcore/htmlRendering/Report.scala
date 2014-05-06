@@ -92,7 +92,8 @@ case class EngineReport(title: Option[String],
   import EngineTools._
   import ReportableHelper._
 
-  val nodes = List(engine.asRequirement)
+  val ed = engine.asRequirement
+  val nodes = List(ed)
 
   def treePaths[Params, BFn, R, RFn](path: List[Reportable], tree: DecisionTree[Params, BFn, R, RFn]): List[List[Reportable]] = (tree :: path) :: treePaths(tree :: path, tree.root)
 
@@ -109,9 +110,15 @@ case class EngineReport(title: Option[String],
     }
   }
 
-  val reportPaths = pathsIncludingSelf.toList ++ (engine match {
-    case e: EngineFromTests[_, _, _, _] => treePaths(List(e.asRequirement, this), e.tree)
-  })
+  val basePath = List(engine.asRequirement, this)
+  val baseReportPaths: List[List[Reportable]] = List(this) :: basePath :: Nil
+  val reportPaths: List[List[Reportable]] = engine match {
+    case e: EngineFromTests[_, _, _, _] => baseReportPaths ::: ed.pathsFrom(basePath).toList ::: treePaths(basePath, e.tree)
+    case f: FoldingEngine[_, _, _, _, _] => baseReportPaths ::: f.engines.flatMap((e) => {
+      val ed = e.asRequirement
+      ed.pathsIncludingSelf(basePath).toList ::: treePaths(ed :: basePath, e.tree)
+    })
+  }
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineReport(title, date, engine, description, textOrder)

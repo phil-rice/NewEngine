@@ -33,7 +33,7 @@ trait NestedHolder[T] extends Traversable[T] {
       case _ => f(c);
     }
   }
-  def all[C <: T](clazz: Class[C]) = this.collect { case c: Any if (clazz.isAssignableFrom(c.getClass())) => c.asInstanceOf[C] }.toList
+  def all[C](clazz: Class[C]) = this.collect { case c: Any if (clazz.isAssignableFrom(c.getClass())) => c.asInstanceOf[C] }.toList
 
   def pathsFrom[X >: T](initialPath: List[X]) = new PathTraversable[T, X](List()) {
     def foreach[U](f: List[X] => U) = foreachPrim[U](nodes, f, initialPath)

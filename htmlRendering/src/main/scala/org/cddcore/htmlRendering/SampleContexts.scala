@@ -21,7 +21,7 @@ object SampleContexts {
   val testDate = new Date(2000, 1, 1)
   val rootUrl = "RootUrl"
   val emptyUrlMap = UrlMap(rootUrl)
-  
+
   def context(report: Report) = {
     val urlMap = emptyUrlMap ++ report.urlMapPaths
     val rc = RenderContext(urlMap, SampleContexts.testDate)
@@ -78,6 +78,27 @@ object SampleContexts {
   val decision = tree.root.asDecision
   val conclusionYes = decision.yes.asConclusion
   val conclusionNo = decision.no.asConclusion
+
+  val folding = Engine.foldList[Int, Int].title("Folding Engine Title").
+    childEngine("ce0").scenario(0).expected(0).
+    childEngine("ce1").scenario(1).expected(2).code { (x) => x * 2 }.because { (x) => x > 0 }.
+    scenario(2).expected(4).
+    build
+
+  val foldingAsFE = folding.asInstanceOf[FoldingEngine[_, _, _, _, _]]
+  val foldingED = folding.asRequirement.asInstanceOf[FoldingEngineDescription[Int, (Int) => Boolean, Int, (Int) => Int, List[Int]]]
+  val foldingEngineReport = Report.engineReport(Some("engineReportTitle"), testDate, folding)
+  val ce0ED = foldingED.all(classOf[EngineDescription[_, _, _, _]])(0);
+  val ce1ED = foldingED.all(classOf[EngineDescription[_, _, _, _]])(1);
+  val ce0s0 = foldingED.scenarios(0)
+  val ce1s1 = foldingED.scenarios(1)
+  val ce1s2 = foldingED.scenarios(2)
+  val ce0Tree = foldingAsFE.engines(0).tree
+  val ce1Tree = foldingAsFE.engines(1).tree
+  val concCe0 = ce0Tree.root
+  val decisionCe1 = ce1Tree.root.asInstanceOf[Decision[_, _, _, _]]
+  val concYesCe1 = decisionCe1.yes
+  val concNoCe1 = decisionCe1.no
 
   val reqNoTitle = RequirementForTest(textOrder = 666)
   val reqWithTitle = RequirementForTest(title = Some("ReqTitle"))

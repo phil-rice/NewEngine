@@ -25,7 +25,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
       List(report.documentHolder, report),
       List(doc1, report.documentHolder, report),
       List(report.engineHolder, report),
-      List(eBlankTitleDoc1ED, report.engineHolder, report)),
+      List(eBlankTitleDoc1ED, report.engineHolder, report)), 
       report.reportPaths)
   }
 
