@@ -36,17 +36,19 @@ class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Param
     Some("noL"))
 }
 
-trait DecisionTree[Params, BFn, R, RFn] extends NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] {
+trait DecisionTree[Params, BFn, R, RFn] extends NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] with Reportable {
   def root: DecisionTreeNode[Params, BFn, R, RFn]
   def rootIsDefault: Boolean
   def nodes = List(root)
 
 }
 
-case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params, BFn, R, RFn], val rootIsDefault: Boolean = true) extends DecisionTree[Params, BFn, R, RFn]
+case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params, BFn, R, RFn], val rootIsDefault: Boolean = true, textOrder: Int = Reportable.nextTextOrder) extends DecisionTree[Params, BFn, R, RFn]
 
 sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]
+  def asConclusion = asInstanceOf[Conclusion[Params, BFn, R, RFn]]
+  def asDecision = asInstanceOf[Decision[Params, BFn, R, RFn]]
 }
 
 case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] {

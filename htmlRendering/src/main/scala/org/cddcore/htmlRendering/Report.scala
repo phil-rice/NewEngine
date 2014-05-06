@@ -1,8 +1,10 @@
 package org.cddcore.htmlRendering
 
 import org.cddcore.utilities._
-import StartChildEndType._
 import org.cddcore.engine._
+import org.cddcore.engine.builder._
+
+import StartChildEndType._
 import java.util.Date
 
 object Report {
@@ -65,7 +67,6 @@ case class DocumentAndEngineReport(title: Option[String],
   val engineHolder = EngineHolder(sortedEngines)
   val nodes = List(documentHolder, engineHolder)
   val reportPaths = pathsIncludingSelf.toList
-  override val urlMapPaths: List[List[Reportable]] = reportPaths.flatMap { case path @ ((engine: Engine) :: tail) => List(path, engine.asRequirement :: tail); case path => List(path) }
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new DocumentAndEngineReport(title, date, engines, description, textOrder)
@@ -77,6 +78,12 @@ case class DocumentAndEngineReport(title: Option[String],
   }
 }
 
+object ElseClause {
+  private val instance = new ElseClause
+  def apply() = instance
+}
+class ElseClause(val textOrder: Int = Reportable.nextTextOrder) extends Reportable
+
 case class EngineReport(title: Option[String],
   val date: Date,
   val engine: Engine,
@@ -86,7 +93,25 @@ case class EngineReport(title: Option[String],
   import ReportableHelper._
 
   val nodes = List(engine.asRequirement)
-  val reportPaths = pathsIncludingSelf.toList
+
+  def treePaths[Params, BFn, R, RFn](path: List[Reportable], tree: DecisionTree[Params, BFn, R, RFn]): List[List[Reportable]] = (tree :: path) :: treePaths(tree :: path, tree.root)
+
+  //builds up in reverse order
+  private def treePaths[Params, BFn, R, RFn](path: List[Reportable], node: DecisionTreeNode[Params, BFn, R, RFn]): List[List[Reportable]] = {
+    node match {
+      case c: Conclusion[Params, BFn, R, RFn] => List((c :: path))
+      case d: Decision[Params, BFn, R, RFn] => {
+        val dPath = (d :: path)
+        val yesPaths = treePaths(dPath, d.yes)
+        val noPaths = treePaths(dPath, d.no)
+        dPath :: yesPaths ::: List(ElseClause() :: dPath) ::: noPaths
+      }
+    }
+  }
+
+  val reportPaths = pathsIncludingSelf.toList ++ (engine match {
+    case e: EngineFromTests[_, _, _, _] => treePaths(List(e.asRequirement, this), e.tree)
+  })
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new EngineReport(title, date, engine, description, textOrder)

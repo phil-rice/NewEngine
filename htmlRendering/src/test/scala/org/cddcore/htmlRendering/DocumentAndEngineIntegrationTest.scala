@@ -17,20 +17,20 @@ import StartChildEndType._
 class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForTest {
 
   "A documentAndEngineReport" should "have report paths that go down the documents then the engines" in {
-    val report = documentAndEngineReport
-    val docHolder = documentAndEngineReport.documentHolder
+    val report = eBlankTitleDoc1_DocAndEngineReport
+    val docHolder = report.documentHolder
     assertEquals(List(doc1), docHolder.nodes)
     assertEquals(List(
-      List(documentAndEngineReport),
-      List(documentAndEngineReport.documentHolder, documentAndEngineReport),
-      List(doc1, documentAndEngineReport.documentHolder, documentAndEngineReport),
-      List(documentAndEngineReport.engineHolder, documentAndEngineReport),
-      List(eBlankWithTitleAndDoc1, documentAndEngineReport.engineHolder, documentAndEngineReport)),
+      List(report),
+      List(report.documentHolder, report),
+      List(doc1, report.documentHolder, report),
+      List(report.engineHolder, report),
+      List(eBlankTitleDoc1ED, report.engineHolder, report)),
       report.reportPaths)
   }
 
   "A documentAndEngineReport's pathsToStartChildAndEnd" should "go through the report, document / engine holders and engines." in {
-    val report = documentAndEngineReport
+    val report = eBlankTitleDoc1_DocAndEngineReport
     val actual = Lists.traversableToStartChildEnd(report.reportPaths)
     val expected = List(
       (List(report), Start),
@@ -38,7 +38,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
       (List(doc1, report.documentHolder, report), Child),
       (List(report.documentHolder, report), End),
       (List(report.engineHolder, report), Start),
-      (List(eBlankWithTitleAndDoc1, report.engineHolder, report), Child),
+      (List(eBlankTitleDoc1ED, report.engineHolder, report), Child),
       (List(report.engineHolder, report), End),
       (List(report), End))
     //    println(Lists.dumpPathsWithStartChildEnd(actual, (x: Reportable) => x.getClass.getSimpleName))
@@ -49,14 +49,13 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
   }
 
   "A documentAndEngineReport' urlMapPath" should "include the engine descriptions" in {
-    val report = documentAndEngineReport
+    val report = eBlankTitleDoc1_DocAndEngineReport
     val expected = List(
-      List(documentAndEngineReport),
-      List(documentAndEngineReport.documentHolder, documentAndEngineReport),
-      List(doc1, documentAndEngineReport.documentHolder, documentAndEngineReport),
-      List(documentAndEngineReport.engineHolder, documentAndEngineReport),
-      List(eBlankWithTitleAndDoc1, documentAndEngineReport.engineHolder, documentAndEngineReport),
-      List(eBlankWithTitleAndDoc1.asRequirement, documentAndEngineReport.engineHolder, documentAndEngineReport))
+      List(report),
+      List(report.documentHolder, report),
+      List(doc1, report.documentHolder, report),
+      List(report.engineHolder, report),
+      List(eBlankTitleDoc1ED, report.engineHolder, report))
     val actual = report.urlMapPaths
     for ((e, a) <- expected.zipAll(actual, null, null))
       assertEquals(e, a)

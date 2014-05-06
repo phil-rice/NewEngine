@@ -1,5 +1,6 @@
 package org.cddcore.htmlRendering
 
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.xml.Elem
@@ -9,7 +10,7 @@ import org.cddcore.engine.builder._
 import org.cddcore.utilities._
 import org.cddcore.utilities.StartChildEndType._
 import org.junit.runner.RunWith
-import java.text.DateFormat
+import java.io.File
 
 object HtmlStrings {
   def report = ???
@@ -36,67 +37,9 @@ class SimpleReportDetails(
 case class RenderContext(urlMap: UrlMap, reportDate: Date, reportDetails: ReportDetails = ReportDetails())
 
 case class DocumentHolder(val nodes: List[Document], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
-case class EngineHolder(val nodes: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
-
-object SampleContexts {
-
-  val testDate = new Date(2000, 1, 1)
-  val rootUrl = "RootUrl"
-  val emptyUrlMap = UrlMap(rootUrl)
-  //  def documentAndEngineReport(e: Engine) = {
-  //    import ReportableHelper._
-  //    import EngineTools._
-  //    val ed = e.asRequirement
-  //    val dAndE = DocumentAndEngineReport(testDate, List(e))
-  //    (Report(Some("reportTitle"), nodes = List(dAndE)), dAndE)
-  //
-  //  }
-  def context(rs: Reportable*) = {
-    def add[RU <: ReportableToUrl[RU]](urlMap: ReportableToUrl[RU], rs: Traversable[Reportable]) = Lists.decreasingList(rs.toList).foldLeft(urlMap) { _ + _ }
-    val urlMap = add(emptyUrlMap, rs)
-    import EngineTools._
-
-    val urlMapWithEds = add(emptyUrlMap, rs.map { case e: Engine => e.asRequirement; case r => r })
-    val c = RenderContext(urlMapWithEds, testDate)
-    c
-  }
-
-  def documentContext(d: Document, ds: Document*): (RenderContext, List[Reportable]) = {
-    val e = (d :: ds.toList).foldLeft(Engine[Int, Int]())((builder, doc) => builder.reference("", doc)).build
-    val report = Report.documentAndEngineReport(Some("documentAndEngineReportTitle"), testDate, List(e))
-    (RenderContext(emptyUrlMap ++ report.urlMapPaths, testDate), List(d, report.documentHolder, report))
-  }
-  val doc1 = Document(title = Some("doc1title"), url = Some("doc1Url"))
-  val docWithoutTitle = Document(url = Some("doc1Url"))
-  val docHolderWithDoc1 = DocumentHolder(List(doc1), textOrder = 333)
-
-  val eBlank = Engine[Int, Int]().build
-  val eBlankD = eBlank.asRequirement
-  val engineHolderWithBlank = EngineHolder(List(eBlank), textOrder = 111)
-
-  val eBlankWithTitle = Engine[Int, Int]().title("EBlankTitle").build
-  val eBlankWithTitleAndDoc1 = Engine[Int, Int]().title("EBlankTitle").reference("", doc1).build
-  val engineHolderWithBlankAndTitle = EngineHolder(List(eBlankWithTitle), textOrder = 222)
-
-  val reqNoTitle = RequirementForTest(textOrder = 666)
-  val reqWithTitle = RequirementForTest(title = Some("ReqTitle"))
-
-  val documentAndEngineReport = Report.documentAndEngineReport(Some("documentAndEngineReportTitle"), testDate, List(eBlankWithTitleAndDoc1))
-
-  val eWithUsecasesAndScenarios = Engine[Int, Int].title("eWithUsecasesAndScenarios").
-    code((x) => x).
-    useCase("useCase0", "useCase0Description").scenario(0).expected(0).
-    useCase("useCase1").scenario(1).expected(1).scenario(2).expected(2).
-    build
-  val ed = eWithUsecasesAndScenarios.asRequirement
-  import ReportableHelper._
-  val uc0 = ed.useCases(0)
-  val uc1 = ed.useCases(1)
-  val uc0s0 = ed.scenarios(0)
-  val uc1s1 = ed.scenarios(1)
-  val uc1s2 = ed.scenarios(2)
-
-  val engineReport = Report.engineReport(Some("engineReportTitle"), testDate, eWithUsecasesAndScenarios)
+case class EngineHolder(val engines: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable {
+  import EngineTools._
+  val nodes = engines.map(_.asRequirement)
 }
 
 @RunWith(classOf[CddJunitRunner])
@@ -110,22 +53,22 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
   import TemplateLike._
   def builderWithReport(title: String) = Engine[RenderContext, List[Reportable], StartChildEndType, String]().title(title).
     useCase("Reports have a huge template at the start, and end. The report title and date are substituted in").
-    scenario(context(), List(Report(title = Some("report title"), date = testDate)), Start).
-    expected(ReportDetails().reportStart("report title", testDate)).
+    scenario(engineReport, engineReport, Start).
+    expected(ReportDetails().reportStart("engineReportTitle", testDate)).
     matchOn { case (RenderContext(_, date, reportDetails), (r: Report) :: _, Start) => reportDetails.reportStart(r.titleString, date) }.
 
-    scenario(context(), List(Report(title = Some("report title"), date = testDate)), End).
+    scenario(engineReport, engineReport, End).
     expected(ReportDetails().reportEnd).
     matchOn { case (RenderContext(_, date, reportDetails), (r: Report) :: _, End) => reportDetails.reportEnd }
 
   val icon = Engine[Reportable, String]().title("icon").description("returns the html for an image for the icon for the scenario").
     code((_) => "<!-- no icon -->").
     useCase("Engine from tests have icon and title equal to engine titleString").
-    scenario(eBlankWithTitle).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
+    scenario(eBlankTitle).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
     matchOn { case (e: EngineFromTests[_, _, _, _]) => s"<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='${e.titleString}' />" }.
 
     useCase("Engine Descriptions have icon and title equal to engine titleString").
-    scenario(eBlankWithTitle.asRequirement).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
+    scenario(eBlankTitleED).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='EBlankTitle' />").
     matchOn { case (e: EngineDescription[_, _, _, _]) => s"<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engine_zps9a86cef4.png' alt='engine with tests icon' title='${e.titleString}' />" }.
 
     useCase("Usescase  have icon and title equal to titleString").
@@ -142,117 +85,156 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
   println("Icon:\n" + icon)
 
+  val linkAndIcon = Engine[RenderContext, Reportable, String]().title("linkAndIcon").description("Displays a suitable icon in a link for the reportable").
+    code { case (rc @ RenderContext(urlMap, _, _), r) => s"<a href='${urlMap(r)}'>${icon(r)}</a>" }.
+    scenario(context(reqWithTitleReport), reqWithTitle).
+    expected(s"<a href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>${icon(reqWithTitle)}</a>").
+    build
+
   val titleAndIcon = Engine[RenderContext, Reportable, String]().title("titleAndIcon").description("Finds a suitable titleAndIcon for a reportable. Includes links to go to item, and the id from the urlmap").
     useCase("Items that are requirements with titles use their titles").
-    scenario(context(reqWithTitle), reqWithTitle).
-    expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
+    scenario(context(reqWithTitleReport), reqWithTitle).
+    expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
     matchOn { case (RenderContext(urlMap, _, _), r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${r.titleString}${icon(r)}</a>" }.
 
     useCase("Items that are requirements without titles are given template name and text order").
-    scenario(context(docWithoutTitle), docWithoutTitle).
-    expected { val d = s"Document_${docWithoutTitle.textOrder}"; s"<a id='$d' href='RootUrl/Document${docWithoutTitle.textOrder}.Document.html'>$d${icon(docWithoutTitle)}</a>" }.
+    scenario(context(doc1NoTitlereport), docNoTitle).
+    expected { val d = s"Document_${docNoTitle.textOrder}"; s"<a id='$d' href='RootUrl/doc1Report/Document${docNoTitle.textOrder}.Document.html'>$d${icon(docNoTitle)}</a>" }.
     matchOn { case (RenderContext(urlMap, _, _), r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
 
     useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
-    scenario(context(eBlankWithTitle), eBlankWithTitle).
-    expected {
-      val ed = eBlankWithTitle.asRequirement
-      val edTextOrder = ed.textOrder
-      s"<a id='EngineDescription_$edTextOrder' href='RootUrl/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankWithTitle)}</a>"
-    }.
-    matchOn {
-      case (RenderContext(urlMap, _, _), e: Engine) => {
-        val ed = e.asInstanceOf[EngineTools[_, _, _, _]].asRequirement
-        s"<a id='${UrlMap.urlId(ed)}' href='${urlMap(ed)}'>${ed.titleString}${icon(e)}</a>"
-      }
-    }.
+    scenario(eBlankTitleReport, eBlankTitleED).
+    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
+    matchOn { case (RenderContext(urlMap, _, _), ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${urlMap(ed)}'>${ed.titleString}${icon(ed)}</a>" }.
 
     build
 
   val engineAndDocumentsSingleItemRenderer = builderWithReport("Engine and Documents Single Item Renderer").
-
     useCase("Engine Holders have a div, and hold the items as an unorder list").
-    scenario(context(engineHolderWithBlank), List(engineHolderWithBlank), Start).
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_DocAndEngineReport.engineHolder, Start).
     expected("\n<div class='engineHolder'><h3>Engines</h3><ul>\n").
     because { case (_, (holder: EngineHolder) :: _, Start) => true; case _ => false }.
 
-    scenario(context(engineHolderWithBlank), List(engineHolderWithBlank), End).
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_engineHolder, End).
     expected("\n</ul></div> <!-- engineHolder -->\n").
     because { case (_, (holder: EngineHolder) :: _, End) => true; case _ => false }.
 
     useCase("Document Holders have a div, and hold the items as an unorder list").
-    scenario(context(docHolderWithDoc1), List(docHolderWithDoc1), Start).
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_documentHolder, Start).
     expected("\n<div class='documentHolder'><h3>Documents</h3><ul>\n").
     because { case (_, (holder: DocumentHolder) :: _, Start) => true; case _ => false }.
 
-    scenario(context(docHolderWithDoc1), List(docHolderWithDoc1), End).
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_documentHolder, End).
     expected("\n</ul></div> <!-- documentHolder -->\n").
     because { case (_, (holder: DocumentHolder) :: _, End) => true; case _ => false }.
 
-    scenario(context(docHolderWithDoc1), List(docHolderWithDoc1), Child).
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_documentHolder, Child).
     expected("\n<div class='documentHolder'><h3>Documents</h3><ul><li>No documents</li></ul></div> <!-- documentHolder -->\n").
     because { case (_, (holder: DocumentHolder) :: _, Child) => true; case _ => false }.
 
     useCase("Documents are in an anchor, and use the TitleAndIcon engine").
-    scenario(context(doc1, docHolderWithDoc1), List(doc1), Child).
-    expected(s"\n<li>${titleAndIcon(context(doc1, docHolderWithDoc1), doc1)}</li>\n").
+    scenario(eBlankTitleDoc1_DocAndEngineReport, doc1, Child).
+    expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), doc1)}</li>\n").
     matchOn { case (rc @ RenderContext(urlMap, _, _), ((doc: Document) :: _), Child) => s"\n<li>${titleAndIcon(rc, doc)}</li>\n" }.
 
     useCase("Engines are in an anchor").
-    scenario(
-      context(eBlankWithTitle, engineHolderWithBlankAndTitle), List(eBlankWithTitle), Child).
-      expected(s"\n<li>${titleAndIcon(context(eBlankWithTitle, engineHolderWithBlankAndTitle), eBlankWithTitle)}</li>\n").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), (engine: Engine) :: _, Child) => s"\n<li>${titleAndIcon(rc, engine)}</li>\n" }.
-      build
+    scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1ED, Child).
+    expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), eBlankTitleDoc1ED)}</li>\n").
+    matchOn { case (rc @ RenderContext(urlMap, _, _), (ed: EngineDescription[_, _, _, _]) :: _, Child) => s"\n<li>${titleAndIcon(rc, ed)}</li>\n" }.
+    build
 
-  val engineReport =
+  def indent(path: List[Reportable]) = path.indexWhere(_.isInstanceOf[DecisionTree[_, _, _, _]]) match {
+    case 1 => ""
+    case i => s"<div class='indent'>${List.fill(i - 1)("&#160;").mkString("")}</div>"
+  }
+
+  val engineReportSingleItemRenderer =
     builderWithReport("Single Engine report").
       useCase("An engine from tests has a div, a ").
-      scenario(context(eBlankWithTitle), List(eBlankWithTitle), Start).
+      scenario(engineReport, eWithUsecasesAndScenariosEd, Start).
       expected("\n" +
         s"<div class='engineWithTests'><div class='engineSummary'>\n" +
-        s"<div class='engineText'>${titleAndIcon(context(eBlankWithTitle), eBlankWithTitle)}</div> <!-- engineText -->\n").
+        s"<div class='engineText'>${titleAndIcon(engineReport, eWithUsecasesAndScenariosEd)}</div> <!-- engineText -->\n").
       matchOn {
-        case (rc @ RenderContext(urlMap, _, _), (engine: Engine) :: _, Start) => "\n" +
+        case (rc @ RenderContext(urlMap, _, _), (engine: EngineDescription[_, _, _, _]) :: _, Start) => "\n" +
           s"<div class='engineWithTests'><div class='engineSummary'>\n" +
           s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n"
       }.
 
-      scenario(context(eBlankWithTitle), List(eBlankWithTitle), Child).
-      expected("\n" +
-        s"<div class='engineWithTests'><div class='engineSummary'>\n" +
-        s"<div class='engineText'>${titleAndIcon(context(eBlankWithTitle), eBlankWithTitle)}</div> <!-- engineText --></div> <!-- engineWithTests-->\n").
-      matchOn {
-        case (rc @ RenderContext(urlMap, _, _), (engine: Engine) :: _, Child) => "\n" +
-          s"<div class='engineWithTests'><div class='engineSummary'>\n" +
-          s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText --></div> <!-- engineWithTests-->\n"
-      }.
-
-      scenario(context(eBlankWithTitle), List(eBlankWithTitle), End).
-      expected("\n</div> <!-- engineWithTests-->\n").
-      because { case (RenderContext(urlMap, _, _), (engine: Engine) :: _, End) => true; case _ => false }.
+      scenario(engineReport, eWithUsecasesAndScenariosEd, End).
+      expected("\n</div> <!-- engineWithTests-->"). //the decision tree closes off the engineSummary div
+      because { case (RenderContext(urlMap, _, _), (engine: EngineDescription[_, _, _, _]) :: _, End) => true; case _ => false }.
 
       useCase("a use case is a header with the title and icon in it, The scenarios are part of the header, and then the description").
-      scenario(context(uc0), List(uc0, ed), Start).
-      expected(s"\n<div class='usecaseSummary'><h4>${titleAndIcon(context(uc0), uc0)}</h4>").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, Start) => s"\n<div class='usecaseSummary'><h4>${titleAndIcon(rc, uc)}</h4>" }.
+      scenario(engineReport, uc0, Start).
+      expected(s"\n<div class='usecaseSummary'><h4>${titleAndIcon(engineReport, uc0)}").
+      matchOn { case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, Start) => s"\n<div class='usecaseSummary'><h4>${titleAndIcon(rc, uc)}" }.
 
-      scenario(context(uc0), List(uc0, ed), Child).
-      expected(s"\n<div class='usecaseSummary'><h4>${titleAndIcon(context(uc0), uc0)}</h4></div> <!-- 'usecaseSummary -->\n").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, Child) => s"\n<div class='usecaseSummary'><h4>${titleAndIcon(rc, uc)}</h4></div> <!-- 'usecaseSummary -->\n" }.
+      scenario(engineReport, uc0, Child).
+      expected(s"\n<div class='usecaseSummary'><h4>${titleAndIcon(engineReport, uc0)}</h4>useCase0Description</div> <!-- 'usecaseSummary -->\n").
+      matchOn {
+        case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, Child) => s"\n<div class='usecaseSummary'>" +
+          s"<h4>${titleAndIcon(rc, uc)}</h4>${uc.description.getOrElse("")}</div> <!-- 'usecaseSummary -->\n"
+      }.
 
-      scenario(context(uc0), List(uc0, ed), End).
-      expected("\n</div> <!-- usecaseSummary -->\n").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, End) => "\n</div> <!-- usecaseSummary -->\n" }.
+      scenario(engineReport, uc0, End).
+      expected("\n</h4>useCase0Description</div> <!-- usecaseSummary -->\n").
+      matchOn { case (rc @ RenderContext(urlMap, _, _), (uc: UseCase[_, _, _, _]) :: _, End) => s"\n</h4>${uc.description.getOrElse("")}</div> <!-- usecaseSummary -->\n" }.
+
+      useCase("a scenario is just the icon").
+      scenario(engineReport, uc0s0, Child).
+      expected(icon(uc0s0)).
+      matchOn { case (_, (s: Scenario[_, _, _, _]) :: _, Child) => icon(s) }.
+
+      useCase("A decision tree, closes off the engine with summary div and  get's it's own div").
+      scenario(engineReport, tree, Start).
+      expected("\n</div> <!-- engineSummary'--><div class='decisionTree'>\n").
+      because { case (_, (s: DecisionTree[_, _, _, _]) :: _, Start) => true; case _ => false }.
+
+      scenario(engineReport, tree, End).
+      expected("\n</div><!-- decisionTree -->\n").
+      matchOn { case (_, (s: DecisionTree[_, _, _, _]) :: _, End) => "\n</div><!-- decisionTree -->\n" }.
+
+      useCase("A decision get's it's own div, and a because").
+      scenario(engineReport, decision, Start).
+      expected("\n<div class='decision'><div class='because'><span class='keyword'>if&#160;</span>" +
+        "\n<div class='because'>x.>(0)</div><!-- because --></div><!-- because -->\n").
+      matchOn {
+        case (_, path @ (d: Decision[_, _, _, _]) :: _, Start) =>
+          s"\n<div class='decision'><div class='because'>${indent(path)}<span class='keyword'>if&#160;</span>" +
+            s"\n<div class='because'>${d.prettyString}</div><!-- because --></div><!-- because -->\n"
+      }.
+      scenario(engineReport, decision, End).
+      expected("</div><!--decision -->\n").
+      matchOn { case (_, (s: Decision[_, _, _, _]) :: _, End) => "</div><!--decision -->\n" }.
+
+      useCase("An elseclause is artificially inserted to allow else to be displayed easily").
+      scenario(engineReport, ElseClause(), Child).
+      expected("<div class='else'><div class='indent'>&#160;</div><span class='keyword'>else&#160;</span></div>").
+      matchOn { case (_, path @ (s: ElseClause) :: _, _) => s"<div class='else'>${indent(path)}<span class='keyword'>else&#160;</span></div>" }.
+
+      useCase("A conclusion get's it's own div").
+      scenario(engineReport, conclusionYes, Child).
+      expected(s"\n<div class='result'><div class='indent'>&#160;</div><span class='keyword'>then&#160;</span>" +
+        s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s1.textOrder}.Scenario.html'>${icon(uc1s1)}</a>" +
+        s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s2.textOrder}.Scenario.html'>${icon(uc1s2)}</a>" +
+        s"<div class='conclusion'>((x: Int) => x.*(2))</div><!-- conclusion --></div><!-- result -->\n").
+      matchOn {
+        case (rc @ RenderContext(urlMap, _, _), path @ (c: Conclusion[_, _, _, _]) :: _, Child) => "\n" +
+          s"<div class='result'>${indent(path)}<span class='keyword'>then&#160;</span>" +
+          s"${c.scenarios.map((s) => s"<a class='scenarioLink' href='${urlMap(s)}'>${icon(s)}</a>").mkString("")}" +
+          s"<div class='conclusion'>${c.code.description}</div><!-- conclusion --></div><!-- result -->\n"
+      }.
 
       build
 
   def main(args: Array[String]) {
     println(ReportDetails())
-    val html = Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankWithTitle)), engineAndDocumentsSingleItemRenderer)
-    println("------------------Start----------------------")
-    println(html)
-    println("------------------End----------------------")
+    println("------------------DocumentAndEngine----------------------")
+    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
+    println("------------------SingleEngine----------------------")
+    println(Report.html(Report.engineReport(Some("Some title"), new Date, eWithUsecasesAndScenarios), engineReportSingleItemRenderer))
+    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(Report.engineReport(Some("Some title"), new Date, engineReportSingleItemRenderer), engineReportSingleItemRenderer)))
   }
 
 }
