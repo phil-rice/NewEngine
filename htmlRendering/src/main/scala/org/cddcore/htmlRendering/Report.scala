@@ -3,7 +3,7 @@ package org.cddcore.htmlRendering
 import org.cddcore.utilities._
 import org.cddcore.engine._
 import org.cddcore.engine.builder._
-
+import EngineTools._
 import StartChildEndType._
 import java.util.Date
 
@@ -13,8 +13,9 @@ object Report {
   def documentAndEngineReport(title: Option[String], date: Date, engines: Traversable[Engine], description: Option[String] = None) =
     new DocumentAndEngineReport(title, date, engines, description)
   def engineReport(title: Option[String], date: Date, engine: Engine, description: Option[String] = None) =
-    new EngineReport(title, date, engine, description)
-
+    new FocusedReport(title, date, List(engine.asRequirement), description)
+  def focusedReport(title: Option[String], date: Date, pathWithoutReport: List[Reportable], description: Option[String] = None) =
+    new FocusedReport(title, date, pathWithoutReport, description)
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = {
     val renderContext = RenderContext(UrlMap() ++ report.urlMapPaths, new Date())
     Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
@@ -78,54 +79,64 @@ case class DocumentAndEngineReport(title: Option[String],
   }
 }
 
-object ElseClause {
-  private val instance = new ElseClause
-  def apply() = instance
-}
-class ElseClause(val textOrder: Int = Reportable.nextTextOrder) extends Reportable
+//case class EngineReport(title: Option[String],
+//  val date: Date,
+//  val engine: Engine,
+//  val description: Option[String] = None,
+//  val textOrder: Int = Reportable.nextTextOrder) extends Report {
+//  import EngineTools._
+//  import ReportableHelper._
+//
+//  val ed = engine.asRequirement
+//  val basePath = List(engine.asRequirement, this)
+//  val baseReportPaths: List[List[Reportable]] = List(this) :: basePath :: Nil
+//  val reportPaths: List[List[Reportable]] = engine match {
+//    case e: EngineFromTests[_, _, _, _] => baseReportPaths ::: ed.pathsFrom(basePath).toList ::: e.tree.treePathsWithElseClause(basePath)
+//    case f: FoldingEngine[_, _, _, _, _] => baseReportPaths ::: f.engines.flatMap((e) => {
+//      val ed = e.asRequirement
+//      ed.pathsIncludingSelf(basePath).toList ::: e.tree.treePathsWithElseClause(ed :: basePath)
+//    })
+//  }
+//
+//  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
+//    new EngineReport(title, date, engine, description, textOrder)
+//
+//  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+//  override def equals(other: Any) = other match {
+//    case er: EngineReport => Requirement.areRequirementFieldsEqual(this, er) && engine == er.engine
+//    case _ => false
+//  }
+//}
 
-case class EngineReport(title: Option[String],
+case class FocusedReport(title: Option[String],
   val date: Date,
-  val engine: Engine,
+  val focusPath: List[Reportable],
   val description: Option[String] = None,
-  val textOrder: Int = Reportable.nextTextOrder) extends Report with NestedHolder[Reportable] {
+  val textOrder: Int = Reportable.nextTextOrder) extends Report {
   import EngineTools._
   import ReportableHelper._
 
-  val ed = engine.asRequirement
-  val nodes = List(ed)
-
-  def treePaths[Params, BFn, R, RFn](path: List[Reportable], tree: DecisionTree[Params, BFn, R, RFn]): List[List[Reportable]] = (tree :: path) :: treePaths(tree :: path, tree.root)
-
-  //builds up in reverse order
-  private def treePaths[Params, BFn, R, RFn](path: List[Reportable], node: DecisionTreeNode[Params, BFn, R, RFn]): List[List[Reportable]] = {
-    node match {
-      case c: Conclusion[Params, BFn, R, RFn] => List((c :: path))
-      case d: Decision[Params, BFn, R, RFn] => {
-        val dPath = (d :: path)
-        val yesPaths = treePaths(dPath, d.yes)
-        val noPaths = treePaths(dPath, d.no)
-        dPath :: yesPaths ::: List(ElseClause() :: dPath) ::: noPaths
-      }
+  private val pathToFocus = focusPath :+ this
+  private val pathsToFocus = Lists.decreasingList(pathToFocus).reverse
+  val addDecisionTree = (path: List[Reportable]) => path match {
+    case path @ (ed: EngineDescription[_, _, _, _]) :: tail => ed.tree.get.treePathsWithElseClause(path)
+    case _ => List()
+  }
+  def childrenPaths(path: List[Reportable]): List[List[Reportable]] = path match {
+    case (f: FoldingEngineDescription[_, _, _, _, _]) :: tail => f.nodes.flatMap {
+      case ed: EngineDescription[_, _, _, _] =>      ed.pathsIncludingSelf(path).toList ::: ed.tree.get.treePathsWithElseClause(ed::path)
     }
+    case (h: NestedHolder[Reportable]) :: tail => h.pathsFrom(path).toList
+    case _ => List()
   }
 
-  val basePath = List(engine.asRequirement, this)
-  val baseReportPaths: List[List[Reportable]] = List(this) :: basePath :: Nil
-  val reportPaths: List[List[Reportable]] = engine match {
-    case e: EngineFromTests[_, _, _, _] => baseReportPaths ::: ed.pathsFrom(basePath).toList ::: treePaths(basePath, e.tree)
-    case f: FoldingEngine[_, _, _, _, _] => baseReportPaths ::: f.engines.flatMap((e) => {
-      val ed = e.asRequirement
-      ed.pathsIncludingSelf(basePath).toList ::: treePaths(ed :: basePath, e.tree)
-    })
-  }
+  val reportPaths = pathsToFocus ::: childrenPaths(pathToFocus) ::: pathsToFocus.flatMap(addDecisionTree)
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new EngineReport(title, date, engine, description, textOrder)
-
+    new FocusedReport(title, date, focusPath, description, textOrder)
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
-    case er: EngineReport => Requirement.areRequirementFieldsEqual(this, er) && engine == er.engine
+    case fr: FocusedReport => Requirement.areRequirementFieldsEqual(this, fr) && focusPath == fr.focusPath
     case _ => false
   }
 }

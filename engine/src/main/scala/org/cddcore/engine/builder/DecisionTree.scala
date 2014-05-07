@@ -35,15 +35,41 @@ class DecisionTreeLens[Params, BFn, R, RFn](val creator: (DecisionTreeNode[Param
     (d, x) => d.copy(no = x),
     Some("noL"))
 }
+object ElseClause {
+  private val instance = new ElseClause
+  def apply() = instance
+}
+
+class ElseClause(val textOrder: Int = Reportable.nextTextOrder) extends Reportable
 
 trait DecisionTree[Params, BFn, R, RFn] extends NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] with Reportable {
   def root: DecisionTreeNode[Params, BFn, R, RFn]
   def rootIsDefault: Boolean
   def nodes = List(root)
+  def treePathsWithElseClause[Params, BFn, R, RFn](pathNotIncludingTree: List[Reportable]): List[List[Reportable]] =
+    (this :: pathNotIncludingTree) :: treePaths(this :: pathNotIncludingTree, root)
 
+  //builds up in reverse order
+  private def treePaths[Params, BFn, R, RFn](path: List[Reportable], node: DecisionTreeNode[Params, BFn, R, RFn]): List[List[Reportable]] = {
+    node match {
+      case c: Conclusion[Params, BFn, R, RFn] => List((c :: path))
+      case d: Decision[Params, BFn, R, RFn] => {
+        val dPath = (d :: path)
+        val yesPaths = treePaths(dPath, d.yes)
+        val noPaths = treePaths(dPath, d.no)
+        dPath :: yesPaths ::: List(ElseClause() :: dPath) ::: noPaths
+      }
+    }
+  }
 }
 
-case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params, BFn, R, RFn], val rootIsDefault: Boolean = true, textOrder: Int = Reportable.nextTextOrder) extends DecisionTree[Params, BFn, R, RFn]
+case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params, BFn, R, RFn], val rootIsDefault: Boolean = true, textOrder: Int = Reportable.nextTextOrder) extends DecisionTree[Params, BFn, R, RFn] {
+  override def hashCode = root.hashCode()
+  override def equals(other: Any) = other match {
+    case sdt: SimpleDecisionTree[Params, BFn, R, RFn] => root == sdt.root && rootIsDefault == sdt.rootIsDefault
+    case _ => false
+  }
+}
 
 sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]

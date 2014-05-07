@@ -50,6 +50,19 @@ trait NestedHolder[T] extends Traversable[T] {
       foreachPrim[U](nodes, f, initialValue)
     }
   }
+  def pathsIncludingAfter(initialPath: List[T], afterFn: (List[T]) => List[List[T]]): List[List[T]] =
+    nodes.flatMap((t) => {
+      val path = t :: initialPath; 
+      t match {
+        case h: NestedHolder[T] => path :: h.pathsIncludingAfter(path, afterFn) ::: afterFn(path)
+        case _ => path :: afterFn(path)
+      }
+    })
+
+  protected def pathsIncludingAfterPrim(initialPath: List[T], afterFn: (List[T]) => List[T]) = {
+
+  }
+
 }
 
 case class SimpleNestedHolder[T](nodes: List[T]) extends NestedHolder[T]

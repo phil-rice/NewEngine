@@ -15,7 +15,6 @@ import org.junit.runner.RunWith
 
 object SampleContexts {
   import scala.language.implicitConversions
-  implicit def toPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String]) = new BuilderPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String])
   implicit def toContext(report: Report) = context(report)
 
   val testDate = new Date(2000, 1, 1)
@@ -26,17 +25,6 @@ object SampleContexts {
     val urlMap = emptyUrlMap ++ report.urlMapPaths
     val rc = RenderContext(urlMap, SampleContexts.testDate)
     rc
-  }
-  class BuilderPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String]) {
-    def scenario(report: Report, item: Reportable, sce: StartChildEndType) = {
-      val reportPaths = report.reportPaths
-      val path = reportPaths.find(_.head == item) match {
-        case Some(p) => p
-        case _ =>
-          throw new IllegalArgumentException(s"\nReport: $report\nLast: $item\n${reportPaths.mkString("\n")}")
-      }
-      builder.scenario(report, path, sce)
-    }
   }
 
   val doc1 = Document(title = Some("doc1title"), url = Some("doc1Url"))
@@ -84,7 +72,9 @@ object SampleContexts {
     childEngine("ce1").scenario(1).expected(2).code { (x) => x * 2 }.because { (x) => x > 0 }.
     scenario(2).expected(4).
     build
-
+    
+    
+    
   val foldingAsFE = folding.asInstanceOf[FoldingEngine[_, _, _, _, _]]
   val foldingED = folding.asRequirement.asInstanceOf[FoldingEngineDescription[Int, (Int) => Boolean, Int, (Int) => Int, List[Int]]]
   val foldingEngineReport = Report.engineReport(Some("engineReportTitle"), testDate, folding)

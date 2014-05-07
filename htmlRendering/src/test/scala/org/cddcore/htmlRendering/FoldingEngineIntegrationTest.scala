@@ -2,15 +2,13 @@ package org.cddcore.htmlRendering
 
 import scala.language.implicitConversions
 
+
 import org.cddcore.engine._
-import org.cddcore.engine.builder.Decision
-import org.cddcore.engine.builder.DecisionTreeNode
+import org.cddcore.engine.builder._
+import org.cddcore.utilities._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import ReportableHelper._
-import org.cddcore.utilities.NestedHolder
-import org.cddcore.utilities.Lists
-import org.cddcore.utilities.StartChildEndType
 import SampleContexts._
 import StartChildEndType._
 import EngineTools._
@@ -20,7 +18,6 @@ import ReportableHelper._
 class FoldingEngineIntegrationTest extends AbstractTest with SomeHoldersForTest {
 
   "FoldingEngineReport" should "have report paths that goes down the engineDescription and any children" in {
-
     val report = foldingEngineReport
     val fed = foldingED
     val expected = List(

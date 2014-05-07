@@ -53,12 +53,12 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, B
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(asRequirement: EngineAsRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap): E
-  def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
+  def constructEngine(asRequirement: EngineRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap): E
+  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
     requirement match {
-      case ed: EngineAsRequirement[Params, BFn, R, RFn] =>
+      case ed: EngineDescription[Params, BFn, R, RFn] =>
         val (dt, exceptionMap, modifiedRequirement) = buildTree(ed, buildExceptions)
-        constructEngine(modifiedRequirement, dt, exceptionMap)
+        constructEngine(modifiedRequirement.copy(tree= Some(dt)), dt, exceptionMap)
     }
   }
 }
@@ -80,7 +80,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
   val validator = evaluateTree.validator
   implicit def ldp: LoggerDisplayProcessor
 
-  def buildEngine(requirement: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap): E
+  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap): E
 
   protected def buildTree[ED <: BuilderNodeAndHolder[Params, BFn, R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)

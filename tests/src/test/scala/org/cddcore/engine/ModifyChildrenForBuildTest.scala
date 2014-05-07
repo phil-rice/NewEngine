@@ -83,10 +83,10 @@ abstract class ModifyChildrenForBuildTest[Params, BFn, R, RFn, B <: Builder[Para
     expected("X")
     scenario("A")
     val e = build
-    val actual = e.asRequirement
+    val actual = e.asRequirement.asInstanceOf[EngineDescription[Params,BFn,R, RFn]]
     val expect = EngineDescription[Params,BFn,R, RFn]( priority = 2, nodes = List(UseCase(title = "UC", priority = 1, expected = Right(result("X")),
       nodes = List(s("A", priority = 1, expected = "X")))))
-    assertEquals(expect, actual)
+    assertEquals(expect, actual.copy(tree=None)) // the tree isn't part of this test
   }
 
 }

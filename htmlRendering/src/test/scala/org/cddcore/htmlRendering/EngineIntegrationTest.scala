@@ -2,17 +2,16 @@ package org.cddcore.htmlRendering
 
 import scala.language.implicitConversions
 
+
 import org.cddcore.engine._
-import org.cddcore.engine.builder.Decision
-import org.cddcore.engine.builder.DecisionTreeNode
+import org.cddcore.engine.builder._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import ReportableHelper._
-import org.cddcore.utilities.NestedHolder
-import org.cddcore.utilities.Lists
-import org.cddcore.utilities.StartChildEndType
+import org.cddcore.utilities._
+
 import SampleContexts._
 import StartChildEndType._
+import ReportableHelper._
 import EngineTools._
 import ReportableHelper._
 
@@ -22,8 +21,7 @@ class EngineIntegrationTest extends AbstractTest with SomeHoldersForTest {
   "EngineReport" should "have report paths that goes down the engineDescription and any children" in {
 
     val report = engineReport
-    val engine = report.engine.asInstanceOf[EngineFromTests[_, _, _, _]]
-    val tree = engine.tree
+    val engine = eWithUsecasesAndScenarios
     val ed = eWithUsecasesAndScenariosEd
     val expected = List(
       List(report),
@@ -48,8 +46,7 @@ class EngineIntegrationTest extends AbstractTest with SomeHoldersForTest {
   "EngineReport's pathsToStartChildAndEnd" should "go through the report, document / engine holders and engines." in {
     val report = engineReport
     val actual = Lists.traversableToStartChildEnd(report.reportPaths)
-    val engine = engineReport.engine.asInstanceOf[EngineFromTests[_, _, _, _]]
-    val tree = engine.tree
+    val engine = eWithUsecasesAndScenarios
     val ed = eWithUsecasesAndScenariosEd
     val expected = List(
       (List(report), Start),

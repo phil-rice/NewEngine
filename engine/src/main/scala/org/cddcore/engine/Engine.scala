@@ -30,13 +30,15 @@ object EngineTools {
 }
 trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] {
   def titleString = asRequirement.titleString
-  def asRequirement: EngineAsRequirement[Params, BFn, R, RFn]
+  def asRequirement: EngineRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: ExceptionMap
 
 }
 
-trait EngineAsRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn]
+trait EngineRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn]{
+  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] 
+}
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with EngineTools[Params, BFn, R, RFn] {
   def engines: List[EngineFromTests[Params, BFn, R, RFn]]

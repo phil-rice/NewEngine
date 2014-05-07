@@ -2,11 +2,8 @@ package org.cddcore.engine
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.language.implicitConversions
-import org.cddcore.utilities.Maps
-import org.cddcore.utilities.CodeHolder
-import org.cddcore.utilities.NestedHolder
-import org.cddcore.utilities.StartChildEndType
-import scala.collection.Traversable
+import org.cddcore.utilities._
+import org.cddcore.engine.builder.DecisionTree
 trait Reportable {
   val textOrder: Int
 }
@@ -121,13 +118,22 @@ case class FoldingEngineDescription[Params, BFn, R, RFn, FullR](
   val foldingFn: (FullR, R) => FullR,
   val initialValue: CodeHolder[() => FullR],
   val textOrder: Int = Reportable.nextTextOrder)
-  extends EngineAsRequirement[Params, BFn, R, RFn] with FoldingBuilderNodeHolder[Params, BFn, R, RFn, FullR] with TypedReportable[Params, BFn, R, RFn] {
+  extends EngineRequirement[Params, BFn, R, RFn] with FoldingBuilderNodeHolder[Params, BFn, R, RFn, FullR] with TypedReportable[Params, BFn, R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new FoldingEngineDescription[Params, BFn, R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[Params, BFn, R, RFn] =
     new FoldingEngineDescription[Params, BFn, R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]) =
     new FoldingEngineDescription[Params, BFn, R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
+
+  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
+    val path = this :: pathNotIncludingThis
+    nodes.flatMap {
+      case e: EngineDescription[Params, BFn, R, RFn] => e.pathsIncludingTree(path)
+      case h: NestedHolder[Reportable] => h.pathsIncludingSelf(path)
+      case r => List(r :: path)
+    }
+  }
   override def toString = s"FoldingEngineDescription(${initialValue.description}, $foldingFn, nodes=${nodes.mkString(", ")}"
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
@@ -145,20 +151,25 @@ case class EngineDescription[Params, BFn, R, RFn](
   val nodes: List[BuilderNode[Params, BFn, R, RFn]] = List(),
   val expected: Option[Either[Exception, R]] = None,
   val references: Set[Reference] = Set(),
+  val tree: Option[DecisionTree[Params, BFn, R, RFn]] = None,
   val textOrder: Int = Reportable.nextTextOrder)
-  extends EngineAsRequirement[Params, BFn, R, RFn] {
+  extends EngineRequirement[Params, BFn, R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
+    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, tree, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[Params, BFn, R, RFn] =
-    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
+    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, tree, textOrder)
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]): BuilderNodeAndHolder[Params, BFn, R, RFn] =
-    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, textOrder)
+    new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, tree, textOrder)
+  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
+    pathsIncludingSelf(pathNotIncludingThis).toList ::: tree.toList.flatMap(_.treePathsWithElseClause(this :: pathNotIncludingThis).toList )
+  }
+
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
-    case ed: EngineDescription[Params, BFn, R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, ed)
+    case ed: EngineDescription[Params, BFn, R, RFn] => Requirement.areBuilderNodeAndHolderFieldsEqual(this, ed) && tree == ed.tree
     case _ => false
   }
-  override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")})"
+  override def toString = s"EngineDescription(${title.getOrElse("")}, nodes=${nodes.mkString(",")}, treeSet=${tree.isDefined})"
 }
 
 case class UseCase[Params, BFn, R, RFn](
@@ -203,6 +214,16 @@ case class Scenario[Params, BFn, R, RFn](
   def copyScenario(because: Option[CodeHolder[BFn]] = because, assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = assertions, configurators: List[(Params) => Unit] = configurators) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
 
+  def prettyPrintExpected(implicit ldp: LoggerDisplayProcessor): String = expected match {
+    case Some(Left(e)) => "throws " + e.getClass
+    case Some(Right(v)) => ldp(v)
+    case _ => "No expected"
+  }
+  def prettyPrintParams(implicit ldp: LoggerDisplayProcessor): String = params match {
+    case (p1, p2) => ldp(p1) + "," + ldp(p2)
+    case (p1, p2, p3) => ldp(p1) + "," + ldp(p2) + "," + ldp(p3)
+    case _ => ldp(params)
+  }
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
   def executeConfigurators = configurators.foreach((c) => c(params))
   override def hashCode = (title.hashCode() + params.hashCode()) / 2

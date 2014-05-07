@@ -5,14 +5,14 @@ import org.cddcore.utilities._
 
 trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BFn, R, RFn], E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, FullR, F] {
   def constructFoldingEngine(
-    requirement: EngineAsRequirement[Params, BFn, R, RFn],
+    requirement: EngineRequirement[Params, BFn, R, RFn],
     engines: List[EngineFromTests[Params, BFn, R, RFn]],
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
     foldingFn: (FullR, R) => FullR): F
   def buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E]
 
-  def buildEngine(r: EngineAsRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
+  def buildEngine(r: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap) = {
     r match {
       case f: FoldingEngineDescription[Params, BFn, R, RFn, FullR] => {
         val initial = (List[EngineFromTests[Params, BFn, R, RFn]](), buildExceptions)

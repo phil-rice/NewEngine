@@ -28,7 +28,13 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     val e = build
     assertEquals(result("A"), e.applyParams(params("a")))
   }
-  
+
+  it should "put the tree into the engine description when built" in {
+    val e = build
+    val ed = e.asRequirement.asInstanceOf[EngineDescription[Params, BFn, R, RFn]]
+    assertEquals(Some(e.tree), ed.tree)
+  }
+
   it should "throw  CannotDefineDescriptionTwiceException if the description has already been set" in {
     scenario("A")
     update(_.description("X"))
