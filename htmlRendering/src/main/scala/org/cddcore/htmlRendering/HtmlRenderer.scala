@@ -4,12 +4,10 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.xml.Elem
-import org.cddcore.cddjunit.CddJunitRunner
 import org.cddcore.engine._
 import org.cddcore.engine.builder._
 import org.cddcore.utilities._
 import org.cddcore.utilities.StartChildEndType._
-import org.junit.runner.RunWith
 import java.io.File
 
 object HtmlStrings {
@@ -26,13 +24,7 @@ trait ReportDetails {
   def reportDateFormatter: DateFormat
 }
 
-class ReportOrchestrator(rootUrl: String, engines: List[Engine], date: Date) {
-  import EngineTools._
-  val rootReport = Report.documentAndEngineReport(Some("title"), date, engines)
-  val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.focusedReport(Some("title"), date, List(e)) :: list).reverse
-  val urlMap = (rootReport :: engineReports).foldLeft(UrlMap(rootUrl))((urlMap, r) => { urlMap ++ r.urlMapPaths })
-  
-}
+
 
 class SimpleReportDetails(
   val css: String = Files.getFromClassPath(classOf[ReportDetails], "cdd.css"),
@@ -50,7 +42,6 @@ case class EngineHolder(val engines: List[Engine], textOrder: Int = Reportable.n
   val nodes = engines.map(_.asRequirement)
 }
 
-@RunWith(classOf[CddJunitRunner])
 object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChildEndType, Elem] {
   import scala.language.implicitConversions
   import SampleContexts._
@@ -326,13 +317,13 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     renderDecisionTrees.
     build
 
-  def main(args: Array[String]) {
-    println(ReportDetails())
-    println("------------------DocumentAndEngine----------------------")
-    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
-    println("------------------SingleEngine----------------------")
-    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
-    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(foldingEngineReport, engineReportSingleItemRenderer)))
-  }
+//  def main(args: Array[String]) {
+//    println(ReportDetails())
+//    println("------------------DocumentAndEngine----------------------")
+//    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
+//    println("------------------SingleEngine----------------------")
+//    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
+//    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(foldingEngineReport, engineReportSingleItemRenderer)))
+//  }
 
 }

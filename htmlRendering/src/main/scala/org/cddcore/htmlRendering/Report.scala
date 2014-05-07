@@ -1,12 +1,12 @@
 package org.cddcore.htmlRendering
 
-import org.cddcore.utilities._
-import org.cddcore.engine._
-import org.cddcore.engine.builder._
-import EngineTools._
-import StartChildEndType._
 import java.util.Date
 
+import org.cddcore.engine._
+import org.cddcore.utilities._
+import StartChildEndType._
+import EngineTools._
+ 
 object Report {
   def apply(title: Option[String] = None, date: Date = new Date, description: Option[String] = None, nodes: List[Reportable] = List()) =
     new SimpleReport(title, date, description, nodes)
@@ -33,6 +33,14 @@ trait Report extends Requirement {
   def references: Set[Reference] = Set()
   def reportPaths: List[List[Reportable]]
   def urlMapPaths: List[List[Reportable]] = reportPaths
+}
+
+class ReportOrchestrator(rootUrl: String, engines: List[Engine], date: Date) {
+  import EngineTools._
+  val rootReport = Report.documentAndEngineReport(Some("title"), date, engines)
+  val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.focusedReport(Some("title"), date, List(e)) :: list).reverse
+  val urlMap = UrlMap(rootUrl) ++ rootReport.urlMapPaths
+
 }
 
 case class SimpleReport(
@@ -68,6 +76,11 @@ case class DocumentAndEngineReport(title: Option[String],
   val engineHolder = EngineHolder(sortedEngines)
   val nodes = List(documentHolder, engineHolder)
   val reportPaths = pathsIncludingSelf.toList
+  private val thisAsPath: List[Reportable] = List(this)
+  private val thisAndEngineHolderAsPath: List[Reportable] = List(engineHolder, this)
+  private val enginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement.pathsIncludingTree(thisAndEngineHolderAsPath)).toList
+  override val urlMapPaths = List(thisAsPath) ++ documentHolder.pathsIncludingSelf[Reportable](thisAsPath) ++ List(thisAndEngineHolderAsPath) ++ enginePaths
+  //    reportPaths ++ engines.map(_.asRequirement).flatMap((ed) => ed.pathsIncludingTree(engineHolder :: ed :: this :: Nil))
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new DocumentAndEngineReport(title, date, engines, description, textOrder)
@@ -124,7 +137,7 @@ case class FocusedReport(title: Option[String],
   }
   def childrenPaths(path: List[Reportable]): List[List[Reportable]] = path match {
     case (f: FoldingEngineDescription[_, _, _, _, _]) :: tail => f.nodes.flatMap {
-      case ed: EngineDescription[_, _, _, _] =>      ed.pathsIncludingSelf(path).toList ::: ed.tree.get.treePathsWithElseClause(ed::path)
+      case ed: EngineDescription[_, _, _, _] => ed.pathsIncludingTree(path)
     }
     case (h: NestedHolder[Reportable]) :: tail => h.pathsFrom(path).toList
     case _ => List()

@@ -1,17 +1,16 @@
 package org.cddcore.htmlRendering
 
 import java.text.DateFormat
+
 import java.text.SimpleDateFormat
 import java.util.Date
 
 import scala.xml.Elem
 
-import org.cddcore.cddjunit.CddJunitRunner
 import org.cddcore.engine._
 import org.cddcore.engine.builder._
 import org.cddcore.utilities._
 import org.cddcore.utilities.StartChildEndType._
-import org.junit.runner.RunWith
 
 object SampleContexts {
   import scala.language.implicitConversions
@@ -42,7 +41,7 @@ object SampleContexts {
   val eBlankTitleReport = Report.engineReport(Some("engineReportTitle"), testDate, eBlankTitle)
 
   val eBlankTitleDoc1 = Engine[Int, Int]().title("EBlankTitle").reference("", doc1).build
-  val eBlankTitleDoc1ED = eBlankTitleDoc1.asRequirement
+  val eBlankTitleDoc1ED = eBlankTitleDoc1.asRequirement.asInstanceOf[EngineDescription[_, _, _, _]]
   val eBlankTitleDoc1_DocAndEngineReport = Report.documentAndEngineReport(Some("documentAndEngineReportTitle"), testDate, List(eBlankTitleDoc1))
   val eBlankTitleDoc1_documentHolder = eBlankTitleDoc1_DocAndEngineReport.documentHolder
   val eBlankTitleDoc1_engineHolder = eBlankTitleDoc1_DocAndEngineReport.engineHolder
@@ -72,9 +71,7 @@ object SampleContexts {
     childEngine("ce1").scenario(1).expected(2).code { (x) => x * 2 }.because { (x) => x > 0 }.
     scenario(2).expected(4).
     build
-    
-    
-    
+
   val foldingAsFE = folding.asInstanceOf[FoldingEngine[_, _, _, _, _]]
   val foldingED = folding.asRequirement.asInstanceOf[FoldingEngineDescription[Int, (Int) => Boolean, Int, (Int) => Int, List[Int]]]
   val foldingEngineReport = Report.engineReport(Some("engineReportTitle"), testDate, folding)
