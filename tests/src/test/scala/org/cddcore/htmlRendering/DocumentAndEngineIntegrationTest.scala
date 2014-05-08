@@ -45,19 +45,17 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
     //      assertEquals(e, a)
 
     assertEquals(expected, actual)
-  }
+  } 
 
-  "A documentAndEngineReport' urlMapPath" should "include the engine descriptions and tree" in {
+  "A documentAndEngineReport' urlMapPath" should "include the engine descriptions and tree, but not engine or document holder" in {
     val report = eBlankTitleDoc1_DocAndEngineReport
     val tree = eBlankTitleDoc1ED.tree.get
     val expected = List(
       List(report),
-      List(report.documentHolder, report),
-      List(doc1, report.documentHolder, report),
-      List(report.engineHolder, report),
-      List(eBlankTitleDoc1ED, report.engineHolder, report),
-      List(tree, eBlankTitleDoc1ED, report.engineHolder, report),
-      List(tree.root, tree, eBlankTitleDoc1ED, report.engineHolder, report))
+      List(doc1, report),
+      List(eBlankTitleDoc1ED, report),
+      List(tree, eBlankTitleDoc1ED, report),
+      List(tree.root, tree, eBlankTitleDoc1ED, report))
     val actual = report.urlMapPaths
     for ((e, a) <- expected.zipAll(actual, null, null))
       assertEquals(e, a)
@@ -69,38 +67,36 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
 
     val expected = List(
       List(report),
-      List(report.documentHolder, report),
-      List(doc1, report.documentHolder, report),
-      List(report.engineHolder, report),
-      List(eBlankTitleDoc1ED, report.engineHolder, report),
-      List(eBlankTree, eBlankTitleDoc1ED, report.engineHolder, report),
-      List(eBlankTree.root, eBlankTree, eBlankTitleDoc1ED, report.engineHolder, report),
+      List(doc1,  report),
+      List(eBlankTitleDoc1ED,  report),
+      List(eBlankTree, eBlankTitleDoc1ED, report),
+      List(eBlankTree.root, eBlankTree, eBlankTitleDoc1ED,  report),
 
-      List(eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(uc0, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(uc0s0, uc0, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(uc1, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(uc1s1, uc1, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(uc1s2, uc1, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(tree, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(decision, tree, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(conclusionYes, decision, tree, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(ElseClause(), decision, tree, eWithUsecasesAndScenariosEd, report.engineHolder, report),
-      List(conclusionNo, decision, tree, eWithUsecasesAndScenariosEd, report.engineHolder, report),
+      List(eWithUsecasesAndScenariosEd, report),
+      List(uc0, eWithUsecasesAndScenariosEd,  report),
+      List(uc0s0, uc0, eWithUsecasesAndScenariosEd, report),
+      List(uc1, eWithUsecasesAndScenariosEd,  report),
+      List(uc1s1, uc1, eWithUsecasesAndScenariosEd,  report),
+      List(uc1s2, uc1, eWithUsecasesAndScenariosEd,  report),
+      List(tree, eWithUsecasesAndScenariosEd,  report),
+      List(decision, tree, eWithUsecasesAndScenariosEd,  report),
+      List(conclusionYes, decision, tree, eWithUsecasesAndScenariosEd,  report),
+      List(ElseClause(), decision, tree, eWithUsecasesAndScenariosEd,  report),
+      List(conclusionNo, decision, tree, eWithUsecasesAndScenariosEd,  report),
 
-      List(foldingED, report.engineHolder, report),
-      List(ce0ED, foldingED, report.engineHolder, report),
-      List(ce0s0, ce0ED, foldingED, report.engineHolder, report),
-      List(ce0Tree, ce0ED, foldingED, report.engineHolder, report),
-      List(concCe0, ce0Tree, ce0ED, foldingED, report.engineHolder, report),
-      List(ce1ED, foldingED, report.engineHolder, report),
-      List(ce1s1, ce1ED, foldingED, report.engineHolder, report),
-      List(ce1s2, ce1ED, foldingED, report.engineHolder, report),
-      List(ce1Tree, ce1ED, foldingED, report.engineHolder, report),
-      List(decisionCe1, ce1Tree, ce1ED, foldingED, report.engineHolder, report),
-      List(concYesCe1, decisionCe1, ce1Tree, ce1ED, foldingED, report.engineHolder, report),
-      List(ElseClause(), decisionCe1, ce1Tree, ce1ED, foldingED, report.engineHolder, report),
-      List(concNoCe1, decisionCe1, ce1Tree, ce1ED, foldingED, report.engineHolder, report))
+      List(foldingED,  report),
+      List(ce0ED, foldingED,  report),
+      List(ce0s0, ce0ED, foldingED,  report),
+      List(ce0Tree, ce0ED, foldingED,  report),
+      List(concCe0, ce0Tree, ce0ED, foldingED,  report),
+      List(ce1ED, foldingED,  report),
+      List(ce1s1, ce1ED, foldingED,  report),
+      List(ce1s2, ce1ED, foldingED,  report),
+      List(ce1Tree, ce1ED, foldingED,  report),
+      List(decisionCe1, ce1Tree, ce1ED, foldingED,  report),
+      List(concYesCe1, decisionCe1, ce1Tree, ce1ED, foldingED,  report),
+      List(ElseClause(), decisionCe1, ce1Tree, ce1ED, foldingED,  report),
+      List(concNoCe1, decisionCe1, ce1Tree, ce1ED, foldingED,  report))
 
     val actual = report.urlMapPaths
     for ((e, a) <- expected.zipAll(actual, null, null))

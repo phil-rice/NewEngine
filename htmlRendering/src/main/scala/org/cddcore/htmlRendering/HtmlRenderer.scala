@@ -24,8 +24,6 @@ trait ReportDetails {
   def reportDateFormatter: DateFormat
 }
 
-
-
 class SimpleReportDetails(
   val css: String = Files.getFromClassPath(classOf[ReportDetails], "cdd.css"),
   val reportStartTemplate: String = Files.getFromClassPath(classOf[ReportDetails], "reportStart"),
@@ -87,13 +85,9 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     def renderDocuments = builder.useCase("Documents are in an anchor, and use the TitleAndIcon engine").
       scenario(eBlankTitleDoc1_DocAndEngineReport, doc1, Child).
       expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), doc1)}</li>\n").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), ((doc: Document) :: _), Child) => s"\n<li>${titleAndIcon(rc, doc)}</li>\n" }.
+      matchOn { case (rc @ RenderContext(urlMap, _, _), ((doc: Document) :: _), Child) => s"\n<li>${titleAndIcon(rc, doc)}</li>\n" }
 
-      useCase("Engines are in an anchor").
-      scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1ED, Child).
-      expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), eBlankTitleDoc1ED)}</li>\n").
-      matchOn { case (rc @ RenderContext(urlMap, _, _), (ed: EngineDescription[_, _, _, _]) :: _, Child) => s"\n<li>${titleAndIcon(rc, ed)}</li>\n" }
-
+    
     def renderEngineHolders = builder.useCase("Engine Holders have a div, and hold the items as an unorder list").
       scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_DocAndEngineReport.engineHolder, Start).
       expected("\n<div class='engineHolder'><h3>Engines</h3><ul>\n").
@@ -102,6 +96,12 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_engineHolder, End).
       expected("\n</ul></div> <!-- engineHolder -->\n").
       because { case (_, (holder: EngineHolder) :: _, End) => true; case _ => false }
+
+    def renderEnginesAsLineItem = builder.       useCase("Engines are in an anchor").
+      scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1ED, Child).
+      expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), eBlankTitleDoc1ED)}</li>\n").
+      matchOn { case (rc @ RenderContext(urlMap, _, _), (ed: EngineDescription[_, _, _, _]) :: _, Child) => s"\n<li>${titleAndIcon(rc, ed)}</li>\n" }
+
 
     def renderFoldingEngines = builder.useCase("A folding engine").
       scenario(foldingEngineReport, foldingED, Start).
@@ -294,6 +294,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     title("Engine and Documents Single Item Renderer").
     renderReport.
     renderEngineHolders.
+    renderEnginesAsLineItem.
     renderDocumentHolders.
     renderDocuments.
     build
@@ -317,13 +318,13 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     renderDecisionTrees.
     build
 
-//  def main(args: Array[String]) {
-//    println(ReportDetails())
-//    println("------------------DocumentAndEngine----------------------")
-//    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
-//    println("------------------SingleEngine----------------------")
-//    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
-//    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(foldingEngineReport, engineReportSingleItemRenderer)))
-//  }
+  //  def main(args: Array[String]) {
+  //    println(ReportDetails())
+  //    println("------------------DocumentAndEngine----------------------")
+  //    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
+  //    println("------------------SingleEngine----------------------")
+  //    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
+  //    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(foldingEngineReport, engineReportSingleItemRenderer)))
+  //  }
 
 }
