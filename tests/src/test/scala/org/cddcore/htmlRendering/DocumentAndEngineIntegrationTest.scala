@@ -45,7 +45,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
     //      assertEquals(e, a)
 
     assertEquals(expected, actual)
-  } 
+  }
 
   "A documentAndEngineReport' urlMapPath" should "include the engine descriptions and tree, but not engine or document holder" in {
     val report = eBlankTitleDoc1_DocAndEngineReport
@@ -61,20 +61,42 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
       assertEquals(e, a)
     assertEquals(expected, actual)
   }
-  "A documentAndEngineReport for an engine and a folding engine's' urlMapPath" should "include the engine descriptions and tree" in {
+  "A documentAndEngineReport for an engine and a folding engine's' reports" should "include the engine descriptions, but not usecases/scenarios or trees" in {
     val report = Report.documentAndEngineReport(Some("title"), new Date(), List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding))
     val eBlankTree = eBlankTitleDoc1ED.tree.get
 
     val expected = List(
       List(report),
-      List(doc1,  report),
+      List(report.documentHolder, report),
+      List(doc1, report.documentHolder, report),
+      List(report.engineHolder, report),
+      List(eBlankTitleDoc1ED, report.engineHolder, report),
+      List(eWithUsecasesAndScenariosEd, report.engineHolder, report),
+
+      List(foldingED, report.engineHolder, report),
+      List(ce0ED, foldingED, report.engineHolder, report),
+      List(ce1ED, foldingED, report.engineHolder, report))
+
+    val actual = report.reportPaths
+    for ((e, a) <- expected.zipAll(actual, null, null))
+      assertEquals(e, a)
+    assertEquals(expected, actual)
+  }
+  "A documentAndEngineReport for an engine and a folding engine's' ulrMap" should "include the engine descriptions,  usecases/scenarios and trees" in {
+    val report = Report.documentAndEngineReport(Some("title"), new Date(), List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding))
+    val eBlankTree = eBlankTitleDoc1ED.tree.get
+    val x = eBlankTitleDoc1ED.pathsIncludingTree(List())
+    println("XXXX\n" + x.mkString("\n"))
+    val expected = List(
+      List(report),
+      List(doc1, report),
       List(eBlankTitleDoc1ED,  report),
-      List(eBlankTree, eBlankTitleDoc1ED, report),
+      List(eBlankTree, eBlankTitleDoc1ED,  report),
       List(eBlankTree.root, eBlankTree, eBlankTitleDoc1ED,  report),
 
-      List(eWithUsecasesAndScenariosEd, report),
+      List(eWithUsecasesAndScenariosEd,  report),
       List(uc0, eWithUsecasesAndScenariosEd,  report),
-      List(uc0s0, uc0, eWithUsecasesAndScenariosEd, report),
+      List(uc0s0, uc0, eWithUsecasesAndScenariosEd,  report),
       List(uc1, eWithUsecasesAndScenariosEd,  report),
       List(uc1s1, uc1, eWithUsecasesAndScenariosEd,  report),
       List(uc1s2, uc1, eWithUsecasesAndScenariosEd,  report),
@@ -83,7 +105,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
       List(conclusionYes, decision, tree, eWithUsecasesAndScenariosEd,  report),
       List(ElseClause(), decision, tree, eWithUsecasesAndScenariosEd,  report),
       List(conclusionNo, decision, tree, eWithUsecasesAndScenariosEd,  report),
-
+ 
       List(foldingED,  report),
       List(ce0ED, foldingED,  report),
       List(ce0s0, ce0ED, foldingED,  report),
@@ -98,7 +120,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
       List(ElseClause(), decisionCe1, ce1Tree, ce1ED, foldingED,  report),
       List(concNoCe1, decisionCe1, ce1Tree, ce1ED, foldingED,  report))
 
-    val actual = report.urlMapPaths
+    val actual = report.urlMapPaths 
     for ((e, a) <- expected.zipAll(actual, null, null))
       assertEquals(e, a)
     assertEquals(expected, actual)

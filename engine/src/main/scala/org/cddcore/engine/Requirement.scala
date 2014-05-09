@@ -11,6 +11,9 @@ trait ReportableWithTemplate extends Reportable {
   val template: String
 }
 
+trait ReportableWithoutUrl extends Reportable {
+  
+}
 object Reportable {
   private final val count = new AtomicInteger(0)
   def nextTextOrder = count.getAndIncrement()
@@ -232,7 +235,7 @@ case class Scenario[Params, BFn, R, RFn](
       (s.params == params) && (s.because == because) && (s.assertions == assertions) && (s.configurators == configurators) && (s.expected == expected)
     case _ => false
   }
-  override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators)"
+  override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators,$textOrder)"
 }
 
 case class Document(

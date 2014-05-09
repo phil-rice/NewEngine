@@ -9,6 +9,7 @@ import EngineTools._
 object ExampleReportOrchestration {
   def main(args: Array[String]) {
     import SampleContexts._
-    new ReportOrchestrator("File:///users/phil/.cdd2", List(eWithUsecasesAndScenarios), new Date()).makeReports
+    
+    new ReportOrchestrator("file:///c:/users/phil/.cdd2", "title", List(eWithUsecasesAndScenarios), new Date()).makeReports
   }
 }

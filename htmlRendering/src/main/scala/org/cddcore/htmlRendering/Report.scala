@@ -1,11 +1,11 @@
 package org.cddcore.htmlRendering
 
 import java.util.Date
-
 import org.cddcore.engine._
 import org.cddcore.utilities._
 import StartChildEndType._
 import EngineTools._
+import java.io.File
 
 object Report {
   def apply(title: Option[String] = None, date: Date = new Date, description: Option[String] = None, nodes: List[Reportable] = List()) =
@@ -22,9 +22,8 @@ object Report {
   }
 
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
-    Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => engine(renderContext, path, cse) }
+    Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
 
- 
 }
 
 trait Report extends Requirement {
@@ -37,21 +36,46 @@ trait Report extends Requirement {
   def urlMapPaths: List[List[Reportable]] = reportPaths
 }
 
-class ReportOrchestrator(rootUrl: String, engines: List[Engine], date: Date) {
-  import EngineTools._
+trait ReportWriter {
+  def print(url: String, main: Option[Reportable], html: String)
+}
 
-  val rootReport = Report.documentAndEngineReport(Some("title"), date, engines)
+class FileReportWriter extends ReportWriter {
+  def print(url: String, main: Option[Reportable], html: String) {
+    val prefix = "file:///"
+    if (url.startsWith(prefix)) {
+      val path = url.substring(prefix.length())
+      Files.printToFile(new File(path))((pw) =>
+        pw.print(html))
+    } else throw new IllegalArgumentException("Url is " + url)
+  }
+}
+
+class MemoryReportWriter extends ReportWriter {
+  var map: Map[String, (Option[Reportable], String)] = Map()
+  def print(url: String, main: Option[Reportable], html: String) {
+    if (map.contains(url)) throw new IllegalArgumentException(url + " is already in map")
+    map = map + (url -> (main, html))
+  }
+
+}
+class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], date: Date = new Date, reportWriter: ReportWriter = new FileReportWriter) {
+  import EngineTools._
+  import Strings._
+  val rootReport = Report.documentAndEngineReport(Some(title), date, engines)
   val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.engineReport(Some("title"), date, e) :: list).reverse
   val urlMap = UrlMap(rootUrl) ++ rootReport.urlMapPaths
-
+  val renderContext = RenderContext(urlMap, date)
   def makeReports = {
     val t = rootReport.reportPaths
-    Files.printToUrl(Strings.url(rootUrl, "index.html"), Report.html(rootReport, HtmlRenderer.engineAndDocumentsSingleItemRenderer))
-    for (e <- engines) {
-      val report = Report.engineReport(Some("title"), date, e)
-      val html = Report.html(report, HtmlRenderer.engineAndDocumentsSingleItemRenderer)
-      val url = urlMap(e.asRequirement)
-      Files.printToUrl(url, Report.html(report, HtmlRenderer.engineReportSingleItemRenderer))
+    reportWriter.print(Strings.url(rootUrl, title, "index.html"), None, Report.html(rootReport, HtmlRenderer.engineAndDocumentsSingleItemRenderer, renderContext))
+    for (e <- engines; path <- e.asRequirement.pathsIncludingSelf.toList) {
+      val r = path.head
+      println(r)
+      val url = urlMap(r)
+      val report = Report.focusedReport(Some("title"), date, path)
+      val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, renderContext)
+      reportWriter.print(url, Some(r), html)
     }
   }
 }
@@ -88,11 +112,20 @@ case class DocumentAndEngineReport(title: Option[String],
   val documentHolder = DocumentHolder(documents)
   val engineHolder = EngineHolder(sortedEngines)
   val nodes = List(documentHolder, engineHolder)
-  val reportPaths = pathsIncludingSelf.toList
   private val thisAsPath: List[Reportable] = List(this)
   private val thisAndEngineHolderAsPath: List[Reportable] = List(engineHolder, this)
-  private val enginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement.pathsIncludingTree(thisAsPath)).toList
-  override val urlMapPaths = List(thisAsPath) ++ documentHolder.pathsFrom(thisAsPath)  ++ enginePaths
+  private val shortenginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement match {
+    case e: EngineDescription[_, _, _, _] => List(e :: thisAndEngineHolderAsPath)
+    case f: FoldingEngineDescription[_, _, _, _, _] => {
+      val head = (f :: thisAndEngineHolderAsPath)
+      val tail = f.nodes.map(_ :: f :: thisAndEngineHolderAsPath);
+      val result = head :: tail
+      result
+    }
+  }).toList
+  private val fullEnginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement.pathsIncludingTree(thisAsPath)).toList
+  override val urlMapPaths = List(thisAsPath) ++ documentHolder.pathsFrom(thisAsPath) ++ fullEnginePaths
+  val reportPaths = List(thisAsPath) ++ documentHolder.pathsIncludingSelf(thisAsPath) ++ List(thisAndEngineHolderAsPath) ++ shortenginePaths
   //    reportPaths ++ engines.map(_.asRequirement).flatMap((ed) => ed.pathsIncludingTree(engineHolder :: ed :: this :: Nil))
 
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =

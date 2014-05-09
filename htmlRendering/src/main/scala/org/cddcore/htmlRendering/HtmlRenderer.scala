@@ -87,7 +87,6 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), doc1)}</li>\n").
       matchOn { case (rc @ RenderContext(urlMap, _, _), ((doc: Document) :: _), Child) => s"\n<li>${titleAndIcon(rc, doc)}</li>\n" }
 
-    
     def renderEngineHolders = builder.useCase("Engine Holders have a div, and hold the items as an unorder list").
       scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1_DocAndEngineReport.engineHolder, Start).
       expected("\n<div class='engineHolder'><h3>Engines</h3><ul>\n").
@@ -97,11 +96,24 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       expected("\n</ul></div> <!-- engineHolder -->\n").
       because { case (_, (holder: EngineHolder) :: _, End) => true; case _ => false }
 
-    def renderEnginesAsLineItem = builder.       useCase("Engines are in an anchor").
+    def renderEnginesAsLineItem = builder.useCase("Engines are in an anchor").
       scenario(eBlankTitleDoc1_DocAndEngineReport, eBlankTitleDoc1ED, Child).
       expected(s"\n<li>${titleAndIcon(context(eBlankTitleDoc1_DocAndEngineReport), eBlankTitleDoc1ED)}</li>\n").
       matchOn { case (rc @ RenderContext(urlMap, _, _), (ed: EngineDescription[_, _, _, _]) :: _, Child) => s"\n<li>${titleAndIcon(rc, ed)}</li>\n" }
 
+    def renderFoldingEnginesAsSmallTree = builder.useCase("Folding engines are in an anchor").
+      scenario(foldingEngineAndDocumentReport, foldingED, Start).
+      expected(s"\n<li>${titleAndIcon(context(foldingEngineAndDocumentReport), foldingED)}</li>\n").
+      matchOn {
+        case (rc @ RenderContext(urlMap, _, _), (fed: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) =>
+          s"\n<li>${titleAndIcon(rc, fed)}</li>\n"
+      }.
+      scenario(foldingEngineAndDocumentReport, foldingED, End).
+      expected(s"").
+      matchOn {
+        case (rc @ RenderContext(urlMap, _, _), (fed: FoldingEngineDescription[_, _, _, _, _]) :: _, End) =>
+          s""
+      }
 
     def renderFoldingEngines = builder.useCase("A folding engine").
       scenario(foldingEngineReport, foldingED, Start).
@@ -295,6 +307,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     renderReport.
     renderEngineHolders.
     renderEnginesAsLineItem.
+    renderFoldingEnginesAsSmallTree.
     renderDocumentHolders.
     renderDocuments.
     build

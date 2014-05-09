@@ -40,7 +40,7 @@ object ElseClause {
   def apply() = instance
 }
 
-class ElseClause(val textOrder: Int = Reportable.nextTextOrder) extends Reportable
+class ElseClause(val textOrder: Int = Reportable.nextTextOrder) extends ReportableWithoutUrl
 
 trait DecisionTree[Params, BFn, R, RFn] extends NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] with Reportable {
   def root: DecisionTreeNode[Params, BFn, R, RFn]

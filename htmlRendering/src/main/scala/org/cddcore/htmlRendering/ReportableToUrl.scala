@@ -1,6 +1,5 @@
 package org.cddcore.htmlRendering
 
-
 import org.cddcore.utilities._
 import org.cddcore.engine._
 
@@ -44,12 +43,14 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
     def url(ru: RU, rToName: KeyedMap[String], path: List[Reportable]) =
       (ru.rootUrl :: path.reverse.map((r) => rToName(r))).mkString("/") + "." + conv(path.head) + ".html"
 
-    def addOnePath(ru: RU, path: List[Reportable]) = {
+    def addOnePath(ru: RU, path: List[Reportable]): RU = {
       val head = path.head
+      if (head.isInstanceOf[ReportableWithoutUrl])
+        return ru
 
       ru.toUrl.get(head) match {
         case Some(oldUrl) if oldUrl == url(asRu, ru.rToName, path) => ru
-        case Some(oldUrl) => throw new IllegalStateException(s"Existing path oldUrl\nNew path $path")
+        case Some(oldUrl) => throw new IllegalStateException(s"Existing path $oldUrl\nNew path ${url(ru, rToName, path)}\n$path\n")
         case _ =>
           {
             val (newSeen, newRToName) = path.foldLeft((ru.seen, ru.rToName))((acc, r) => acc match {
@@ -79,7 +80,7 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
     val calculatedName = Strings.urlClean(r match {
       case report: Report => { val result = report.titleOrDescription(""); if (result.length > 120) "" else result }
       case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
-      case engine: EngineTools[_,_,_,_] => { val result = engine.asRequirement.titleOrDescription(""); if (result.length > 120) "" else result }
+      case engine: EngineTools[_, _, _, _] => { val result = engine.asRequirement.titleOrDescription(""); if (result.length > 120) "" else result }
       case req: Requirement => { val result = req.titleOrDescription(""); if (result.length > 40) "" else result }
       case _ => "";
     }).replace(" ", "_")

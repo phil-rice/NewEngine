@@ -74,6 +74,7 @@ object SampleContexts {
 
   val foldingAsFE = folding.asInstanceOf[FoldingEngine[_, _, _, _, _]]
   val foldingED = folding.asRequirement.asInstanceOf[FoldingEngineDescription[Int, (Int) => Boolean, Int, (Int) => Int, List[Int]]]
+  val foldingEngineAndDocumentReport = Report.documentAndEngineReport(None, testDate, List(folding))
   val foldingEngineReport = Report.engineReport(Some("engineReportTitle"), testDate, folding)
   val ce0ED = foldingED.all(classOf[EngineDescription[_, _, _, _]])(0);
   val ce1ED = foldingED.all(classOf[EngineDescription[_, _, _, _]])(1);
