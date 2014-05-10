@@ -12,7 +12,7 @@ trait ReportableWithTemplate extends Reportable {
 }
 
 trait ReportableWithoutUrl extends Reportable {
-  
+
 }
 object Reportable {
   private final val count = new AtomicInteger(0)
@@ -41,17 +41,21 @@ object Requirement {
 
 }
 
-trait Requirement extends Reportable {
+trait TitledReportable extends Reportable {
   def title: Option[String]
   def description: Option[String]
+  lazy val titleString = title.getOrElse("")
+  def titleOrDescription(default: String) = title.getOrElse(description.getOrElse(default))
+
+}
+
+trait Requirement extends TitledReportable {
   def priority: Option[Int]
   def references: Set[Reference]
   def copyRequirement(title: Option[String] = title,
     description: Option[String] = description,
     priority: Option[Int] = priority,
     references: Set[Reference] = references): Requirement
-  lazy val titleString = title.getOrElse("")
-  def titleOrDescription(default: String) = title.getOrElse(description.getOrElse(default))
 }
 
 trait TypedReportable[Params, BFn, R, RFn] extends Reportable
@@ -235,7 +239,7 @@ case class Scenario[Params, BFn, R, RFn](
       (s.params == params) && (s.because == because) && (s.assertions == assertions) && (s.configurators == configurators) && (s.expected == expected)
     case _ => false
   }
-  override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators,$textOrder)"
+  override def toString = s"Scenario($params,$title,$description,$because,$code,$priority,$expected,$references,$assertions,$configurators)"
 }
 
 case class Document(

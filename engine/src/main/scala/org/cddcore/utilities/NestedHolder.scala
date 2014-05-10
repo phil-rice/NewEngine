@@ -4,13 +4,7 @@ import org.cddcore.engine.Reportable
 import org.cddcore.engine._
 import StartChildEndType._
 
-trait NestedHolderLike[H, T] {
-  def children(h: H): List[T]
-  implicit def BuilderNodeAsHolderLike[Params, BFn, R, RFn] =
-    new NestedHolderLike[BuilderNodeAndHolder[Params, BFn, R, RFn], BuilderNode[Params, BFn, R, RFn]] {
-      def children(r: BuilderNodeAndHolder[Params, BFn, R, RFn]) = r.nodes
-    }
-}
+
 
 abstract class PathTraversable[T, X >: T](initialPath: List[X]) extends Traversable[List[X]] {
   protected def foreachPrim[U](nodes: List[T], f: List[X] => U, path: List[X]): Unit = {

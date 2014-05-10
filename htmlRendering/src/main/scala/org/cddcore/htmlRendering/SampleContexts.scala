@@ -18,11 +18,12 @@ object SampleContexts {
 
   val testDate = new Date(2000, 1, 1)
   val rootUrl = "RootUrl"
+  val iconUrl = "IconUrl"
   val emptyUrlMap = UrlMap(rootUrl)
 
   def context(report: Report) = {
     val urlMap = emptyUrlMap ++ report.urlMapPaths
-    val rc = RenderContext(urlMap, SampleContexts.testDate)
+    val rc = RenderContext(urlMap, SampleContexts.testDate, iconUrl)
     rc
   }
 

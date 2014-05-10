@@ -17,8 +17,10 @@ object Report {
   def focusedReport(title: Option[String], date: Date, pathWithoutReport: List[Reportable], description: Option[String] = None) =
     new FocusedReport(title, date, pathWithoutReport, description)
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = {
-    val renderContext = RenderContext(UrlMap() ++ report.urlMapPaths, new Date())
-    Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
+    val urlMap = UrlMap() ++ report.urlMapPaths
+    val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "index.html")
+    val renderContext = RenderContext(urlMap, new Date(), iconUrl)
+    html(report, engine, renderContext)
   }
 
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
@@ -26,12 +28,10 @@ object Report {
 
 }
 
-trait Report extends Requirement {
+trait Report extends TitledReportable {
   def title: Option[String]
   def date: Date
   def description: Option[String]
-  def priority: Option[Int] = None
-  def references: Set[Reference] = Set()
   def reportPaths: List[List[Reportable]]
   def urlMapPaths: List[List[Reportable]] = reportPaths
 }
@@ -65,17 +65,18 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
   val rootReport = Report.documentAndEngineReport(Some(title), date, engines)
   val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.engineReport(Some("title"), date, e) :: list).reverse
   val urlMap = UrlMap(rootUrl) ++ rootReport.urlMapPaths
-  val renderContext = RenderContext(urlMap, date)
+  val iconUrl = Strings.url(rootUrl, title, "index.html")
+  val renderContext = RenderContext(urlMap, date, iconUrl)
   def makeReports = {
     val t = rootReport.reportPaths
-    reportWriter.print(Strings.url(rootUrl, title, "index.html"), None, Report.html(rootReport, HtmlRenderer.engineAndDocumentsSingleItemRenderer, renderContext))
+    reportWriter.print(iconUrl, None, Report.html(rootReport, HtmlRenderer.engineAndDocumentsSingleItemRenderer, renderContext))
     for (e <- engines; path <- e.asRequirement.pathsIncludingSelf.toList) {
       val r = path.head
       println(r)
       val url = urlMap(r)
       val report = Report.focusedReport(Some("title"), date, path)
       val renderer = HtmlRenderer.rendererFor(r)
-      val html = Report.html(report,renderer, renderContext)
+      val html = Report.html(report, renderer, renderContext)
       reportWriter.print(url, Some(r), html)
     }
   }
@@ -89,15 +90,7 @@ case class SimpleReport(
   val textOrder: Int = Reportable.nextTextOrder) extends Report with NestedHolder[Reportable] {
   val reportPaths = pathsIncludingSelf.toList
 
-  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new SimpleReport(title, date, description, nodes, textOrder)
-
   override def toString = s"Report(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
-  override def hashCode = (title.hashCode() + description.hashCode()) / 2
-  override def equals(other: Any) = other match {
-    case p: SimpleReport => Requirement.areRequirementFieldsEqual(this, p) && nodes == p.nodes
-    case _ => false
-  }
 }
 
 case class DocumentAndEngineReport(title: Option[String],
@@ -129,44 +122,7 @@ case class DocumentAndEngineReport(title: Option[String],
   val reportPaths = List(thisAsPath) ++ documentHolder.pathsIncludingSelf(thisAsPath) ++ List(thisAndEngineHolderAsPath) ++ shortenginePaths
   //    reportPaths ++ engines.map(_.asRequirement).flatMap((ed) => ed.pathsIncludingTree(engineHolder :: ed :: this :: Nil))
 
-  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new DocumentAndEngineReport(title, date, engines, description, textOrder)
-
-  override def hashCode = (title.hashCode() + description.hashCode()) / 2
-  override def equals(other: Any) = other match {
-    case de: DocumentAndEngineReport => Requirement.areRequirementFieldsEqual(this, de) && engines == de.engines
-    case _ => false
-  }
 }
-
-//case class EngineReport(title: Option[String],
-//  val date: Date,
-//  val engine: Engine,
-//  val description: Option[String] = None,
-//  val textOrder: Int = Reportable.nextTextOrder) extends Report {
-//  import EngineTools._
-//  import ReportableHelper._
-//
-//  val ed = engine.asRequirement
-//  val basePath = List(engine.asRequirement, this)
-//  val baseReportPaths: List[List[Reportable]] = List(this) :: basePath :: Nil
-//  val reportPaths: List[List[Reportable]] = engine match {
-//    case e: EngineFromTests[_, _, _, _] => baseReportPaths ::: ed.pathsFrom(basePath).toList ::: e.tree.treePathsWithElseClause(basePath)
-//    case f: FoldingEngine[_, _, _, _, _] => baseReportPaths ::: f.engines.flatMap((e) => {
-//      val ed = e.asRequirement
-//      ed.pathsIncludingSelf(basePath).toList ::: e.tree.treePathsWithElseClause(ed :: basePath)
-//    })
-//  }
-//
-//  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-//    new EngineReport(title, date, engine, description, textOrder)
-//
-//  override def hashCode = (title.hashCode() + description.hashCode()) / 2
-//  override def equals(other: Any) = other match {
-//    case er: EngineReport => Requirement.areRequirementFieldsEqual(this, er) && engine == er.engine
-//    case _ => false
-//  }
-//}
 
 case class FocusedReport(title: Option[String],
   val date: Date,
@@ -192,13 +148,6 @@ case class FocusedReport(title: Option[String],
 
   val reportPaths = pathsToFocus ::: childrenPaths(pathToFocus) ::: pathsToFocus.flatMap(addDecisionTree)
 
-  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new FocusedReport(title, date, focusPath, description, textOrder)
-  override def hashCode = (title.hashCode() + description.hashCode()) / 2
-  override def equals(other: Any) = other match {
-    case fr: FocusedReport => Requirement.areRequirementFieldsEqual(this, fr) && focusPath == fr.focusPath
-    case _ => false
-  }
 }
 
 /** A reportable with a wrapper is used in the reports when making a projection of an original report. This allows the correct urls to be determined */

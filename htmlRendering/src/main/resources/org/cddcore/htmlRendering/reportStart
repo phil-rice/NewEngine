@@ -8,7 +8,7 @@
 	<div class='report'>
 		<div class='topLine'>
 			<div class='cddLogo'>
-			<a id='cddLogo' href='file:///C:\Users\Phil\.cdd\Junit\org.cddcore.carers.CarersContinuousIntegration.Project.html'>
+			<a id='cddLogo' href='$ICON_URL$'>
 			<img src='http://img32.imageshack.us/img32/8151/xy9u.png'  alt='Report Home Page'/></a>
 			</div> <!-- cddLogo -->
 			<div class='cddBox'> 
@@ -20,8 +20,8 @@
 			</div> <!-- cddBox -->
 			<div class='reportTopBox'>
 			<div class='reportTitle'>Report name</div>
-			<div class='reportText'>Project: org.cddcore.carers.CarersContinuousIntegration </div>
+			<div class='reportText'>Project: $REPORT_TITLE$ </div>
 			<div class='reportTitle'>Report date</div>
-			<div class='reportDate'>20:11 Tue Apr 29 2014</div>
+			<div class='reportDate'>$REPORT_DATE$</div>
 			</div><!--Report Top Box-->
 		</div><!-- top Line -->
