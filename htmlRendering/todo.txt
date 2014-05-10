@@ -1,0 +1,21 @@
+Known:
+* The red/green/amber
+* HtmlDisplay
+* Traceitems
+* Traces
+* Web tests
+* Live display
+
+Quality of life
+* Improve the toString of the matchOn
+* allow because to have a partial function to boolen (and ensure that has a nice toString)
+
+
+Go to Carers and some of the others, and make sure they work 
+(expecting issues with titles / descriptions and stuff)
+
+
+CodeCoverage
+Equals/hashcode tests (and these are actually worth doing...)
+Junit stuff
+
