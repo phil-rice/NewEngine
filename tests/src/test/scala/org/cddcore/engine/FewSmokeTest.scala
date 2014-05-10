@@ -131,6 +131,6 @@ class FewSmokeTest extends AbstractTest {
     val engine = builder.build
     assertEquals("love - all", engine(0, 0, 0))
     assertEquals("fifteen - all", engine(1, 1, 1))
-
   }
+  
 }

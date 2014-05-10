@@ -74,7 +74,8 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
       println(r)
       val url = urlMap(r)
       val report = Report.focusedReport(Some("title"), date, path)
-      val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, renderContext)
+      val renderer = HtmlRenderer.rendererFor(r)
+      val html = Report.html(report,renderer, renderContext)
       reportWriter.print(url, Some(r), html)
     }
   }

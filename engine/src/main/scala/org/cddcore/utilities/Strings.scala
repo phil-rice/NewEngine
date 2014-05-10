@@ -20,7 +20,7 @@ object Strings {
   def bracketsToKvs(left: String, right: String) = left.zip(right).toList
 
   def oneLine(s: String) = s.replace('\n', ' ').replaceAll("\r", " ")
-  def htmlEscape(raw: String) = raw.replace("&", "&amp;").replace("\"", "&quot;").replace("\'", "&apos;").replace("<", "&lt;").replace("&gt;", ">").replace("\n", "<br />")
+  def htmlEscape(raw: String) = raw.replace("&", "&amp;").replace("\"", "&quot;").replace("\'", "&apos;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br />")
   def htmlTooltipEscape(raw: String) = raw.replace("&", "&amp;").replace("\"", "&quot;").replace("\'", "&apos;").replace("<", "&lt;").replace("&gt;", ">")
   def url(s: String*) = s.mkString("/")
   def safeToInt(s: String) =
