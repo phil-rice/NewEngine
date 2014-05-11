@@ -8,18 +8,19 @@ import java.util.Date
 import org.scalatest.BeforeAndAfterAll
 import org.cddcore.utilities.Strings
 import Strings.url
+import org.cddcore.htmlRendering.MemoryReportWriter
+import org.cddcore.htmlRendering.ReportOrchestrator
 
 @RunWith(classOf[JUnitRunner])
-class ReportOrchestrationTest extends AbstractTest with BeforeAndAfterAll {
+class ReportOrchestrationTest extends AbstractTest {
   val writer = new MemoryReportWriter
   val rootUrl = "file:///c:/users/xx/.cdd2"
   val title = "reportTitle"
   val projectRoot = url(rootUrl, title)
-  override def beforeAll {
-    new ReportOrchestrator(rootUrl, title, List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding), new Date(), writer).makeReports
-  }
+  val orchestrator = new ReportOrchestrator(rootUrl, title, List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding), new Date(), writer)
 
   "A ReportOrchestrator" should "print to files for the root report, documents, the engines, usecases and scenarios" in {
+    orchestrator.makeReports
     val map = writer.map
     val urls = map.keys.toList.sortBy((x) => x)
     val expected = List(
@@ -42,8 +43,28 @@ class ReportOrchestrationTest extends AbstractTest with BeforeAndAfterAll {
     assertEquals(expected, urls)
   }
 
-  it should "" in {
+  it should "should find the pathToConclusion in a scenario with an engine from tests" in {
+    import SampleContexts._
 
+    val path = List(uc0s0, uc0, eWithUsecasesAndScenariosEd, engineReport)
+    val conclusionPath = orchestrator.pathToConclusion(path)
+    assertEquals(List(conclusionNo, decision), conclusionPath)
+
+  }
+  it should "should find the pathToConclusion in a scenario with a folding engine" in {
+    import SampleContexts._
+
+    val path = List(ce1s1, ce1ED, foldingED, foldingEngineAndDocumentReport)
+    val conclusionPath = orchestrator.pathToConclusion(path)
+
+    assertEquals(List(concYesCe1, decisionCe1), conclusionPath)
+  }
+
+  it should "return an empty list from pathToConclusion if the path head isn't a scenario" in {
+    import SampleContexts._
+    val path = List(uc0, eWithUsecasesAndScenariosEd, engineReport)
+    val conclusionPath = orchestrator.pathToConclusion(path)
+    assertEquals(List(), conclusionPath)
   }
 
 }

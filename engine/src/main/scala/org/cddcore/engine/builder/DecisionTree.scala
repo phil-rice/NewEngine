@@ -143,6 +143,17 @@ trait EvaluateTree[Params, BFn, R, RFn] {
   def findLensToConclusion(root: DTN, bc: (BFn) => Boolean): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL)
   def findLensToLastDecisionNode(root: DTN, s: S): Option[Lens[DT, Decision[Params, BFn, R, RFn]]] = findLensToLastDecisionNode(root, makeBecauseClosure(s), rootL.andThen(toDecisionL))
 
+  def findPathToConclusion(tree: DT, params: Params): List[DTN] = findPathToConclusionPrim(tree.root, makeBecauseClosure(params), List())
+
+  protected def findPathToConclusionPrim(root: DTN, becauseClosure: BecauseClosure, path: List[DTN]): List[DTN] = {
+    root match {
+      case d: Decision[Params, BFn, R, RFn] => d.isTrue(becauseClosure) match {
+        case true => findPathToConclusionPrim(d.yes, becauseClosure, d :: path)
+        case false => findPathToConclusionPrim(d.no, becauseClosure, d :: path)
+      }
+      case c: Conclusion[Params, BFn, R, RFn] => c :: path
+    }
+  }
   def safeEvaluate(tree: DT, scenarioWithParams: S) = safe(evaluate(tree, scenarioWithParams))
 
   def evaluate(tree: DT, scenarioWithParams: S): R = {

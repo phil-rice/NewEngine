@@ -36,8 +36,8 @@ trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Param
 
 }
 
-trait EngineRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn]{
-  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] 
+trait EngineRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn] {
+  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]]
 }
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with EngineTools[Params, BFn, R, RFn] {
@@ -49,6 +49,7 @@ trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] 
 
 trait EngineFromTests[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, RFn] {
   def tree: DecisionTree[Params, BFn, R, RFn]
+
   def applyParams(params: Params): R = {
     val monitor = Engine.currentMonitor
     monitor.call(this, params)

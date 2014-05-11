@@ -38,7 +38,9 @@ class SimpleReportDetails(
 
 }
 
-case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, reportDetails: ReportDetails = ReportDetails())(implicit ldp: LoggerDisplayProcessor)
+case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, pathToConclusion: List[Reportable] = List(), reportDetails: ReportDetails = ReportDetails())(implicit ldp: LoggerDisplayProcessor) {
+  override def toString = getClass.getSimpleName()
+}
 
 case class DocumentHolder(val nodes: List[Document], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
 case class EngineHolder(val engines: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable {
@@ -48,7 +50,7 @@ case class EngineHolder(val engines: List[Engine], textOrder: Int = Reportable.n
 
 object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChildEndType, Elem] {
   import scala.language.implicitConversions
-  import SampleContexts._ 
+  import SampleContexts._
   implicit def toPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String]) = new BuilderPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String])
 
   def indent(path: List[Reportable]) = path.indexWhere(_.isInstanceOf[DecisionTree[_, _, _, _]]) match {
@@ -57,19 +59,20 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
   }
 
   class BuilderPimper(builder: Builder3[RenderContext, List[Reportable], StartChildEndType, String, String]) {
-    def scenario(report: Report, item: Reportable, sce: StartChildEndType): Builder3[RenderContext, List[Reportable], StartChildEndType, String, String] = {
+    def scenario(report: Report, item: Reportable, sce: StartChildEndType, pathToConclusion: List[Reportable] = List()): Builder3[RenderContext, List[Reportable], StartChildEndType, String, String] = {
       val reportPaths = report.reportPaths
       val path = reportPaths.find(_.head == item) match {
         case Some(p) => p
         case _ =>
           throw new IllegalArgumentException(s"\nReport: $report\nLast: $item\n${reportPaths.mkString("\n")}")
       }
-      builder.scenario(report, path, sce)
+      val rc = context(report).copy(pathToConclusion = pathToConclusion)
+      builder.scenario(rc, path, sce)
     }
     def renderReport = builder.useCase("Reports have a huge template at the start, and end. The report title and date are substituted in").
       scenario(engineReport, engineReport, Start).
       expected(ReportDetails().reportStart("engineReportTitle", iconUrl, testDate)).
-      matchOn { case (RenderContext(_, date, iconUrl,  reportDetails), (r: Report) :: _, Start) => reportDetails.reportStart(r.titleString, iconUrl, date) }.
+      matchOn { case (RenderContext(_, date, iconUrl, pathToConclusion, reportDetails), (r: Report) :: _, Start) => reportDetails.reportStart(r.titleString, iconUrl, date) }.
 
       scenario(engineReport, engineReport, End).
       expected(ReportDetails().reportEnd).
@@ -127,13 +130,13 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
         s"<div class='engineWithChildren'><div class='engineWithChildrenSummary'>" +
         s"<div class='engineText'>${titleAndIcon(foldingEngineReport, foldingED)}</div> <!-- engineText -->\n").
       matchOn {
-        case (rc , (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => "\n" +
+        case (rc, (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => "\n" +
           s"<div class='engineWithChildren'><div class='engineWithChildrenSummary'>" +
           s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n"
       }.
       scenario(foldingEngineReport, foldingED, End).
       expected("\n</div> <!--engineWithChildrenSummary --></div> <!-- engineWithChildren -->\n").
-      because { case (rc @ RenderContext(urlMap, _, _, _), (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, End) => true; case _ => false }
+      because { case (_, (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, End) => true; case _ => false }
 
     def renderChildEngines = builder.useCase("An engine from tests has a div, a ").
       scenario(foldingEngineReport, ce0ED, Start).
@@ -148,7 +151,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
       scenario(foldingEngineReport, ce0ED, End).
       expected("\n</div> <!-- childEngine -->"). //the decision tree closes off the engineSummary div
-      because { case (RenderContext(urlMap, _, _, _), (engine: EngineDescription[_, _, _, _]) :: (_: FoldingEngineDescription[_, _, _, _, _]) :: _, End) => true; case _ => false }
+      because { case (_, (engine: EngineDescription[_, _, _, _]) :: (_: FoldingEngineDescription[_, _, _, _, _]) :: _, End) => true; case _ => false }
 
     def renderEngineFromTests = builder.useCase("An engine from tests has a div, a ").
       scenario(engineReport, eWithUsecasesAndScenariosEd, Start).
@@ -190,7 +193,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
       scenario(engineReport, uc0, End).
       expected("\n</div> <!-- usecaseSummary -->\n").
-      matchOn { case (rc , (uc: UseCase[_, _, _, _]) :: _, End) => s"\n</div> <!-- usecaseSummary -->\n" }.
+      matchOn { case (rc, (uc: UseCase[_, _, _, _]) :: _, End) => s"\n</div> <!-- usecaseSummary -->\n" }.
 
       renderUseCasesChildren
 
@@ -224,18 +227,58 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       matchOn { case (_, (s: DecisionTree[_, _, _, _]) :: _, End) => "\n</div><!-- decisionTree -->\n" }.
       renderDecisions
 
-    protected def renderDecisions = builder.useCase("A decision get's it's own div, and a because").
+    private def decisionPrefix(path: List[Reportable], d: Decision[_, _, _, _], injected: String) =
+      s"\n<div class='decision'>$injected${indent(path)}<span class='keyword'>if&#160;</span>" +
+        s"\n<div class='because'>${Strings.htmlEscape(d.prettyString)}</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n"
+
+    private def decisionIsTrue(path: List[Reportable], d: Decision[_, _, _, _]) = {
+      path.indexOf(d) match {
+        case -1 =>
+          throw new IllegalStateException
+        case 0 =>
+          throw new IllegalStateException
+        case i => {
+          val child = path(i - 1)
+          if (d.yes == child)
+            true
+          else if (d.no == child)
+            false
+          else
+            throw new IllegalStateException
+        }
+      }
+    }
+
+    protected def renderDecisions = builder.
+      useCase("A decision get's it's own div, and a because").
       scenario(engineReport, decision, Start).
       expected("\n<div class='decision'><div class='because'><span class='keyword'>if&#160;</span>" +
-        "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because -->\n").
-      matchOn {
-        case (_, path @ (d: Decision[_, _, _, _]) :: _, Start) =>
-          s"\n<div class='decision'><div class='because'>${indent(path)}<span class='keyword'>if&#160;</span>" +
-            s"\n<div class='because'>${Strings.htmlEscape(d.prettyString)}</div><!-- because --></div><!-- because -->\n"
-      }.
+        "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n").
+      matchOn { case (_, path @ (d: Decision[_, _, _, _]) :: _, Start) => decisionPrefix(path, d, "<div class='because'>") }.
       scenario(engineReport, decision, End).
       expected("</div><!--decision -->\n").
       matchOn { case (_, (s: Decision[_, _, _, _]) :: _, End) => "</div><!--decision -->\n" }.
+
+      useCase("A decision that is in the pathToConclusion needs to be marked 'true' or 'false'").
+      scenario(engineReport, decision, Start, List(conclusionYes, decision)).
+      expected("\n<div class='decision'><div class='ifTrueOnPath'><span class='keyword'>if&#160;</span>" +
+        "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n").
+      matchOn {
+        case (rc, path @ (d: Decision[_, _, _, _]) :: _, Start) if rc.pathToConclusion.contains(d) && decisionIsTrue(rc.pathToConclusion, d) =>
+          decisionPrefix(path, d, "<div class='ifTrueOnPath'>")
+      }.
+
+      scenario(engineReport, decision, Start, List(conclusionNo, decision)).
+      expected("\n<div class='decision'><div class='ifFalseOnPath'><span class='keyword'>if&#160;</span>" +
+        "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n").
+      matchOn {
+        case (rc, path @ (d: Decision[_, _, _, _]) :: _, Start) if rc.pathToConclusion.contains(d) && !decisionIsTrue(rc.pathToConclusion, d) =>
+          decisionPrefix(path, d, "<div class='ifFalseOnPath'>")
+      }.
+
+      scenario(engineReport, decision, End, List(conclusionYes, decision)).
+      expected("</div></div><!--decision -->\n").
+      matchOn { case (rc, path @ (d: Decision[_, _, _, _]) :: _, End) if rc.pathToConclusion.contains(d) => "</div></div><!--decision -->\n" }.
 
       useCase("An elseclause is artificially inserted to allow else to be displayed easily").
       scenario(engineReport, ElseClause(), Child).
@@ -251,6 +294,18 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       matchOn {
         case (rc, path @ (c: Conclusion[_, _, _, _]) :: _, Child) => "\n" +
           s"<div class='result'>${indent(path)}<span class='keyword'>then&#160;</span>" +
+          s"${c.scenarios.map((s) => s"<a class='scenarioLink' href='${rc.urlMap(s)}'>${icon(s)}</a>").mkString("")}" +
+          s"<div class='conclusion'>${Strings.htmlEscape(c.code.description)}</div><!-- conclusion --></div><!-- result -->\n"
+      }.
+      useCase("A conclusion that is on the pathToConclusion needs to be marked get's it's own div").
+      scenario(engineReport, conclusionYes, Child,List(conclusionYes, decision)).
+      expected(s"\n<div class='resultWithTest '><div class='indent'>&#160;</div><span class='keyword'>then&#160;</span>" +
+        s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s1.textOrder}.Scenario.html'>${icon(uc1s1)}</a>" +
+        s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s2.textOrder}.Scenario.html'>${icon(uc1s2)}</a>" +
+        s"<div class='conclusion'>((x: Int) =&gt; x.*(2))</div><!-- conclusion --></div><!-- result -->\n").
+      matchOn {
+        case (rc, path @ (c: Conclusion[_, _, _, _]) :: _, Child) if (rc.pathToConclusion.contains(c)) => "\n" +
+          s"<div class='resultWithTest '>${indent(path)}<span class='keyword'>then&#160;</span>" +
           s"${c.scenarios.map((s) => s"<a class='scenarioLink' href='${rc.urlMap(s)}'>${icon(s)}</a>").mkString("")}" +
           s"<div class='conclusion'>${Strings.htmlEscape(c.code.description)}</div><!-- conclusion --></div><!-- result -->\n"
       }
@@ -290,7 +345,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
   println("Icon:\n" + icon)
 
   val linkAndIcon = Engine[RenderContext, Reportable, String]().title("linkAndIcon").description("Displays a suitable icon in a link for the reportable").
-    code { case (rc , r) => s"<a href='${rc.urlMap(r)}'>${icon(r)}</a>" }.
+    code { case (rc, r) => s"<a href='${rc.urlMap(r)}'>${icon(r)}</a>" }.
     scenario(context(reqWithTitleReport), reqWithTitle).
     expected(s"<a href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>${icon(reqWithTitle)}</a>").
     build
@@ -299,17 +354,17 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     useCase("Items that are requirements with titles use their titles").
     scenario(context(reqWithTitleReport), reqWithTitle).
     expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
-    matchOn { case (RenderContext(urlMap, _, _, _), r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${Strings.htmlEscape(r.titleString)}${icon(r)}</a>" }.
+    matchOn { case (rc, r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${Strings.htmlEscape(r.titleString)}${icon(r)}</a>" }.
 
     useCase("Items that are requirements without titles are given template name and text order").
     scenario(context(doc1NoTitlereport), docNoTitle).
     expected { val d = s"Document_${docNoTitle.textOrder}"; s"<a id='$d' href='RootUrl/doc1Report/Document${docNoTitle.textOrder}.Document.html'>$d${icon(docNoTitle)}</a>" }.
-    matchOn { case (RenderContext(urlMap, _, _, _), r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
+    matchOn { case (rc, r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
 
     useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
     scenario(eBlankTitleReport, eBlankTitleED).
     expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
-    matchOn { case (RenderContext(urlMap, _, _, _), ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }.
+    matchOn { case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }.
 
     build
 

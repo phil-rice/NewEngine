@@ -76,8 +76,25 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
       val url = urlMap(r)
       val report = Report.focusedReport(Some("title"), date, path)
       val renderer = HtmlRenderer.rendererFor(r)
-      val html = Report.html(report, renderer, renderContext)
-      reportWriter.print(url, Some(r), html)
+      val actualPathToConclusion = pathToConclusion(path)
+      val newRenderContext = renderContext.copy(pathToConclusion = actualPathToConclusion)
+      val html = Report.html(report, renderer, newRenderContext)
+      reportWriter.print(url, Some(r), html) 
+    } 
+  }
+
+  def pathToConclusion[Params, BFn, R, RFn](path: List[Reportable]): List[Reportable] = {
+    def engineFromTestsFor(ed: EngineDescription[Params, BFn, R, RFn]) =
+      engines.flatMap {
+        case e: EngineFromTests[Params, BFn, R, RFn] if (e.asRequirement.eq(ed)) => Some(e)
+        case f: FoldingEngine[Params, BFn, R, RFn, _] => f.engines.collect { case e: EngineFromTests[Params, BFn, R, RFn] if (e.asRequirement.eq(ed)) => e }.headOption
+        case _ => None
+      }.head
+    def pathFrom(e: EngineFromTests[Params, BFn, R, RFn], params: Params) = e.evaluator.findPathToConclusion(e.tree, params)
+
+    path.head match {
+      case s: Scenario[Params, BFn, R, RFn] => path.collect { case ed: EngineDescription[Params, BFn, R, RFn] => pathFrom(engineFromTestsFor(ed), s.params) }.head
+      case _ => List()
     }
   }
 }
