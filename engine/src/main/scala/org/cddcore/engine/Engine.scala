@@ -28,7 +28,7 @@ trait Engine extends Reportable {
 object EngineTools {
   implicit def toEngineTools[Params, BFn, R, RFn](e: Engine) = e.asInstanceOf[EngineTools[Params, BFn, R, RFn]]
 }
-trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] {
+trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] with WithLoggerDisplayProcessor {
   def titleString = asRequirement.titleString
   def asRequirement: EngineRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]

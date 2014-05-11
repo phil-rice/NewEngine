@@ -14,8 +14,8 @@ trait CanCopyWithNewExceptionMap[R, RFn] extends HasExceptionMap[R, RFn] {
 trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, FullR, B, E], E <: EngineTools[Params, BFn, R, RFn]]
   extends BuilderNodeHolder[Params, BFn, R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
-  with WhileBuildingValidateScenario[Params, BFn, R, RFn] {
-  implicit def ldp: LoggerDisplayProcessor
+  with WhileBuildingValidateScenario[Params, BFn, R, RFn]
+  with WithLoggerDisplayProcessor {
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
   import bl._
 

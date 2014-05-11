@@ -1,5 +1,7 @@
 package org.cddcore.utilities
 
+import org.cddcore.engine.HtmlDisplay
+
 trait LoggerDisplay {
   def loggerDisplay(dp: LoggerDisplayProcessor): String
 }
@@ -24,6 +26,11 @@ trait LoggerDisplayProcessor extends Function[Any, String] {
         case d: LoggerDisplay => d.loggerDisplay(this);
         case a => a.toString
       })
+  def html(a: Any): String =
+    a match {
+      case h: HtmlDisplay => h.htmlDisplay
+      case _ => Strings.htmlEscape(a.toString)
+    }
 }
 case class SimpleLoggerDisplayProcessor(displayMap: ClassFunctionList[String] = ClassFunctionList()) extends LoggerDisplayProcessor
 

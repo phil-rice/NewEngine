@@ -62,7 +62,7 @@ case class Builder1[P, R, FullR](
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine1[P, R, FullR] = nodes match {
-    case (r: EngineRequirement[P, (P) => Boolean, R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions)
+    case (r: EngineRequirement[P, (P) => Boolean, R, (P) => R]) :: nil => buildEngine.buildEngine(r, buildExceptions, ldp)
     case _ => throw new IllegalArgumentException(nodes.toString)
   }
   def copyWithNewExceptions(buildExceptions: ExceptionMap) =
@@ -80,8 +80,9 @@ case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean,
   def constructEngine(
     requirement: EngineRequirement[P, (P) => Boolean, R, (P) => R],
     dt: DecisionTree[P, (P) => Boolean, R, (P) => R],
-    exceptionMap: ExceptionMap): Engine1[P, R, R] =
-    Engine1FromTests(requirement, dt, evaluateTree, exceptionMap)
+    exceptionMap: ExceptionMap,
+    ldp: LoggerDisplayProcessor): Engine1[P, R, R] =
+    Engine1FromTests(requirement, dt, evaluateTree, exceptionMap)(ldp)
 
 }
 class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR], Engine1[P, R, R]](
@@ -92,8 +93,9 @@ class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) =
     engines: List[EngineFromTests[P, (P) => Boolean, R, (P) => R]],
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
-    foldingFn: (FullR, R) => FullR): FoldingEngine1[P, R, FullR] =
-    FoldingEngine1(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)
+    foldingFn: (FullR, R) => FullR,
+    ldp: LoggerDisplayProcessor): FoldingEngine1[P, R, FullR] =
+    FoldingEngine1(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)(ldp)
 }
 trait Engine1[P, R, FullR] extends EngineTools[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
 
@@ -102,7 +104,7 @@ case class Engine1FromTests[P, R](
   tree: DecisionTree[P, (P) => Boolean, R, (P) => R],
   evaluator: EvaluateTree[P, (P) => Boolean, R, (P) => R],
   buildExceptions: ExceptionMap,
-  val textOrder: Int = Reportable.nextTextOrder)
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor)
   extends Engine1[P, R, R] with EngineFromTests[P, (P) => Boolean, R, (P) => R] with Function1[P, R] {
   def apply(p: P) = applyParams(p)
 
@@ -114,7 +116,7 @@ case class FoldingEngine1[P, R, FullR](
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
   foldingFn: (FullR, R) => FullR,
-  val textOrder: Int = Reportable.nextTextOrder)
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor)
   extends Engine1[P, R, FullR] with FoldingEngine[P, (P) => Boolean, R, (P) => R, FullR] {
   def apply(p: P) = applyParams(p)
 }

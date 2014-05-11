@@ -10,6 +10,9 @@ trait Reportable {
 trait ReportableWithTemplate extends Reportable {
   val template: String
 }
+trait WithLoggerDisplayProcessor  {
+  implicit def ldp: LoggerDisplayProcessor
+}
 
 trait ReportableWithoutUrl extends Reportable {
 
@@ -219,7 +222,7 @@ case class Scenario[Params, BFn, R, RFn](
   val references: Set[Reference] = Set(),
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
   val configurators: List[(Params) => Unit] = List(),
-  val textOrder: Int = Reportable.nextTextOrder) extends BuilderNode[Params, BFn, R, RFn] {
+  val textOrder: Int = Reportable.nextTextOrder)( implicit val ldp: LoggerDisplayProcessor) extends BuilderNode[Params, BFn, R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[Params, BFn, R, RFn] =
@@ -227,12 +230,12 @@ case class Scenario[Params, BFn, R, RFn](
   def copyScenario(because: Option[CodeHolder[BFn]] = because, assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = assertions, configurators: List[(Params) => Unit] = configurators) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
 
-  def prettyPrintExpected(implicit ldp: LoggerDisplayProcessor): String = expected match {
+  def prettyPrintExpected: String = expected match {
     case Some(Left(e)) => "throws " + e.getClass
     case Some(Right(v)) => ldp(v)
     case _ => "No expected"
   }
-  def prettyPrintParams(implicit ldp: LoggerDisplayProcessor): String = params match {
+  def prettyPrintParams: String = params match {
     case (p1, p2) => ldp(p1) + "," + ldp(p2)
     case (p1, p2, p3) => ldp(p1) + "," + ldp(p2) + "," + ldp(p3)
     case _ => ldp(params)
