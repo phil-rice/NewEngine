@@ -14,6 +14,12 @@ trait ReportableWithTemplate extends Reportable {
 trait ReportableWithoutUrl extends Reportable {
 
 }
+
+/** Classes implementing this are displayed using htmlDisplay, rather than toString when shown on a website, or in HTML pages.*/
+trait HtmlDisplay {
+  def htmlDisplay: String
+}
+
 object Reportable {
   private final val count = new AtomicInteger(0)
   def nextTextOrder = count.getAndIncrement()

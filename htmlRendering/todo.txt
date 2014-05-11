@@ -1,5 +1,6 @@
 Known:
-* The red/green/amber
+* The red/green  <--- DONE
+* amber
 * HtmlDisplay
 * Traceitems
 * Traces
