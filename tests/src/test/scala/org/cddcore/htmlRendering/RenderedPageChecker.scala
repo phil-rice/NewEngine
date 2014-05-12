@@ -124,10 +124,23 @@ trait HtmlRenderedChecker extends HtmlChecker {
       }
     })
   }
+  def checkUsecaseWithScenariosDetails(path: List[Reportable], useCaseNode: Node) {
+    val useCase = path.head.asInstanceOf[UseCase[_, _, _, _]]
+    val h4 = only(useCaseNode \ "h4")
+    val links = h4 \ "a"
+    assertEquals(1 , links.size) 
+    val useCaselink = links.head
+    assertTextEquals(useCase.titleString, useCaselink)
+    assertEquals(urlMap(useCase), useCaselink.attribute("href").get text)
+
+    val scenarioDivs = divsWith( "scenario", useCaseNode.child)
+    val summaries = useCase.scenarios.zipAll(scenarioDivs, null, null).map(_ match {
+      case (s: Scenario[_, _, _, _], scenarioDiv) => checkScenarioDetails(s :: path, scenarioDiv)
+    })
+  }
 
   def checkScenarioDetails(path: List[Reportable], scenarioNode: Node) {
     val test = path.head.asInstanceOf[Scenario[_, _, _, _]]
-    val engine = PathUtils.findEngine(path)
     val scenarioText = onlyDivWith("scenarioText", scenarioNode.child)
     val linkNode = only(scenarioText \ "a")
     val link = linkNode.attribute("href").get
@@ -136,7 +149,7 @@ trait HtmlRenderedChecker extends HtmlChecker {
     val trs = table \ "tr"
     val paramTd = findTdInRowWithTitle(table, "Parameter")
     val paramText = paramTd.get.text
-    assertEquals(test.prettyPrintParams, test.params)
+    assertEquals(paramText, test.prettyPrintParams)
 
     val expectedTd = findTdInRowWithTitle(table, "Expected")
     assertTextEquals(test.prettyPrintExpected, expectedTd.get)

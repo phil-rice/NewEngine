@@ -50,7 +50,15 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   }
 
   it should "allow expectedAndCode" in {
-    fail
+    code("Q")
+    scenario("A"); expectedAndCode("X"); because ("A")
+    scenario("B"); expectedAndCode("Y"); because("B")
+    val e = build
+    assertEquals(result("X"), e.applyParams("A"))
+    assertEquals(result("Y"), e.applyParams("B"))
+    assertEquals(result("X"), e.applyParams("AB"))
+    assertEquals(result("X"), e.applyParams("ACD"))
+    assertEquals(result("Q"), e.applyParams("123"))
   }
 
   it should "use the priority" in {

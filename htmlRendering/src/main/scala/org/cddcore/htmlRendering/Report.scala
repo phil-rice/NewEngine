@@ -16,24 +16,27 @@ object Report {
     new FocusedReport(title, date, List(engine.asRequirement), description)
   def focusedReport(title: Option[String], date: Date, pathWithoutReport: List[Reportable], description: Option[String] = None) =
     new FocusedReport(title, date, pathWithoutReport, description)
-  
-    
-  def htmlAndRenderedContext(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): (String,RenderContext) = {
+
+  def htmlAndRenderedContext(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): (String, RenderContext) = {
     val urlMap = UrlMap() ++ report.urlMapPaths
     val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "index.html")
     val renderContext = RenderContext(urlMap, new Date(), iconUrl)
     (html(report, engine, renderContext), renderContext)
   }
-  def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = 
-		  htmlAndRenderedContext(report, engine)._1
+  def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String =
+    htmlAndRenderedContext(report, engine)._1
 
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
     Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
-  
-  def htmlAndRenderedContext(report: Report): (String,RenderContext) =
+
+  def htmlAndRenderedContext(report: Report): (String, RenderContext) =
     report match {
       case r: DocumentAndEngineReport => htmlAndRenderedContext(report, HtmlRenderer.engineAndDocumentsSingleItemRenderer)
-      case r: FocusedReport => htmlAndRenderedContext(report, HtmlRenderer.engineReportSingleItemRenderer)
+      case r: FocusedReport => r.focusPath.head match {
+        case e: EngineRequirement[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.engineReportSingleItemRenderer)
+        case uc: UseCase[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.useCaseOrScenarioReportRenderer)
+        case s: Scenario[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.useCaseOrScenarioReportRenderer)
+      }
     }
 
 }

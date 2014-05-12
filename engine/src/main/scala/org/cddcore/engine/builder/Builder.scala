@@ -47,8 +47,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B =
     wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
-  def expectedAndCode(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r)))).
-      codeHolder(expectedToCode(Right(r)))
+  def expectedAndCode(r: R, title: String = null): B = expected(r, title).codeHolder(expectedToCode(Right(r)))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
   def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
   def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))

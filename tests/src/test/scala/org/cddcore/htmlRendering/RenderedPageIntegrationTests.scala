@@ -91,13 +91,47 @@ class RenderedPageIntegrationTests extends AbstractTest {
       val checker = new SimpleHtmlRenderedChecker(html, rc)
 
       val usecaseDivs = checker.divsWith("usecaseSummary")
-      assertEquals(expectedUsecases.size, usecaseDivs.size)
-      for ((uc, div) <- expectedUsecases.zip(usecaseDivs))
+      for ((uc, div) <- expectedUsecases.zipAll(usecaseDivs, null, null))
         checker.checkUsecaseWithScenariosSummarized(List(uc), div)
+    }
+    checkReport(eWithUsecasesAndScenarios, List(uc0, uc1))
+  }
+  it should "pass the usecase section test when scenarios are just details in usecases" in {
+    def checkReport(e: Engine, expectedUsecases: List[UseCase[_, _, _, _]], focusPathReversed: Reportable*) {
+      import EngineTools._
+      val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
+      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
+      val html = Report.html(report, HtmlRenderer.useCaseOrScenarioReportRenderer, rc)
+      val checker = new SimpleHtmlRenderedChecker(html, rc)
+
+      val usecaseDivs = checker.divsWith("usecaseSummary")
+      for ((uc, div) <- expectedUsecases.zipAll(usecaseDivs, null, null))
+        checker.checkUsecaseWithScenariosDetails(List(uc), div)
     }
     checkReport(eWithUsecasesAndScenarios, List(uc0, uc1))
     checkReport(eWithUsecasesAndScenarios, List(uc0), uc0)
     checkReport(eWithUsecasesAndScenarios, List(uc1), uc1)
+  }
+  it should "pass the scenario section test " in {
+    def checkReport(e: Engine, expectedScenarios: List[Scenario[_, _, _, _]], focusPathReversed: Reportable*) {
+      import EngineTools._
+      val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
+      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
+      //      val classPaths = report.reportPaths.map(_.map(_.getClass().getSimpleName()))
+      //      val paths = Lists.pathToStartChildEnd(classPaths)
+      //      println(paths.mkString("\n"))
+      val html = Report.html(report, HtmlRenderer.useCaseOrScenarioReportRenderer, rc)
+      val checker = new SimpleHtmlRenderedChecker(html, rc)
+
+      val scenarioDivs = checker.divsWith("scenario")
+      for ((s, div) <- expectedScenarios.zipAll(scenarioDivs, null, null))
+        checker.checkScenarioDetails(List(s), div)
+    }
+    checkReport(eWithUsecasesAndScenarios, List(uc0s0, uc1s1, uc1s2))
+    checkReport(eWithUsecasesAndScenarios, List(uc0s0), uc0)
+    checkReport(eWithUsecasesAndScenarios, List(uc1s1), uc1, uc1s1)
   }
 
 }

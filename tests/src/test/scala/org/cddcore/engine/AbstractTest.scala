@@ -67,6 +67,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def becauseException(e: Exception) = builder = becauseExceptionImpl(e)
   def matchOn(seed: Seed, result: R)
   def expected(seed: ResultSeed) = update(_.expected(result(seed)))
+  def expectedAndCode(seed: ResultSeed) = update(_.expectedAndCode(result(seed)))
   def expectException(e: Exception) = update(_.expectException(e))
   def assertion(callback: => Boolean) = builder = assertionPrim(callback)
   def configurate(cfg: (Params) => Unit) = builder = configuratorPrim(cfg)
