@@ -40,6 +40,7 @@ case class Builder2[P1, P2, R, FullR](
   buildExceptions: ExceptionMap = new ExceptionMap(),
   buildEngine: BuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
   extends Builder[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, FullR]] {
+  def expectedToCode = buildEngine.expectedToCode
 
   val makeClosures = buildEngine.mc
   val validator = buildEngine.validator

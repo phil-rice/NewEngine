@@ -1,18 +1,18 @@
-package org.cddcore.examples.folding
+package org.cddcore.example.folding
 
 import org.cddcore.engine.Engine
 import org.junit.runner.RunWith
+import org.cddcore.tests.CddJunitRunner
 import org.cddcore.engine.Reportable
-import org.cddcore.cddjunit.CddJunitRunner
 
 case class Person(hasPet: Boolean = false, hasWife: Boolean = false, isRich: Boolean = false, isInTrouble: Boolean = false, hasWorkIssues: Boolean = false)
 /**
  * This is just an example of folding. There are a number of minor engines, each working out if you are 'happy; for 'this reason'.
  *  The person is only happy is they have all the reasons to be happy.
- */ 
+ */
 @RunWith(classOf[CddJunitRunner])
-object Folding {
-  val engine = Engine.folding[Person, Boolean, Boolean](true, (acc: Boolean, h: Boolean) => acc && h).
+object Happy {
+  val engine = Engine.folding[Person, Boolean, Boolean]((acc: Boolean, h: Boolean) => acc && h, true).
     title("Happy Engine").
     childEngine("Happy people have pets").
     scenario(Person(hasPet = false)).expected(false).
@@ -31,7 +31,4 @@ object Folding {
     scenario(Person(hasWorkIssues = false)).expected(true).because((p: Person) => !p.hasWorkIssues).
     build;
 
-  def main(args: Array[String]) {
-    println(engine)
-  }
 }

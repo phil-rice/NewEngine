@@ -1,19 +1,19 @@
-package org.cddcore.cddjunit
+package org.cddcore.tests
 
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.Array.canBuildFrom
-
 import org.cddcore.engine._
 import org.cddcore.utilities._
 import org.junit.runner.Description
 import org.junit.runner.Runner
 import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
+import org.cddcore.engine.Engine.test
+import org.cddcore.utilities.KeyLike.ReportableLike
 
 object CddRunner {
   val separator = "\n#########\n"

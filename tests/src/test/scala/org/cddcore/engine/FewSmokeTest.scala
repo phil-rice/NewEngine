@@ -1,7 +1,6 @@
 package org.cddcore.engine
 
 import org.junit.runner.RunWith
-
 import org.scalatest.junit.JUnitRunner
 import ReportableHelper._
 import org.cddcore.engine.builder.DecisionTree
@@ -132,5 +131,17 @@ class FewSmokeTest extends AbstractTest {
     assertEquals("love - all", engine(0, 0, 0))
     assertEquals("fifteen - all", engine(1, 1, 1))
   }
-  
+
+  "A scenario" should "use the HtmlDisplay in prettyPrintParams if it exists" in {
+    case class ParamsWithHtmlDisplay(value: String) extends HtmlDisplay {
+      def htmlDisplay = s"html_${value}_string"
+    }
+
+    val e = Engine[ParamsWithHtmlDisplay, String]().
+      scenario(ParamsWithHtmlDisplay("A")).expected("A").code((x) => x.value).build
+    val s = e.asRequirement.scenarios(0)
+    assertEquals("ParamsWithHtmlDisplay(A)", s.prettyPrintParams)
+    assertEquals("html_A_string", s.htmlPrintParams)
+  }
+
 }

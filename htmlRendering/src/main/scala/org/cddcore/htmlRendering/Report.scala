@@ -16,15 +16,25 @@ object Report {
     new FocusedReport(title, date, List(engine.asRequirement), description)
   def focusedReport(title: Option[String], date: Date, pathWithoutReport: List[Reportable], description: Option[String] = None) =
     new FocusedReport(title, date, pathWithoutReport, description)
-  def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = {
+  
+    
+  def htmlAndRenderedContext(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): (String,RenderContext) = {
     val urlMap = UrlMap() ++ report.urlMapPaths
     val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "index.html")
     val renderContext = RenderContext(urlMap, new Date(), iconUrl)
-    html(report, engine, renderContext)
+    (html(report, engine, renderContext), renderContext)
   }
+  def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): String = 
+		  htmlAndRenderedContext(report, engine)._1
 
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
     Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
+  
+  def htmlAndRenderedContext(report: Report): (String,RenderContext) =
+    report match {
+      case r: DocumentAndEngineReport => htmlAndRenderedContext(report, HtmlRenderer.engineAndDocumentsSingleItemRenderer)
+      case r: FocusedReport => htmlAndRenderedContext(report, HtmlRenderer.engineReportSingleItemRenderer)
+    }
 
 }
 
@@ -79,8 +89,8 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
       val actualPathToConclusion = pathToConclusion(path)
       val newRenderContext = renderContext.copy(pathToConclusion = actualPathToConclusion)
       val html = Report.html(report, renderer, newRenderContext)
-      reportWriter.print(url, Some(r), html) 
-    } 
+      reportWriter.print(url, Some(r), html)
+    }
   }
 
   def pathToConclusion[Params, BFn, R, RFn](path: List[Reportable]): List[Reportable] = {

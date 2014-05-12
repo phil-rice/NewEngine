@@ -1,12 +1,13 @@
 package org.cddcore.engine
 
-import org.scalatest._
-import bsh.Node
-import org.scalatest.FlatSpecLike
-import org.cddcore.utilities.CodeHolder
 import org.cddcore.engine.builder._
+import org.cddcore.utilities.CodeHolder
 import org.cddcore.utilities.ExceptionMap
 import org.cddcore.utilities.LoggerDisplayProcessor
+import org.scalatest._
+import org.scalatest.FlatSpecLike
+import scala.xml.Node
+
 
 trait AssertEquals {
   def assertEquals[T1, T2](expected: T1, actual: T2, prefix: String = "") {
@@ -33,7 +34,9 @@ trait AssertEquals {
     if (expected != actual)
       assert(expected == actual, msg)
   }
-
+ def assertTextEquals(expected: String, actual: Node) {
+    assertEquals(expected, actual.text.trim)
+  }
   def assertEquals[T1, T2](prefix: String, expected: T1, actual: T2) {
     assert(expected == actual, prefix + "\nExpected\n" + expected + "\nActual\n" + actual)
   }

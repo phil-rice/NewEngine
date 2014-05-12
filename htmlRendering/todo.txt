@@ -1,15 +1,15 @@
 Known:
 * The red/green  <--- DONE
 * amber
-* HtmlDisplay
+* HtmlDisplay<--- DONE
 * Traceitems
 * Traces
 * Web tests
 * Live display
-
+*Legacy
 Quality of life
 * Improve the toString of the matchOn
-* allow because to have a partial function to boolen (and ensure that has a nice toString)
+* allow because to have a partial function to boolean (and ensure that has a nice toString)
 
 
 Go to Carers and some of the others, and make sure they work 

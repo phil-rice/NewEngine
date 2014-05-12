@@ -18,6 +18,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   with WithLoggerDisplayProcessor {
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
   import bl._
+  def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
 
   protected def wrap(stuff: => Builder[Params, BFn, R, RFn, FullR, B, E]): B = try {
     stuff.asInstanceOf[B]
@@ -44,7 +45,10 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
     new UseCase[Params, BFn, R, RFn](Some(title), description = Option(description)) :: nodes))
   def becauseHolder(becauseHolder: CodeHolder[BFn]): B =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
-  def expected(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
+  def expected(r: R, title: String = null): B =
+    wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
+  def expectedAndCode(r: R, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r)))).
+      codeHolder(expectedToCode(Right(r)))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
   def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
   def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))

@@ -141,20 +141,20 @@ object Engine {
   /** returns a builder for an engine that implements Function3[P1,P2,P3,R] */
   def apply[P1, P2, P3, R]()(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine3)(ldp)
 
-  def folding[P, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder1[P, R, FullR](BuildEngine.initialNodes[P, (P) => Boolean, R, (P) => R, FullR](initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine1[P, R, FullR])(ldp)
-  def foldList[P, R] = folding[P, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
-  def foldSet[P, R] = folding[P, R, Set[R]](Set(), { _ + _ })
+  def foldList[P, R] = folding[P, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
+  def foldSet[P, R] = folding[P, R, Set[R]]({ _ + _ }, Set())
 
-  def folding[P1, P2, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P1, P2, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder2[P1, P2, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine2[P1, P2, R, FullR])(ldp)
-  def foldList[P1, P2, R] = folding[P1, P2, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
-  def foldSet[P1, P2, R] = folding[P1, P2, R, Set[R]](Set(), { _ + _ })
+  def foldList[P1, P2, R] = folding[P1, P2, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
+  def foldSet[P1, P2, R] = folding[P1, P2, R, Set[R]]({ _ + _ }, Set())
 
-  def folding[P1, P2, P3, R, FullR](initialValue: FullR, foldingFn: (FullR, R) => FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P1, P2, P3, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
     Builder3[P1, P2, P3, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine3[P1, P2, P3, R, FullR])(ldp)
-  def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]](List(), (acc: List[R], v: R) => acc :+ v)
-  def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]](Set(), { _ + _ })
+  def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
+  def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]]({ _ + _ }, Set())
 
   def testing = _testing.get
   private var _testing = new ThreadLocal[Boolean] {

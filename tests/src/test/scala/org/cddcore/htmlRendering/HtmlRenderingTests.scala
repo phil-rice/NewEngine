@@ -1,8 +1,9 @@
 package org.cddcore.htmlRendering
 
-import org.cddcore.cddjunit.CddContinuousIntegrationTest
-import org.cddcore.cddjunit.CddContinuousIntegrationRunner
+import org.cddcore.tests.CddContinuousIntegrationTest
 import org.junit.runner.RunWith
+import org.cddcore.tests.CddContinuousIntegrationRunner
+
 
 @RunWith(classOf[CddContinuousIntegrationRunner])
 class HtmlRenderingTests extends CddContinuousIntegrationTest {

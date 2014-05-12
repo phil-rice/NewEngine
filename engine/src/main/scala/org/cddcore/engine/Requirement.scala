@@ -10,8 +10,8 @@ trait Reportable {
 trait ReportableWithTemplate extends Reportable {
   val template: String
 }
-trait WithLoggerDisplayProcessor  {
-  implicit def ldp: LoggerDisplayProcessor
+trait WithLoggerDisplayProcessor {
+  def ldp: LoggerDisplayProcessor
 }
 
 trait ReportableWithoutUrl extends Reportable {
@@ -34,6 +34,26 @@ object Reportable {
     }
   }
 }
+object PathUtils {
+  /** Walks up the path until it finds the first engine*/
+  def findEngine(path: List[Reportable]) = findEnginePath(path).head.asInstanceOf[EngineRequirement[_, _, _, _]]
+  /** Walks up the path until it finds the first engine, return a truncated path with the engine as the head */
+  def findEnginePath(path: List[Reportable]): List[Reportable] = path match {
+    case (_: EngineRequirement[_, _, _, _]) :: tail => path
+    case _ :: tail => findEnginePath(tail)
+    case _ => throw new IllegalArgumentException
+  }
+   /** Walks up the path until it finds the first use case */
+  def findUseCase(path: List[Reportable]) = findUseCasePath(path).head.asInstanceOf[UseCase[_,_,_,_]]
+  /** Walks up the path until it finds the first use case, return a truncated path with the usecase as the head */
+  def findUseCasePath(path: List[Reportable]): List[Reportable] = path match {
+    case (usecase: UseCase[_,_,_,_]) :: tail => path
+    case h :: tail => findUseCasePath(tail)
+    case _ => throw new IllegalArgumentException
+  }
+  
+}
+
 object Requirement {
   def areRequirementFieldsEqual(r1: Requirement, r2: Requirement) = {
     r1.title == r2.title &&
@@ -106,22 +126,22 @@ class ReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with Typ
 
 }
 
-case class Project(
-  val title: Option[String] = None,
-  val description: Option[String] = None,
-  val priority: Option[Int] = None,
-  val nodes: List[Reportable] = List(),
-  val references: Set[Reference] = Set(),
-  val textOrder: Int = Reportable.nextTextOrder) extends Requirement with NestedHolder[Reportable] {
-  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
-    new Project(title, description, priority, nodes, references, textOrder)
-  override def toString = s"Project(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
-  override def hashCode = (title.hashCode() + description.hashCode()) / 2
-  override def equals(other: Any) = other match {
-    case p: Project => Requirement.areRequirementFieldsEqual(this, p)
-    case _ => false
-  }
-}
+//case class Project(
+//  val title: Option[String] = None,
+//  val description: Option[String] = None,
+//  val priority: Option[Int] = None,
+//  val nodes: List[Reportable] = List(),
+//  val references: Set[Reference] = Set(),
+//  val textOrder: Int = Reportable.nextTextOrder) extends Requirement with NestedHolder[Reportable] {
+//  def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
+//    new Project(title, description, priority, nodes, references, textOrder)
+//  override def toString = s"Project(${title.getOrElse("None")}, nodes=(${nodes.mkString(",")}))"
+//  override def hashCode = (title.hashCode() + description.hashCode()) / 2
+//  override def equals(other: Any) = other match {
+//    case p: Project => Requirement.areRequirementFieldsEqual(this, p)
+//    case _ => false
+//  }
+//}
 
 case class FoldingEngineDescription[Params, BFn, R, RFn, FullR](
   val title: Option[String] = None,
@@ -222,7 +242,7 @@ case class Scenario[Params, BFn, R, RFn](
   val references: Set[Reference] = Set(),
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
   val configurators: List[(Params) => Unit] = List(),
-  val textOrder: Int = Reportable.nextTextOrder)( implicit val ldp: LoggerDisplayProcessor) extends BuilderNode[Params, BFn, R, RFn] {
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor) extends BuilderNode[Params, BFn, R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[Params, BFn, R, RFn] =
@@ -235,10 +255,20 @@ case class Scenario[Params, BFn, R, RFn](
     case Some(Right(v)) => ldp(v)
     case _ => "No expected"
   }
+  def htmlPrintExpected: String = expected match {
+    case Some(Left(e)) => "throws " + e.getClass
+    case Some(Right(v)) => ldp.html(v)
+    case _ => "No expected"
+  }
   def prettyPrintParams: String = params match {
     case (p1, p2) => ldp(p1) + "," + ldp(p2)
     case (p1, p2, p3) => ldp(p1) + "," + ldp(p2) + "," + ldp(p3)
     case _ => ldp(params)
+  }
+  def htmlPrintParams: String = params match {
+    case (p1, p2) => ldp.html(p1) + "," + ldp.html(p2)
+    case (p1, p2, p3) => ldp.html(p1) + "," + ldp.html(p2) + "," + ldp.html(p3)
+    case _ => ldp.html(params)
   }
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
   def executeConfigurators = configurators.foreach((c) => c(params))

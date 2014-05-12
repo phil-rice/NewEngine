@@ -39,6 +39,7 @@ class SimpleReportDetails(
 }
 
 case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, pathToConclusion: List[Reportable] = List(), reportDetails: ReportDetails = ReportDetails())(implicit ldp: LoggerDisplayProcessor) {
+  def loggerDisplayProcessor = ldp
   override def toString = getClass.getSimpleName()
 }
 
@@ -212,8 +213,8 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       matchOn {
         case (rc, (s: Scenario[_, _, _, _]) :: _, Child) => s"<div class='scenario'><div class='scenarioText'>${titleAndIcon(rc, s)}</div>" +
           s"<table class='scenarioTable'>" +
-          s"<tr><td class='title'>Parameter</td><td class='value'>${s.prettyPrintParams}</td></tr>" +
-          s"<tr><td class='title'>Expected</td><td class='value'>${s.prettyPrintExpected}</td></tr>" +
+          s"<tr><td class='title'>Parameter</td><td class='value'>${s.htmlPrintParams}</td></tr>" +
+          s"<tr><td class='title'>Expected</td><td class='value'>${s.htmlPrintExpected}</td></tr>" +
           "</table></div><!-- scenario -->"
       }
 

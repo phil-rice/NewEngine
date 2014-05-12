@@ -71,7 +71,7 @@ object SampleContexts {
     childEngine("ce0").scenario(0).expected(0).
     childEngine("ce1").scenario(1).expected(2).code { (x) => x * 2 }.because { (x) => x > 0 }.
     scenario(2).expected(4).
-    build
+    build.asInstanceOf[FoldingEngine1[Int, Int, List[Int]]]
 
   val foldingAsFE = folding.asInstanceOf[FoldingEngine[_, _, _, _, _]]
   val foldingED = folding.asRequirement.asInstanceOf[FoldingEngineDescription[Int, (Int) => Boolean, Int, (Int) => Int, List[Int]]]

@@ -79,7 +79,7 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
   protected def newName(seen: Set[String], r: Reportable)(implicit conv: TemplateLike[Reportable]) = {
     val calculatedName = Strings.urlClean(r match {
       case report: Report => { val result = report.titleOrDescription(""); if (result.length > 120) "" else result }
-      case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
+//      case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
       case engine: EngineTools[_, _, _, _] => { val result = engine.asRequirement.titleOrDescription(""); if (result.length > 120) "" else result }
       case req: Requirement => { val result = req.titleOrDescription(""); if (result.length > 40) "" else result }
       case _ => "";

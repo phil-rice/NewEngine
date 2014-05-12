@@ -46,7 +46,7 @@ case class Builder1[P, R, FullR](
   import bl._
   import makeClosures._
   import validator._
-
+  def expectedToCode = buildEngine.expectedToCode
   def because(because: (P) => Boolean): Builder1[P, R, FullR] = macro Builder1.becauseImpl[P, R, FullR]
   def code(code: (P) => R): Builder1[P, R, FullR] = macro Builder1.codeImpl[P, R, FullR]
   def matchOn(pf: PartialFunction[P, R]) = macro Builder1.matchOnImpl[P, R, FullR]

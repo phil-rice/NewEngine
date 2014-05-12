@@ -47,7 +47,10 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     assertEquals(result("Y"), e.applyParams("B"))
     assertEquals(result("Y"), e.applyParams("AB"))
     assertEquals(result("X"), e.applyParams("ACD"))
+  }
 
+  it should "allow expectedAndCode" in {
+    fail
   }
 
   it should "use the priority" in {
@@ -66,7 +69,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
 
   it should "allow use cases to be specified with a title and a description " in {
     update(_.useCase("title1", "description"))
-    assertEquals(EngineDescription[Params, BFn, R, RFn](nodes = List(UseCase[Params, BFn,R, RFn](
+    assertEquals(EngineDescription[Params, BFn, R, RFn](nodes = List(UseCase[Params, BFn, R, RFn](
       title = Some("title1"),
       description = Some("description")))), currentBuilder.nodes.head)
   }
