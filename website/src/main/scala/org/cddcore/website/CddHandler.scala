@@ -60,8 +60,8 @@ class CddHandler(title: String, engines: List[Engine], pathHandlers: List[CddPat
             response.getWriter().println(html)
           } catch {
             case e: Throwable =>
-              println(ph);
-              e.printStackTrace();
+//              println(ph);
+//              e.printStackTrace();
               throw e
           }
         case _ => ;
@@ -91,7 +91,15 @@ class PathHandler extends CddPathHandler {
     import context._
     val report = Report.focusedReport(None, path)
     val renderer = Report.rendererFor(report)
-    Report.html(report, renderer, renderContext)
+    val ed = PathUtils.findEngine(path)
+    val rc = (path.head, ed) match {
+      case (s: Scenario[_, _, _, _], ed: EngineDescription[_,_,_,_]) => {
+        val engine = ""
+        renderContext
+      }
+      case _ => renderContext
+    }
+    Report.html(report, renderer, rc)
   }
 }
 //      case _ => List()

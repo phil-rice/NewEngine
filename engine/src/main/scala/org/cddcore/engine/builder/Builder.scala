@@ -43,13 +43,15 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
 
   def useCase(title: String, description: String = null): B = wrap(nextUseCaseHolderL.andThen(nodesL).mod(this, (nodes: List[BuilderNode[Params, BFn, R, RFn]]) =>
     new UseCase[Params, BFn, R, RFn](Some(title), description = Option(description)) :: nodes))
+  def because(because: BFn, description: String): B = becauseHolder(new CodeHolder[BFn](because, description))
+
   def becauseHolder(becauseHolder: CodeHolder[BFn]): B =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B =
     wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectedAndCode(r: R, title: String = null): B = expected(r, title).codeHolder(expectedToCode(Right(r)))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
-  def reference(ref: String, document: Document = null): B = 
+  def reference(ref: String, document: Document = null): B =
     wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Option(document))))
 
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]): B

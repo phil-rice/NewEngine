@@ -9,23 +9,44 @@ abstract class EngineOrTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RF
   extends DecisionTreeBuilderAndBuilderBeingTested[Params, BFn, R, RFn, R, B, E] {
   implicit def toSome[X](x: X) = Some(x)
   protected def expectedOrRuleErrorMessage: String
-  "A Engine with an if then rule" should "Add 'or' to the existing parent if new scenario with same result but different reason" in {
-    scenario("A");
-    expected("W");
-    because("A")
-    scenario("AB"); expected("W"); because("B")
 
+  protected def checkOrRule(expected: (Scenario[Params, BFn, R, RFn], Scenario[Params, BFn, R, RFn]) => DecisionTreeNode[Params, BFn, R, RFn]) = {
+    import ReportableHelper._
     val e = build.asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
-    val sa = s("A", expected = "W", because = "A")
-    val sb = s("AB", expected = "W", because = "B")
-
-    val expect = dec(List(sa, sb), conc(sa, sb), defaultRoot)
-    assertEquals(expect, e.tree.root)
+    val sa = e.asRequirement.scenarios(0)
+    val sb = e.asRequirement.scenarios(1)
+    assertEquals(expected(sa, sb), e.tree.root)
 
     assertEquals(result("W"), e.applyParams(params("A")))
     assertEquals(result("W"), e.applyParams(params("AB")))
-    assertEquals(result("W"), e.applyParams(params("B")))
+
     evaluating { e.applyParams(params("C")) } should produce[UndecidedException]
+    e
+  }
+
+  "A Engine with an if then rule" should "Add 'or' to the existing parent if new scenario with same result but different reason (no code blocks)" in {
+    scenario("A"); expected("W"); because("A")
+    scenario("AB"); expected("W"); because("B")
+
+    val e = checkOrRule((sa, sb) => dec(List(sa, sb), conc(sa, sb), defaultRoot))
+    assertEquals(result("W"), e.applyParams(params("B")))
+
+  }
+
+  it should "not add an or if there is a code block specified in first scenario" in {
+    scenario("A"); expected("W"); because("A"); code("W")
+    scenario("AB"); expected("W"); because("B")
+
+    val e = checkOrRule((sa, sb) => dec(sa, dec(sb, conc(sb), conc(sa)), defaultRoot))
+    evaluating { e.applyParams(params("B")) } should produce[UndecidedException]
+  }
+
+  it should "not add an or if there is a code block specified in second scenario" in {
+    scenario("A"); expected("W"); because("A");
+    scenario("AB"); expected("W"); because("B"); code("W")
+
+    val e = checkOrRule((sa, sb) => dec(sa, dec(sb, conc(sb), conc(sa)), defaultRoot))
+    evaluating { e.applyParams(params("B")) } should produce[UndecidedException]
   }
 
   "An engine" should "Add scenario to root if adding with same conclusion, different reason" in {
@@ -43,8 +64,6 @@ abstract class EngineOrTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RF
   }
 
   it should "not allow a scenario in the else clause of the parent to be broken" in {
-    case class FourBooleans(a: Boolean, b: Boolean, c: Boolean, d: Boolean)
-    implicit def toFourBooleans(x: (Boolean, Boolean, Boolean, Boolean)) = FourBooleans(x._1, x._2, x._3, x._4)
     scenario("-"); expected("none")
     scenario("A"); expected("x"); because("A") //if a then x else none
     scenario("AC"); expected("y"); because("AC") // if a then (if ac then y else x) else none

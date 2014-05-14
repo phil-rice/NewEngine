@@ -29,6 +29,16 @@ abstract class EngineConstructionTest[Params, BFn, R, RFn, B <: Builder[Params, 
     assertEquals(result("A"), e.applyParams(params("a")))
   }
 
+  it should "allow the 'because with string' to specify the description in the because clause" in {
+    scenario("A"); expected("X")
+    because("A", "some description")
+    val e = build
+    import ReportableHelper._
+    val s = e.asRequirement.scenarios(0)
+    val b = s.because
+    assertEquals("some description", b.get.description)
+  } 
+
   it should "put the tree into the engine description when built" in {
     val e = build
     val ed = e.asRequirement.asInstanceOf[EngineDescription[Params, BFn, R, RFn]]

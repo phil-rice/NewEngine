@@ -151,14 +151,14 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
       (comesToSameConclusion, scenario.because, tree.rootIsDefault) match {
         case (false, None, true) => concLToConclusionL.set(tree, newConclusion)
         case (true, None, _) => addAssertion(concL.andThen(toConclusionL))
-        case (true, Some(_), _) => addOrRule
-        case (false, None, _) =>
+        case (true, Some(_), _) if !scenario.code.isDefined && oldConclusion.scenarios.foldLeft(true)((acc, s) => acc && !s.code.isDefined) => addOrRule
+        case (_, None, _) =>
           oldConclusion.scenarios match {
             case Nil => throw ScenarioConflictingWithDefaultAndNoBecauseException(concL, actual, expected, scenario)
             case existing =>
               throw ScenarioConflictingWithoutBecauseException(concL, actual, expected, existing, scenario)
           }
-        case (false, Some(b), _) => addDecisionNodeTo
+        case _ => addDecisionNodeTo
       }
     result
   }

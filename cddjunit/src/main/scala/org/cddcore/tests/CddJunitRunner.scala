@@ -14,6 +14,7 @@ import org.junit.runner.notification.Failure
 import org.junit.runner.notification.RunNotifier
 import org.cddcore.engine.Engine.test
 import org.cddcore.utilities.KeyLike.ReportableLike
+import org.cddcore.htmlRendering.ReportOrchestrator
 
 object CddRunner {
   val separator = "\n#########\n"
@@ -156,6 +157,8 @@ trait CddRunner extends Runner {
             }
         })
     }
+
+    new ReportOrchestrator(CddRunner.directory.toURL().toString(), "JUnit", allEngines).makeReports
 
   }
 }

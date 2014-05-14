@@ -56,7 +56,7 @@ trait ReportWriter {
 
 class FileReportWriter extends ReportWriter {
   def print(url: String, main: Option[Reportable], html: String) {
-    val prefix = "file:///"
+    val prefix = "file:/"
     if (url.startsWith(prefix)) {
       val path = url.substring(prefix.length())
       Files.printToFile(new File(path))((pw) =>
@@ -79,14 +79,13 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
   val rootReport = Report.documentAndEngineReport(Some(title), date, engines)
   val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.engineReport(Some("title"), date, e) :: list).reverse
   val urlMap = UrlMap(rootUrl) ++ rootReport.urlMapPaths
-  val iconUrl = Strings.url(rootUrl, title, "")
+  val iconUrl = Strings.url(rootUrl, title, "index.html")
   val renderContext = RenderContext(urlMap, date, iconUrl)
   def makeReports = {
     val t = rootReport.reportPaths
     reportWriter.print(iconUrl, None, Report.html(rootReport, HtmlRenderer.engineAndDocumentsSingleItemRenderer, renderContext))
     for (e <- engines; path <- e.asRequirement.pathsIncludingSelf.toList) {
       val r = path.head
-      println(r)
       val url = urlMap(r)
       val report = Report.focusedReport(Some("title"), path)
       val renderer = HtmlRenderer.rendererFor(r)

@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 import org.cddcore.utilities.CodeHolder
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-
+import org.cddcore.htmlRendering.SampleContexts
 
 class RequirementTest
 
@@ -32,7 +32,7 @@ class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
     assertEquals(List(en1), holderEn1.all(classOf[EN]))
     assertEquals(List(en1), holderEn1.all(classOf[BuilderNode[String, (String) => Boolean, String, (String) => String]]))
     assertEquals(List(en1, en2), holderEn12.all(classOf[EN]))
-    val actual = holderHolderEn12.all(classOf[BuilderNode[String, (String)=>Boolean,String, (String) => String]])
+    val actual = holderHolderEn12.all(classOf[BuilderNode[String, (String) => Boolean, String, (String) => String]])
     assertEquals(List(holderEn12, en1, en2), actual)
     assertEquals(List(en1, en2), holderHolderEn12.all(classOf[EN]))
   }
@@ -46,6 +46,7 @@ class EngineHolderTest extends AbstractTest with SomeHoldersForTest {
       List(en2, holderEn12)),
       holderHolderEn12.paths.toList)
   }
+
 
 }
 

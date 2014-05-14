@@ -355,17 +355,17 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     useCase("Items that are requirements with titles use their titles").
     scenario(context(reqWithTitleReport), reqWithTitle).
     expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
-    matchOn { case (rc, r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${Strings.htmlEscape(r.titleString)}${icon(r)}</a>" }.
+    matchOnPrim({ case (rc, r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${Strings.htmlEscape(r.titleString)}${icon(r)}</a>" }, "is requirement and title is defined", "icon and title").
 
     useCase("Items that are requirements without titles are given template name and text order").
     scenario(context(doc1NoTitlereport), docNoTitle).
     expected { val d = s"Document_${docNoTitle.textOrder}"; s"<a id='$d' href='RootUrl/doc1Report/Document${docNoTitle.textOrder}.Document.html'>$d${icon(docNoTitle)}</a>" }.
-    matchOn { case (rc, r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
+    matchOnPrim({ case (rc, r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }, "requirement", "just icon").
 
-    //    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
-    //    scenario(eBlankTitleReport, eBlankTitleED).
-    //    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
-    //    matchOn { case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }.
+    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
+    scenario(eBlankTitleReport, eBlankTitleED).
+    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
+    matchOnPrim({ case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }, "is engine description", "some ed stuff").
 
     build
 

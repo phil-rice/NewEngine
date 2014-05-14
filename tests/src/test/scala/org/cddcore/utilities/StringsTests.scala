@@ -20,6 +20,11 @@ class StringsTests extends AbstractTest {
 	  assertEquals("abc_123_", Strings.urlClean("abc 123;_'#\n~()<>{}\\\\")) //no defined characters
   }
   
+  "The url method" should "aggregate path parts, putting in / if needed" in {
+    assertEquals("abc/def", Strings.url("abc", "def"))
+    assertEquals("abc/def", Strings.url("abc/", "def"))
+  }
+  
   "The blanks method" should "return the correct number of blanks" in {
     assertEquals("", Strings.blanks(0))
     assertEquals(" ", Strings.blanks(1))

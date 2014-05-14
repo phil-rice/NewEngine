@@ -116,7 +116,6 @@ object ReportableHelper {
 class ReportableHelper[Params, BFn, R, RFn](r: NestedHolder[Reportable] with TypedReportable[Params, BFn, R, RFn]) {
   lazy val scenarios = r.all(classOf[Scenario[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
   lazy val useCases = r.all(classOf[UseCase[Params, BFn, R, RFn]]).toList.sortBy(_.textOrder)
-  lazy val engines = r.all(classOf[Engine]).toList.sortBy(_.textOrder)
   lazy val documents =
     (r :: r.toList).foldLeft(Set[Document]())((acc, r) =>
       r match {

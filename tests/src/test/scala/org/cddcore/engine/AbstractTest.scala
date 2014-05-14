@@ -8,7 +8,6 @@ import org.scalatest._
 import org.scalatest.FlatSpecLike
 import scala.xml.Node
 
-
 trait AssertEquals {
   def assertEquals[T1, T2](expected: T1, actual: T2, prefix: String = "") {
     def msg = prefix + "\nExpected\n" + expected + "\nActual\n" + actual
@@ -34,7 +33,7 @@ trait AssertEquals {
     if (expected != actual)
       assert(expected == actual, msg)
   }
- def assertTextEquals(expected: String, actual: Node) {
+  def assertTextEquals(expected: String, actual: Node) {
     assertEquals(expected, actual.text.trim)
   }
   def assertEquals[T1, T2](prefix: String, expected: T1, actual: T2) {
@@ -64,6 +63,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def update(fn: (B) => B): B = { val result = fn(builder); builder = result; result }
   def scenario(seed: Seed, title: String = null) = builder = scenarioImpl(params(seed), title)
   def because(seed: Seed) = builder = becauseImpl(seed)
+  def because(seed: Seed, description: String) = update { _.because(becauseBfn(seed), description) }
   def becauseException(e: Exception) = builder = becauseExceptionImpl(e)
   def matchOn(seed: Seed, result: R)
   def expected(seed: ResultSeed) = update(_.expected(result(seed)))
