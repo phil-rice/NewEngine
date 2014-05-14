@@ -33,12 +33,17 @@ object UrlMap {
 }
 
 trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
+  import EngineTools._
+  import ReportableHelper._
   def copy(rootUrl: String, rToName: KeyedMap[String], toUrl: KeyedMap[String], fromUrl: Map[String, List[Reportable]], seen: Set[String]): RU
   private def asRu = this.asInstanceOf[RU]
   def addPath(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): (RU, String) = { val result = this + path; (result, result(path.head)) }
 
   def ++(holder: NestedHolder[Reportable] with Reportable): RU = this ++ holder.pathsIncludingSelf
   def ++(paths: Traversable[List[Reportable]])(implicit conv: TemplateLike[Reportable]): RU = paths.foldLeft(asRu) { _ + _ }
+  def ++(engines: List[Engine]): ReportableToUrl[RU] = engines.foldLeft(this)((urlMap, e) => urlMap ++
+    e.asRequirement.pathsIncludingTree(List()) ++
+    e.asRequirement.documents.map(List(_)))
   def +(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): RU = {
     def url(ru: RU, rToName: KeyedMap[String], path: List[Reportable]) =
       (ru.rootUrl :: path.reverse.map((r) => rToName(r))).mkString("/") + "." + conv(path.head) + ".html"
@@ -79,7 +84,7 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
   protected def newName(seen: Set[String], r: Reportable)(implicit conv: TemplateLike[Reportable]) = {
     val calculatedName = Strings.urlClean(r match {
       case report: Report => { val result = report.titleOrDescription(""); if (result.length > 120) "" else result }
-//      case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
+      //      case project: Project => { val result = project.titleOrDescription(""); if (result.length > 120) "" else result }
       case engine: EngineTools[_, _, _, _] => { val result = engine.asRequirement.titleOrDescription(""); if (result.length > 120) "" else result }
       case req: Requirement => { val result = req.titleOrDescription(""); if (result.length > 40) "" else result }
       case _ => "";

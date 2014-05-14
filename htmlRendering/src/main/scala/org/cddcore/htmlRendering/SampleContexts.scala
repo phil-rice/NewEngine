@@ -28,10 +28,10 @@ object SampleContexts {
   }
 
   val doc1 = Document(title = Some("doc1title"), url = Some("doc1Url"))
-  val doc1Report = Report(Some("doc1Report"), testDate, None, List(doc1))
+  val doc1Report = Report(Some("doc1Report"), None, List(doc1))
 
   val docNoTitle = Document(url = Some("doc1Url"))
-  val doc1NoTitlereport = Report(Some("doc1Report"), testDate, None, List(docNoTitle))
+  val doc1NoTitlereport = Report(Some("doc1Report"),  None, List(docNoTitle))
 
   val eBlank = Engine[Int, Int]().build
   val eBlankED = eBlank.asRequirement
@@ -92,6 +92,6 @@ object SampleContexts {
   val reqNoTitle = RequirementForTest(textOrder = 666)
   val reqWithTitle = RequirementForTest(title = Some("ReqTitle"))
 
-  val reqWithTitleReport = Report.apply(Some("ReportTitle"), testDate, None, List(reqWithTitle))
+  val reqWithTitleReport = Report.apply(Some("ReportTitle"),  None, List(reqWithTitle))
 
 }

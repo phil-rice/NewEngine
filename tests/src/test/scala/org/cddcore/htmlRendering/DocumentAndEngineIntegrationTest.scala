@@ -86,7 +86,6 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
     val report = Report.documentAndEngineReport(Some("title"), new Date(), List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding))
     val eBlankTree = eBlankTitleDoc1ED.tree.get
     val x = eBlankTitleDoc1ED.pathsIncludingTree(List())
-    println("XXXX\n" + x.mkString("\n"))
     val expected = List(
       List(report),
       List(doc1, report),

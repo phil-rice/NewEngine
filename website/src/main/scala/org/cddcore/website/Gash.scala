@@ -1,4 +1,4 @@
-package org.corecdd.website
+package org.cddcore.website
 
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.Handler

@@ -49,13 +49,13 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
     wrap(currentNodeL.andThen(expectedL).set(this, Some(Right(r))))
   def expectedAndCode(r: R, title: String = null): B = expected(r, title).codeHolder(expectedToCode(Right(r)))
   def expectException(e: Exception, title: String = null): B = wrap(currentNodeL.andThen(expectedL).set(this, Some(Left(e))))
-  def reference(ref: String): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, None)))
-  def reference(ref: String, document: Document): B = wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Some(document))))
+  def reference(ref: String, document: Document = null): B = 
+    wrap(currentNodeL.andThen(asRequirementL).andThen(referencesL).mod(this, (r) => r + Reference(ref, Option(document))))
 
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]): B
   def codeHolder(codeHolder: CodeHolder[RFn]): B = wrap(currentNodeL.andThen(codeL((o, n, c) => {})).set(this, Some(codeHolder)))
-  def childEngine(title: String): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
-    mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params, BFn, R, RFn](title = Some(title)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
+  def childEngine(title: String, description: String = null): B = wrap(toFoldingEngineDescription.andThen(foldEngineNodesL).
+    mod(this.asInstanceOf[B], ((n) => new EngineDescription[Params, BFn, R, RFn](title = Some(title), description = Option(description)) :: n)).asInstanceOf[Builder[Params, BFn, R, RFn, FullR, B, E]])
 }
 
 trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {

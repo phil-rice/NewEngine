@@ -2,9 +2,9 @@ package org.cddcore.example
 
 import java.text.SimpleDateFormat
 import java.util.Date
-
 import org.cddcore.engine.Engine
 import org.junit.runner.RunWith
+import org.cddcore.tests.CddJunitRunner
 
 case class Person(name: String, income: Float, dateOfBirth: Date)
 

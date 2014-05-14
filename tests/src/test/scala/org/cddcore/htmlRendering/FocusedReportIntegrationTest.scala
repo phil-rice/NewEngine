@@ -20,7 +20,7 @@ class FocusedReportIntegrationTest extends AbstractTest {
 
   import SampleContexts._
   "A focusedReport for a use case" should "have report paths include the children,and decision trees added after engine children" in {
-    val report = Report.focusedReport(Some("title"), new Date(), List(uc0, eWithUsecasesAndScenariosEd))
+    val report = Report.focusedReport(Some("title"),  List(uc0, eWithUsecasesAndScenariosEd))
     val expected = List(
       List(report),
       List(eWithUsecasesAndScenariosEd, report),
@@ -38,7 +38,7 @@ class FocusedReportIntegrationTest extends AbstractTest {
   }
 
   "A focusedReport for a  engine with tests" should "walk through all the children then the decision tree" in {
-    val report = Report.focusedReport(Some("title"), new Date(), List(eWithUsecasesAndScenariosEd))
+    val report = Report.focusedReport(Some("title"),List(eWithUsecasesAndScenariosEd))
     val expected = List(
       List(report),
       List(eWithUsecasesAndScenariosEd, report),
@@ -60,7 +60,7 @@ class FocusedReportIntegrationTest extends AbstractTest {
 
   "A focusedReport for a FoldingEngine" should "have all the decision tress" in {
     val fed = foldingED
-    val report = Report.focusedReport(Some("title"), new Date(), List(fed))
+    val report = Report.focusedReport(Some("title"),  List(fed))
     val expected = List(
       List(report),
       List(fed, report),

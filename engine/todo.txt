@@ -1,1 +1,2 @@
 JUnit: If there is an exception thrown in a matchOn clause, it causes an initialisation error
+

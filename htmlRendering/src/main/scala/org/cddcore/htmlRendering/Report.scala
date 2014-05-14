@@ -8,18 +8,18 @@ import EngineTools._
 import java.io.File
 
 object Report {
-  def apply(title: Option[String] = None, date: Date = new Date, description: Option[String] = None, nodes: List[Reportable] = List()) =
-    new SimpleReport(title, date, description, nodes)
+  def apply(title: Option[String] = None, description: Option[String] = None, nodes: List[Reportable] = List()) =
+    new SimpleReport(title, description, nodes)
   def documentAndEngineReport(title: Option[String], date: Date, engines: Traversable[Engine], description: Option[String] = None) =
-    new DocumentAndEngineReport(title, date, engines, description)
+    new DocumentAndEngineReport(title, engines, description)
   def engineReport(title: Option[String], date: Date, engine: Engine, description: Option[String] = None) =
-    new FocusedReport(title, date, List(engine.asRequirement), description)
-  def focusedReport(title: Option[String], date: Date, pathWithoutReport: List[Reportable], description: Option[String] = None) =
-    new FocusedReport(title, date, pathWithoutReport, description)
+    new FocusedReport(title, List(engine.asRequirement), description)
+  def focusedReport(title: Option[String], pathWithoutReport: List[Reportable], description: Option[String] = None) =
+    new FocusedReport(title, pathWithoutReport, description)
 
   def htmlAndRenderedContext(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String]): (String, RenderContext) = {
     val urlMap = UrlMap() ++ report.urlMapPaths
-    val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "index.html")
+    val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "")
     val renderContext = RenderContext(urlMap, new Date(), iconUrl)
     (html(report, engine, renderContext), renderContext)
   }
@@ -29,22 +29,23 @@ object Report {
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
     Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
 
-  def htmlAndRenderedContext(report: Report): (String, RenderContext) =
+  def rendererFor(report: Report) =
     report match {
-      case r: DocumentAndEngineReport => htmlAndRenderedContext(report, HtmlRenderer.engineAndDocumentsSingleItemRenderer)
+      case r: DocumentAndEngineReport => HtmlRenderer.engineAndDocumentsSingleItemRenderer
       case r: FocusedReport => r.focusPath.head match {
-        case e: EngineRequirement[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.engineReportSingleItemRenderer)
-        case uc: UseCase[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.useCaseOrScenarioReportRenderer)
-        case s: Scenario[_, _, _, _] => htmlAndRenderedContext(report, HtmlRenderer.useCaseOrScenarioReportRenderer)
+        case e: EngineRequirement[_, _, _, _] => HtmlRenderer.engineReportSingleItemRenderer
+        case uc: UseCase[_, _, _, _] => HtmlRenderer.useCaseOrScenarioReportRenderer
+        case s: Scenario[_, _, _, _] => HtmlRenderer.useCaseOrScenarioReportRenderer
       }
     }
+
+  def htmlAndRenderedContext(report: Report): (String, RenderContext) = htmlAndRenderedContext(report, rendererFor(report))
 
 }
 
 trait Report extends TitledReportable {
   def title: Option[String]
-  def date: Date
-  def description: Option[String]
+		  def description: Option[String]
   def reportPaths: List[List[Reportable]]
   def urlMapPaths: List[List[Reportable]] = reportPaths
 }
@@ -78,7 +79,7 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
   val rootReport = Report.documentAndEngineReport(Some(title), date, engines)
   val engineReports = engines.foldLeft(List[Report]())((list, e) => Report.engineReport(Some("title"), date, e) :: list).reverse
   val urlMap = UrlMap(rootUrl) ++ rootReport.urlMapPaths
-  val iconUrl = Strings.url(rootUrl, title, "index.html")
+  val iconUrl = Strings.url(rootUrl, title, "")
   val renderContext = RenderContext(urlMap, date, iconUrl)
   def makeReports = {
     val t = rootReport.reportPaths
@@ -87,7 +88,7 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
       val r = path.head
       println(r)
       val url = urlMap(r)
-      val report = Report.focusedReport(Some("title"), date, path)
+      val report = Report.focusedReport(Some("title"), path)
       val renderer = HtmlRenderer.rendererFor(r)
       val actualPathToConclusion = pathToConclusion(path)
       val newRenderContext = renderContext.copy(pathToConclusion = actualPathToConclusion)
@@ -114,7 +115,6 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
 
 case class SimpleReport(
   val title: Option[String],
-  val date: Date,
   val description: Option[String],
   val nodes: List[Reportable],
   val textOrder: Int = Reportable.nextTextOrder) extends Report with NestedHolder[Reportable] {
@@ -124,7 +124,6 @@ case class SimpleReport(
 }
 
 case class DocumentAndEngineReport(title: Option[String],
-  val date: Date,
   val engines: Traversable[Engine],
   val description: Option[String] = None,
   val textOrder: Int = Reportable.nextTextOrder) extends Report with NestedHolder[Reportable] {
@@ -155,7 +154,6 @@ case class DocumentAndEngineReport(title: Option[String],
 }
 
 case class FocusedReport(title: Option[String],
-  val date: Date,
   val focusPath: List[Reportable],
   val description: Option[String] = None,
   val textOrder: Int = Reportable.nextTextOrder) extends Report {

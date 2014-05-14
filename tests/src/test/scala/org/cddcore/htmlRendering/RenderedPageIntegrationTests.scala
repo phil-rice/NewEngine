@@ -36,7 +36,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
       val htmlAndContext = Report.htmlAndRenderedContext(r)
       val checker = new SimpleHtmlRenderedChecker(htmlAndContext)
       val engineWithTestsDiv = checker.onlyDivWith("engineWithTests")
-      checker.checkEngineSummaryChecker(List(ed, engineReport), engineWithTestsDiv)
+      checker.checkEngineSummary(List(ed, engineReport), engineWithTestsDiv)
     }
     checkReportWithOneEngine(engineReport, eWithUsecasesAndScenariosEd)
     checkReportWithOneEngine(eBlankTitleReport, eBlankTitleED)
@@ -47,12 +47,12 @@ class RenderedPageIntegrationTests extends AbstractTest {
       import EngineTools._
       val ed = e.asRequirement
       val focusPath = focusPathReversed.reverse.toList :+ ed
-      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val report = Report.focusedReport(Some("sort of title"), focusPath)
       val rc = RenderContext(UrlMap() ++ ed.pathsIncludingTree(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
       val engineWithTestsDiv = checker.onlyDivWith("engineWithTests")
-      checker.checkEngineSummaryChecker(List(ed, engineReport), engineWithTestsDiv)
+      checker.checkEngineSummary(List(ed, engineReport), engineWithTestsDiv)
     }
     checkReport(eWithUsecasesAndScenarios)
     checkReport(eWithUsecasesAndScenarios, uc0)
@@ -66,14 +66,14 @@ class RenderedPageIntegrationTests extends AbstractTest {
       import EngineTools._
       val fed = e.asRequirement
       val focusPath = focusPathReversed.reverse.toList :+ fed
-      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val report = Report.focusedReport(Some("sort of title"), focusPath)
       val rc = RenderContext(UrlMap() ++ fed.pathsIncludingTree(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
       val childEngineDivs = checker.divsWith("childEngine")
       assertEquals(expectedChildEngines.size, childEngineDivs.size)
       for ((ce, div) <- expectedChildEngines.zip(childEngineDivs))
-        checker.checkEngineSummaryChecker(List(ce.asRequirement, fed, engineReport), div)
+        checker.checkEngineSummary(List(ce.asRequirement, fed, engineReport), div)
     }
     checkReport(folding, folding.engines)
     checkReport(folding, List(folding.engines(0)), ce0ED)
@@ -85,7 +85,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
     def checkReport(e: Engine, expectedUsecases: List[UseCase[_, _, _, _]], focusPathReversed: Reportable*) {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
-      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val report = Report.focusedReport(Some("sort of title"), focusPath)
       val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
@@ -100,7 +100,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
     def checkReport(e: Engine, expectedUsecases: List[UseCase[_, _, _, _]], focusPathReversed: Reportable*) {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
-      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val report = Report.focusedReport(Some("sort of title"),  focusPath)
       val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.useCaseOrScenarioReportRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
@@ -117,7 +117,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
     def checkReport(e: Engine, expectedScenarios: List[Scenario[_, _, _, _]], focusPathReversed: Reportable*) {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
-      val report = Report.focusedReport(Some("sort of title"), new Date, focusPath)
+      val report = Report.focusedReport(Some("sort of title"), focusPath)
       val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
       //      val classPaths = report.reportPaths.map(_.map(_.getClass().getSimpleName()))
       //      val paths = Lists.pathToStartChildEnd(classPaths)

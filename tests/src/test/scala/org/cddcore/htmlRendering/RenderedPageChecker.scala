@@ -76,8 +76,8 @@ trait HtmlChecker extends AssertEquals {
 trait HtmlRenderedChecker extends HtmlChecker {
   val renderContext: RenderContext
 
-  val urlMap: UrlMap = renderContext.urlMap
-  val ldp = renderContext.loggerDisplayProcessor
+  def urlMap: UrlMap = renderContext.urlMap
+  def ldp = renderContext.loggerDisplayProcessor
   val reportDiv = onlyDivWith("report");
 
   def checkTopLine(expectedTitle: String) {
@@ -93,9 +93,9 @@ trait HtmlRenderedChecker extends HtmlChecker {
     assertTextEquals(expectedTitle.trim, reportTextDiv)
   }
 
-  def checkEngineSummaryChecker(path: List[Reportable], engineNode: Node) {
-    val engineSummary = onlyDivWith("engineSummary", engineNode.child)
-    val engineText = onlyDivWith("engineText", engineSummary.child)
+  def checkEngineSummary(path: List[Reportable], engineNode: Node) {
+    val engineSummaryDiv = onlyDivWith("engineSummary", engineNode.child)
+    val engineText = onlyDivWith("engineText", engineSummaryDiv.child)
     //    val engineTable = onlyDivWith("engineTable", engineSummary.child)
     val decisionTree = onlyDivWith("decisionTree", engineNode.child)
 
@@ -107,33 +107,48 @@ trait HtmlRenderedChecker extends HtmlChecker {
     assertEquals(urlMap(ed), engineLinkUrl)
   }
 
-  def checkUsecaseWithScenariosSummarized(path: List[Reportable], useCaseNode: Node) {
-    val useCase = path.head.asInstanceOf[UseCase[_, _, _, _]]
-    val h4 = only(useCaseNode \ "h4")
-    val links = h4 \ "a"
-    assertEquals(1 + useCase.nodes.size, links.size) //the +1 is the use case itself
+  def checkEngineSummaryWithUsecases[Params, BFn, R, RFn](path: List[Reportable], engineNode: Node) {
+    import ReportableHelper._
+    val engine = path.head.asInstanceOf[EngineRequirement[Params, BFn, R, RFn]]
+    checkEngineSummary(path, engineNode)
+    val engineSummaryDiv = onlyDivWith("engineSummary", engineNode.child)
+    val usecaseDivs = divsWith("usecaseSummary")
+    val expectedUsecases = engine.useCases
+    for ((uc, div) <- expectedUsecases.zipAll(usecaseDivs, null, null))
+      checkUsecaseWithScenariosDetails(List(uc), div)
+  }
+  private def findUseCaseLinks(useCaseNode: Node) = only(useCaseNode \ "h4") \ "a"
+
+  def checkUsecase(useCase: UseCase[_, _, _, _], useCaseNode: Node, expectedLinks: Option[Int] = None) {
+    val links = findUseCaseLinks(useCaseNode)
     val useCaselink = links.head
+    expectedLinks match {
+      case Some(el) => assertEquals(el, links.size)
+      case _ =>
+    }
     assertTextEquals(useCase.titleString, useCaselink)
     assertEquals(urlMap(useCase), useCaselink.attribute("href").get text)
+  }
 
+  def checkUsecaseWithScenariosSummarized(path: List[Reportable], useCaseNode: Node) {
+    val useCase = path.head.asInstanceOf[UseCase[_, _, _, _]]
+    checkUsecase(useCase, useCaseNode, Some(1 + useCase.nodes.size))
+
+    val links = findUseCaseLinks(useCaseNode)
     val scenarioLinks = links.tail
     val summaries = useCase.scenarios.zipAll(scenarioLinks, null, null).map(_ match {
       case (s: Scenario[_, _, _, _], scenarioLink) => {
-        assertTextEquals(s.titleString, scenarioLink)
+        assertTextEquals("", scenarioLink)
         assertEquals(urlMap(s), scenarioLink.attribute("href").get text)
       }
     })
   }
+
   def checkUsecaseWithScenariosDetails(path: List[Reportable], useCaseNode: Node) {
     val useCase = path.head.asInstanceOf[UseCase[_, _, _, _]]
-    val h4 = only(useCaseNode \ "h4")
-    val links = h4 \ "a"
-    assertEquals(1 , links.size) 
-    val useCaselink = links.head
-    assertTextEquals(useCase.titleString, useCaselink)
-    assertEquals(urlMap(useCase), useCaselink.attribute("href").get text)
+    checkUsecase(useCase, useCaseNode, Some(1))
 
-    val scenarioDivs = divsWith( "scenario", useCaseNode.child)
+    val scenarioDivs = divsWith("scenario", useCaseNode.child)
     val summaries = useCase.scenarios.zipAll(scenarioDivs, null, null).map(_ match {
       case (s: Scenario[_, _, _, _], scenarioDiv) => checkScenarioDetails(s :: path, scenarioDiv)
     })

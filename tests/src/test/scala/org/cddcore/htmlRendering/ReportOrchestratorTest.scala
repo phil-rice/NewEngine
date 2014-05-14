@@ -8,8 +8,6 @@ import java.util.Date
 import org.scalatest.BeforeAndAfterAll
 import org.cddcore.utilities.Strings
 import Strings.url
-import org.cddcore.htmlRendering.MemoryReportWriter
-import org.cddcore.htmlRendering.ReportOrchestrator
 
 @RunWith(classOf[JUnitRunner])
 class ReportOrchestrationTest extends AbstractTest {
@@ -24,7 +22,7 @@ class ReportOrchestrationTest extends AbstractTest {
     val map = writer.map
     val urls = map.keys.toList.sortBy((x) => x)
     val expected = List(
-      "file:///c:/users/xx/.cdd2/reportTitle/index.html",
+      "file:///c:/users/xx/.cdd2/reportTitle/",
       "file:///c:/users/xx/.cdd2/reportTitle/EBlankTitle.EngineDescription.html",
       "file:///c:/users/xx/.cdd2/reportTitle/eWithUsecasesAndScenarios.EngineDescription.html",
       "file:///c:/users/xx/.cdd2/reportTitle/eWithUsecasesAndScenarios/useCase0.UseCase.html",

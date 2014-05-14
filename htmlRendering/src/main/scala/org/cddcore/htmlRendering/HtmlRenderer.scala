@@ -299,7 +299,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
           s"<div class='conclusion'>${Strings.htmlEscape(c.code.description)}</div><!-- conclusion --></div><!-- result -->\n"
       }.
       useCase("A conclusion that is on the pathToConclusion needs to be marked get's it's own div").
-      scenario(engineReport, conclusionYes, Child,List(conclusionYes, decision)).
+      scenario(engineReport, conclusionYes, Child, List(conclusionYes, decision)).
       expected(s"\n<div class='resultWithTest '><div class='indent'>&#160;</div><span class='keyword'>then&#160;</span>" +
         s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s1.textOrder}.Scenario.html'>${icon(uc1s1)}</a>" +
         s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s2.textOrder}.Scenario.html'>${icon(uc1s2)}</a>" +
@@ -343,7 +343,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     }.
     build
 
-  println("Icon:\n" + icon)
+  //  println("Icon:\n" + icon)
 
   val linkAndIcon = Engine[RenderContext, Reportable, String]().title("linkAndIcon").description("Displays a suitable icon in a link for the reportable").
     code { case (rc, r) => s"<a href='${rc.urlMap(r)}'>${icon(r)}</a>" }.
@@ -362,10 +362,10 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     expected { val d = s"Document_${docNoTitle.textOrder}"; s"<a id='$d' href='RootUrl/doc1Report/Document${docNoTitle.textOrder}.Document.html'>$d${icon(docNoTitle)}</a>" }.
     matchOn { case (rc, r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }.
 
-    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
-    scenario(eBlankTitleReport, eBlankTitleED).
-    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
-    matchOn { case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }.
+    //    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
+    //    scenario(eBlankTitleReport, eBlankTitleED).
+    //    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
+    //    matchOn { case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }.
 
     build
 
@@ -413,13 +413,12 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       scenario(uc0s0).expected(useCaseOrScenarioReportRenderer).
       build
 
-  //  def main(args: Array[String]) {
-  //    println(ReportDetails())
-  //    println("------------------DocumentAndEngine----------------------")
-  //    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
-  //    println("------------------SingleEngine----------------------")
-  //    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
-  //    Files.printToFile(new File("c:/users/phil/desktop/test.html"))(_.println(Report.html(foldingEngineReport, engineReportSingleItemRenderer)))
-  //  }
+  def main(args: Array[String]) {
+    println(ReportDetails())
+    println("------------------DocumentAndEngine----------------------")
+    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
+    println("------------------SingleEngine----------------------")
+    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
+  }
 
 }
