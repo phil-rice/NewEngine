@@ -31,7 +31,7 @@ object SampleContexts {
   val doc1Report = Report(Some("doc1Report"), None, List(doc1))
 
   val docNoTitle = Document(url = Some("doc1Url"))
-  val doc1NoTitlereport = Report(Some("doc1Report"),  None, List(docNoTitle))
+  val doc1NoTitlereport = Report(Some("doc1Report"), None, List(docNoTitle))
 
   val eBlank = Engine[Int, Int]().build
   val eBlankED = eBlank.asRequirement
@@ -89,9 +89,22 @@ object SampleContexts {
   val concYesCe1 = decisionCe1.yes
   val concNoCe1 = decisionCe1.no
 
+  type TI = TraceItem[Any, Any, Any, Any]
+  implicit def toTraceItem(x: (Any, Any, Any, List[TI])) =
+    x match { case (engine, params, result, nodes) => new TraceItem[Any, Any, Any, Any](engine, params, Right(result), None, nodes, 0) }
+  val (result, trace) = Engine.trace(folding(1))
+  val foldingTraceReport = Report.traceReport(Some("some title"), trace)
+
+  val ce0TI: TI = (folding.engines(0), 1, 0, List())
+  val ce1TI: TI = (folding.engines(1), 1, 2, List())
+  val foldingTI: TI = (folding, 1, List(0, 2), List(ce0TI, ce1TI))
+  val actualFoldingTI = trace(0)
+  val actualCe0TI = actualFoldingTI.nodes(0)
+  val actualCe1TI = actualFoldingTI.nodes(1)
+
   val reqNoTitle = RequirementForTest(textOrder = 666)
   val reqWithTitle = RequirementForTest(title = Some("ReqTitle"))
 
-  val reqWithTitleReport = Report.apply(Some("ReportTitle"),  None, List(reqWithTitle))
+  val reqWithTitleReport = Report.apply(Some("ReportTitle"), None, List(reqWithTitle))
 
 }

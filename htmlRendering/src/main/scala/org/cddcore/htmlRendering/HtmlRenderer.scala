@@ -127,28 +127,16 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
     def renderFoldingEngines = builder.useCase("A folding engine").
       scenario(foldingEngineReport, foldingED, Start).
-      expected("\n" +
-        s"<div class='engineWithChildren'><div class='engineWithChildrenSummary'>" +
-        s"<div class='engineText'>${titleAndIcon(foldingEngineReport, foldingED)}</div> <!-- engineText -->\n").
-      matchOn {
-        case (rc, (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => "\n" +
-          s"<div class='engineWithChildren'><div class='engineWithChildrenSummary'>" +
-          s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n"
-      }.
+      expected(s"\n<div class='engineWithChildren'><div class='engineWithChildrenSummary'><div class='engineText'>${titleAndIcon(foldingEngineReport, foldingED)}</div> <!-- engineText -->\n").
+      matchOn { case (rc, (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => s"\n<div class='engineWithChildren'><div class='engineWithChildrenSummary'><div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n" }.
       scenario(foldingEngineReport, foldingED, End).
       expected("\n</div> <!--engineWithChildrenSummary --></div> <!-- engineWithChildren -->\n").
       because { case (_, (engine: FoldingEngineDescription[_, _, _, _, _]) :: _, End) => true; case _ => false }
 
     def renderChildEngines = builder.useCase("An engine from tests has a div, a ").
       scenario(foldingEngineReport, ce0ED, Start).
-      expected("\n" +
-        s"<div class='childEngine'><div class='engineSummary'>\n" +
-        s"<div class='engineText'>${titleAndIcon(foldingEngineReport, ce0ED)}</div> <!-- engineText -->\n").
-      matchOn {
-        case (rc, (engine: EngineDescription[_, _, _, _]) :: (_: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => "\n" +
-          s"<div class='childEngine'><div class='engineSummary'>\n" +
-          s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n"
-      }.
+      expected(s"<div class='childEngine'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(foldingEngineReport, ce0ED)}</div> <!-- engineText -->\n").
+      matchOn { case (rc, (engine: EngineDescription[_, _, _, _]) :: (_: FoldingEngineDescription[_, _, _, _, _]) :: _, Start) => s"<div class='childEngine'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n" }.
 
       scenario(foldingEngineReport, ce0ED, End).
       expected("\n</div> <!-- childEngine -->"). //the decision tree closes off the engineSummary div
@@ -156,14 +144,8 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
     def renderEngineFromTests = builder.useCase("An engine from tests has a div, a ").
       scenario(engineReport, eWithUsecasesAndScenariosEd, Start).
-      expected("\n" +
-        s"<div class='engineWithTests'><div class='engineSummary'>\n" +
-        s"<div class='engineText'>${titleAndIcon(engineReport, eWithUsecasesAndScenariosEd)}</div> <!-- engineText -->\n").
-      matchOn {
-        case (rc, (engine: EngineDescription[_, _, _, _]) :: _, Start) => "\n" +
-          s"<div class='engineWithTests'><div class='engineSummary'>\n" +
-          s"<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n"
-      }.
+      expected(s"<div class='engineWithTests'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(engineReport, eWithUsecasesAndScenariosEd)}</div> <!-- engineText -->\n").
+      matchOn { case (rc, (engine: EngineDescription[_, _, _, _]) :: _, Start) => s"<div class='engineWithTests'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(rc, engine)}</div> <!-- engineText -->\n" }.
 
       scenario(engineReport, eWithUsecasesAndScenariosEd, End).
       expected("\n</div> <!-- engineWithTests-->"). //the decision tree closes off the engineSummary div
@@ -311,6 +293,35 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
           s"<div class='conclusion'>${Strings.htmlEscape(c.code.description)}</div><!-- conclusion --></div><!-- result -->\n"
       }
 
+    def renderTraceItems = renderTraceItemsAboutFoldingEngines.renderTraceItemsAboutEngineFromTests
+
+    import EngineTools._
+    protected def renderTraceItemsAboutFoldingEngines = builder.useCase("A trace item about folding engines").
+      scenario(foldingTraceReport, actualFoldingTI, Start).
+      matchOn {
+        case (rc, (ti @ TraceItem(engine: FoldingEngine[_, _, _, _, _], _, _, _, _, _, _)) :: _, Start) =>
+          s"\n<div class='engineWithChildren'><div class='engineWithChildrenSummary'><div class='engineText'>${titleAndIcon(rc, EngineTools.toEngineTools(engine).asRequirement)}</div> <!-- engineText -->\n"
+      }.
+      expected(s"\n<div class='engineWithChildren'><div class='engineWithChildrenSummary'><div class='engineText'>${titleAndIcon(foldingTraceReport, foldingED)}</div> <!-- engineText -->\n").
+
+      scenario(foldingTraceReport, actualFoldingTI, End).
+      matchOnPrim({
+        case (rc, (ti @ TraceItem(engine: FoldingEngine[_, _, _, _, _], _, _, _, _, _, _)) :: _, End) => "\n</div> <!--engineWithChildrenSummary --></div> <!-- engineWithChildren -->\n"
+      }, "is trace item for folding engine", "close off engineWithChildrenSummary nad engineWithChildren divs").
+      expected("\n</div> <!--engineWithChildrenSummary --></div> <!-- engineWithChildren -->\n")
+
+    protected def renderTraceItemsAboutEngineFromTests = builder.useCase("A trace item about child engines has a div, a ").
+      scenario(foldingTraceReport, ce0TI, Start).
+      expected(s"<div class='childEngine'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(foldingTraceReport, ce0ED)}</div> <!-- engineText -->\n").
+      matchOn {
+        case (rc, (ti @ TraceItem(engine: EngineFromTests[_, _, _, _], _, _, _, _, _, _)) :: _, Start) =>
+          s"<div class='childEngine'><div class='engineSummary'>\n<div class='engineText'>${titleAndIcon(rc, engine.asRequirement)}</div> <!-- engineText -->\n"
+      }.
+
+      scenario(foldingTraceReport, ce0TI, End).
+      expected("\n</div> <!-- childEngine -->"). //the decision tree closes off the engineSummary div
+      matchOn { case (_, (ti @ TraceItem(engine: EngineFromTests[_, _, _, _], _, _, _, _, _, _)) :: _, End) => "\n</div> <!-- childEngine -->" }
+
   }
 
   type PathAndTag = (List[Reportable], StartChildEndType)
@@ -330,6 +341,10 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     useCase("Folding Engine Descriptions have icon and title equal to engine titleString").
     scenario(foldingED).expected("<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engineFold2_zpsb62930b9.png' alt='folding engine icon' title='Folding Engine Title' />").
     matchOn { case (e: FoldingEngineDescription[_, _, _, _, _]) => s"<img src='http://i782.photobucket.com/albums/yy108/phil-rice/engineFold2_zpsb62930b9.png' alt='folding engine icon' title='${Strings.htmlEscape(e.titleString)}' />" }.
+
+    useCase("TraceItems have no icon or title").
+    scenario(actualFoldingTI).expected("<!-- no icon -->").
+    matchOn { case (ti: TI) => "<!-- no icon -->" }.
 
     useCase("Usescase  have icon and title equal to titleString").
     scenario(uc0).expected("<img	src='http://i782.photobucket.com/albums/yy108/phil-rice/useCase_zps23a7250c.png' alt='usecase icon' title='useCase0'/>").
@@ -357,15 +372,15 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     expected(s"<a id='RequirementForTest_${reqWithTitle.textOrder}' href='RootUrl/ReportTitle/ReqTitle.RequirementForTest.html'>ReqTitle<!-- no icon --></a>").
     matchOnPrim({ case (rc, r: Requirement) if r.title.isDefined => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${Strings.htmlEscape(r.titleString)}${icon(r)}</a>" }, "is requirement and title is defined", "icon and title").
 
-    useCase("Items that are requirements without titles are given template name and text order").
+    useCase("Items that are reportables without titles are given template name and text order").
     scenario(context(doc1NoTitlereport), docNoTitle).
     expected { val d = s"Document_${docNoTitle.textOrder}"; s"<a id='$d' href='RootUrl/doc1Report/Document${docNoTitle.textOrder}.Document.html'>$d${icon(docNoTitle)}</a>" }.
-    matchOnPrim({ case (rc, r: Requirement) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }, "requirement", "just icon").
+    matchOnPrim({ case (rc, r: Reportable) => s"<a id='${UrlMap.urlId(r)}' href='${rc.urlMap(r)}'>${UrlMap.urlId(r)}${icon(r)}</a>" }, "reportable", "just icon").
 
-//    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
-//    scenario(eBlankTitleReport, eBlankTitleED).
-//    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
-//    matchOnPrim({ case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }, "is engine description", "some ed stuff").
+    //    useCase("Engines are displayed based on their requirements. Without a name uses template name and text order").
+    //    scenario(eBlankTitleReport, eBlankTitleED).
+    //    expected { s"<a id='EngineDescription_${eBlankTitleED.textOrder}' href='RootUrl/engineReportTitle/EBlankTitle.EngineDescription.html'>EBlankTitle${icon(eBlankTitleED)}</a>" }.
+    //    matchOnPrim({ case (rc, ed: EngineDescription[_, _, _, _]) => s"<a id='${UrlMap.urlId(ed)}' href='${rc.urlMap(ed)}'>${Strings.htmlEscape(ed.titleString)}${icon(ed)}</a>" }, "is engine description", "some ed stuff").
 
     build
 
@@ -381,6 +396,17 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
   val engineReportSingleItemRenderer = Engine[RenderContext, List[Reportable], StartChildEndType, String]().title("Single Engine report").
     renderReport.
+    renderFoldingEngines.
+    renderChildEngines.
+    renderEngineFromTests.
+    renderUseCasesWhenScenariosAreSummaries.
+    renderScenarioAsIcons.
+    renderDecisionTrees.
+    build
+
+  val traceReportSingleItemRenderer = Engine[RenderContext, List[Reportable], StartChildEndType, String]().title("Trace Item Report").
+    renderReport.
+    renderTraceItems.
     renderFoldingEngines.
     renderChildEngines.
     renderEngineFromTests.

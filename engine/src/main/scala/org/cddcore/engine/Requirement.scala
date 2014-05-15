@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.language.implicitConversions
 import org.cddcore.utilities._
 import org.cddcore.engine.builder.DecisionTree
+import org.cddcore.engine.builder.Conclusion
 trait Reportable {
   val textOrder: Int
 }
@@ -43,15 +44,15 @@ object PathUtils {
     case _ :: tail => findEnginePath(tail)
     case _ => throw new IllegalArgumentException
   }
-   /** Walks up the path until it finds the first use case */
-  def findUseCase(path: List[Reportable]) = findUseCasePath(path).head.asInstanceOf[UseCase[_,_,_,_]]
+  /** Walks up the path until it finds the first use case */
+  def findUseCase(path: List[Reportable]) = findUseCasePath(path).head.asInstanceOf[UseCase[_, _, _, _]]
   /** Walks up the path until it finds the first use case, return a truncated path with the usecase as the head */
   def findUseCasePath(path: List[Reportable]): List[Reportable] = path match {
-    case (usecase: UseCase[_,_,_,_]) :: tail => path
+    case (usecase: UseCase[_, _, _, _]) :: tail => path
     case h :: tail => findUseCasePath(tail)
     case _ => throw new IllegalArgumentException
   }
-  
+
 }
 
 object Requirement {

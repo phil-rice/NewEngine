@@ -10,18 +10,18 @@ class TraceTest extends AbstractTest {
   type TB = TraceBuilder[String, String, String, String]
   type TI = TraceItem[String, String, String, String]
 
-  "A StartChildEndTraversable's foreach" should "return itself and child, if no children" in {
-    case class SCE(name: String, children: SCE*) extends StartChildEndTraversable[SCE] {
-      override def toString = s"SCE($name)"
-    }
-    val sce = SCE("empty")
-    val sce0 = SCE("zero")
-    val sce1 = SCE("one")
-    val sceHolds01 = SCE("sceHolds01", sce0, sce1)
-
-    assertEquals(List((sce, Child)), sce.toList)
-    assertEquals(List((sceHolds01, Start), (sce0, Child), (sce1, Child), (sceHolds01, End)), sceHolds01.toList)
-  }
+//  "A StartChildEndTraversable's foreach" should "return itself and child, if no children" in {
+//    case class SCE(name: String, children: SCE*) extends StartChildEndTraversable[SCE] {
+//      override def toString = s"SCE($name)"
+//    }
+//    val sce = SCE("empty")
+//    val sce0 = SCE("zero")
+//    val sce1 = SCE("one")
+//    val sceHolds01 = SCE("sceHolds01", sce0, sce1)
+//
+//    assertEquals(List((sce, Child)), sce.toList)
+//    assertEquals(List((sceHolds01, Start), (sce0, Child), (sce1, Child), (sceHolds01, End)), sceHolds01.toList)
+//  }
   "A TraceBuilder" should "start with an empty trace" in {
     val tb: TB = TraceBuilder()
     assertEquals(List(), tb.children)

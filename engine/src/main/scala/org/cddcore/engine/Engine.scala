@@ -44,7 +44,15 @@ trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] 
   def engines: List[EngineFromTests[Params, BFn, R, RFn]]
   def initialValue: CodeHolder[() => FullR]
   def foldingFn: (FullR, R) => FullR
-  def applyParams(params: Params): FullR = engines.foldLeft(initialValue.fn())((acc, e) => foldingFn(acc, e.applyParams(params)))
+  def applyParams(params: Params): FullR = {
+    val monitor = Engine.currentMonitor
+    monitor.call(this, params)
+    try {
+      val result = engines.foldLeft(initialValue.fn())((acc, e) => foldingFn(acc, e.applyParams(params)))
+      monitor.finished[FullR](this, None, result)
+      result
+    } catch { case e: Exception => monitor.failed(this, None, e); throw e }
+  }
 }
 
 trait EngineFromTests[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, RFn] {

@@ -24,4 +24,18 @@ class HtmlRenderingIntegrationTest extends AbstractTest with ExampleWebSiteEngin
     for (e <- engines)
       engine(rc, e.asRequirement)
   }
+
+  "The html rendered" should "load" in {
+    import HtmlRenderer._
+    import SampleContexts._
+    val report = foldingTraceReport
+    val rc: RenderContext = report
+    val urlMap = rc.urlMap
+    val item = actualFoldingTI
+    val x = urlMap.get(item)
+
+//    HtmlRenderer.titleAndIcon(rc, actualFoldingTI)
+    val html = Report.html(Some(""), trace)
+    println(html)
+  }
 }

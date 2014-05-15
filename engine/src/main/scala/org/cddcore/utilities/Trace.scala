@@ -8,28 +8,19 @@ object StartChildEndType extends Enumeration {
 }
 import StartChildEndType._
 
-/** Warning using this for a case class will require overriding toString */
-trait StartChildEndTraversable[T <: StartChildEndTraversable[T]] extends Traversable[(StartChildEndTraversable[T], StartChildEndType)] {
-  def children: Traversable[T]
-  def foreach[U](f: ((StartChildEndTraversable[T], StartChildEndType)) => U): Unit =
-    children match {
-      case Nil => f((this, Child))
-      case _ => f((this, Start)); for (c <- children) c.foreach(f); f((this, End))
-    }
-}
 
 case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params, result: Either[Exception, Result],
-  evidence: Option[Evidence], children: List[TraceItem[Main, Params, Result, Evidence]], took: Long,
+  evidence: Option[Evidence], nodes: List[TraceItem[Main, Params, Result, Evidence]], took: Long,
   textOrder: Int = Reportable.nextTextOrder)
-  extends StartChildEndTraversable[TraceItem[Main, Params, Result, Evidence]] with Reportable {
+  extends NestedHolder[TraceItem[Main, Params, Result, Evidence]] with Reportable {
 
   override def hashCode = main.hashCode() / 2 + params.hashCode / 2
   override def equals(other: Any) =
     other match {
-      case t: TraceItem[Main, Params, Result, Evidence] => t.main == main && t.params == params && t.children == children && t.result == result;
+      case t: TraceItem[Main, Params, Result, Evidence] => t.main == main && t.params == params && t.nodes == nodes && t.result == result;
       case _ => false
     }
-  override def toString = s"TraceItem($main,$params,$result,children=(${children.mkString(",")}))"
+  override def toString = s"TraceItem($main,$params,$result,children=(${nodes.mkString(",")}))"
 }
 
 object TraceBuilder {
