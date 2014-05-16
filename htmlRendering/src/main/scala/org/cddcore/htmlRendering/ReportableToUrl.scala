@@ -42,7 +42,7 @@ trait ReportableToUrl[RU <: ReportableToUrl[RU]] extends UrlMap {
   def ++(holder: NestedHolder[Reportable] with Reportable): RU = this ++ holder.pathsIncludingSelf
   def ++(paths: Traversable[List[Reportable]])(implicit conv: TemplateLike[Reportable]): RU = paths.foldLeft(asRu) { _ + _ }
   def ++(engines: List[Engine]): ReportableToUrl[RU] = engines.foldLeft(this)((urlMap, e) => urlMap ++
-    e.asRequirement.pathsIncludingTree(List()) ++
+    e.asRequirement.pathsIncludingTreeAndEngine(List()) ++
     e.asRequirement.documents.map(List(_)))
   def +(path: List[Reportable])(implicit conv: TemplateLike[Reportable]): RU = {
     def url(ru: RU, rToName: KeyedMap[String], path: List[Reportable]) =

@@ -85,7 +85,7 @@ class DocumentAndEngineIntegrationTest extends AbstractTest with SomeHoldersForT
   "A documentAndEngineReport for an engine and a folding engine's' ulrMap" should "include the engine descriptions,  usecases/scenarios and trees" in {
     val report = Report.documentAndEngineReport(Some("title"), new Date(), List(eBlankTitleDoc1, eWithUsecasesAndScenarios, folding))
     val eBlankTree = eBlankTitleDoc1ED.tree.get
-    val x = eBlankTitleDoc1ED.pathsIncludingTree(List())
+    val x = eBlankTitleDoc1ED.pathsIncludingTreeAndEngine(List())
     val expected = List(
       List(report),
       List(doc1, report),

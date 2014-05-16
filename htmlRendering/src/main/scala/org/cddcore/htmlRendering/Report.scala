@@ -121,7 +121,7 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
         case f: FoldingEngine[Params, BFn, R, RFn, _] => f.engines.collect { case e: EngineFromTests[Params, BFn, R, RFn] if (e.asRequirement.eq(ed)) => e }.headOption
         case _ => None
       }.head
-    def pathFrom(e: EngineFromTests[Params, BFn, R, RFn], params: Params) = e.evaluator.findPathToConclusion(e.tree, params)
+    def pathFrom(e: EngineFromTests[Params, BFn, R, RFn], params: Params) = e.evaluator.findPathToConclusionWithParams(e.tree, params)
 
     path.head match {
       case s: Scenario[Params, BFn, R, RFn] => path.collect { case ed: EngineDescription[Params, BFn, R, RFn] => pathFrom(engineFromTestsFor(ed), s.params) }.head
@@ -163,10 +163,10 @@ case class DocumentAndEngineReport(title: Option[String],
       result
     }
   }).toList
-  private val fullEnginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement.pathsIncludingTree(thisAsPath)).toList
+  private val fullEnginePaths: List[List[Reportable]] = engines.flatMap(_.asRequirement.pathsIncludingTreeAndEngine(thisAsPath)).toList
   override val urlMapPaths = List(thisAsPath) ++ documentHolder.pathsFrom(thisAsPath) ++ fullEnginePaths
   val reportPaths = List(thisAsPath) ++ documentHolder.pathsIncludingSelf(thisAsPath) ++ List(thisAndEngineHolderAsPath) ++ shortenginePaths
-  //    reportPaths ++ engines.map(_.asRequirement).flatMap((ed) => ed.pathsIncludingTree(engineHolder :: ed :: this :: Nil))
+  //    reportPaths ++ engines.map(_.asRequirement).flatMap((ed) => ed.pathsIncludingTreeAndEngine(engineHolder :: ed :: this :: Nil))
 
 }
 
@@ -185,7 +185,7 @@ case class FocusedReport(title: Option[String],
   }
   def childrenPaths(path: List[Reportable]): List[List[Reportable]] = path match {
     case (f: FoldingEngineDescription[_, _, _, _, _]) :: tail => f.nodes.flatMap {
-      case ed: EngineDescription[_, _, _, _] => ed.pathsIncludingTree(path)
+      case ed: EngineDescription[_, _, _, _] => ed.pathsIncludingTreeAndEngine(path)
     }
     case (h: NestedHolder[Reportable]) :: tail => h.pathsFrom(path).toList
     case _ => List()
@@ -202,14 +202,14 @@ case class TraceReport(title: Option[String],
   import ReportableHelper._
   import ReportableHelper._
 
-  val reportPaths = {
+  val reportPaths = { 
     val thisPath = List(this)
     val traceItemPaths = traceItems.flatMap((traceItem) => traceItem.pathsIncludingSelf(thisPath))
     val result = traceItemPaths.flatMap {
       case path @ (ti: TraceItem[_, _, _, _]) :: tail =>
         path :: ((ti.main: @unchecked) match {
           case f: FoldingEngine[_, _, _, _, _] => List()
-          case e: EngineFromTests[_, _, _, _] => e.asRequirement.pathsIncludingTree(path)
+          case e: EngineFromTests[_, _, _, _] => e.asRequirement.requirementsIncludingTree(path)
         })
     }
     thisPath :: result
@@ -219,7 +219,7 @@ case class TraceReport(title: Option[String],
     case e: EngineFromTests[_, _, _, _] => e.asRequirement
   }.toSet.toList
 
-  override val urlMapPaths = eds.flatMap(_.pathsIncludingTree(List())) ::: traceItems.flatMap((traceItem) => traceItem.pathsIncludingSelf)
+  override val urlMapPaths = eds.flatMap(_.pathsIncludingTreeAndEngine(List())) ::: traceItems.flatMap((traceItem) => traceItem.pathsIncludingSelf)
 }
 
 /** A reportable with a wrapper is used in the reports when making a projection of an original report. This allows the correct urls to be determined */

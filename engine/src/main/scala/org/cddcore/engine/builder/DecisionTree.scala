@@ -70,24 +70,40 @@ case class SimpleDecisionTree[Params, BFn, R, RFn](root: DecisionTreeNode[Params
     case _ => false
   }
 }
+trait AnyDecisionTreeNode extends Reportable {
+  def toDecisionTreeNode[Params, BFn, R, RFn] = this.asInstanceOf[DecisionTreeNode[Params, BFn, R, RFn]]
+  def containsConclusion(c: AnyConclusion): Boolean
+}
 
-sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable {
+sealed trait DecisionTreeNode[Params, BFn, R, RFn] extends Reportable with AnyDecisionTreeNode {
   def scenarios: List[Scenario[Params, BFn, R, RFn]]
   def asConclusion = asInstanceOf[Conclusion[Params, BFn, R, RFn]]
   def asDecision = asInstanceOf[Decision[Params, BFn, R, RFn]]
 }
 
-case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] {
+trait AnyConclusion extends AnyDecisionTreeNode {
+  def toConclusion[Params, BFn, R, RFn] = this.asInstanceOf[Conclusion[Params, BFn, R, RFn]]
+}
+
+case class Conclusion[Params, BFn, R, RFn](code: CodeHolder[RFn], scenarios: List[Scenario[Params, BFn, R, RFn]], textOrder: Int = Reportable.nextTextOrder) extends DecisionTreeNode[Params, BFn, R, RFn] with AnyConclusion {
+  def containsConclusion(c: AnyConclusion) = eq(c)
   override def hashCode = textOrder
   override def equals(other: Any) = other match {
     case c: Conclusion[Params, BFn, R, RFn] => c.code == code && c.scenarios == scenarios
     case _ => false
   }
+}
 
+trait AnyDecision extends AnyDecisionTreeNode {
+  def toDecision[Params, BFn, R, RFn] = this.asInstanceOf[Decision[Params, BFn, R, RFn]]
+  def toYes[Params, BFn, R, RFn] = toDecision[Params, BFn, R, RFn].yes
+  def toNo[Params, BFn, R, RFn] = toDecision[Params, BFn, R, RFn].no
+  def toPrettyString[Params, BFn, R, RFn] = toDecision[Params, BFn, R, RFn].prettyString
 }
 
 case class Decision[Params, BFn, R, RFn](because: List[CodeHolder[BFn]], yes: DecisionTreeNode[Params, BFn, R, RFn], no: DecisionTreeNode[Params, BFn, R, RFn], scenarioThatCausedNode: Scenario[Params, BFn, R, RFn], textOrder: Int = Reportable.nextTextOrder)
-  extends DecisionTreeNode[Params, BFn, R, RFn] with NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] {
+  extends DecisionTreeNode[Params, BFn, R, RFn] with NestedHolder[DecisionTreeNode[Params, BFn, R, RFn]] with AnyDecision {
+  def containsConclusion(c: AnyConclusion) = yes.containsConclusion(c) || no.containsConclusion(c)
   def scenarios = yes.scenarios ++ no.scenarios
   def isTrue(bc: (BFn) => Boolean) = because.foldLeft(false)((acc, ch) => acc || bc(ch.fn))
   def prettyString = because.map(_.pretty).mkString(" or ")
@@ -143,9 +159,17 @@ trait EvaluateTree[Params, BFn, R, RFn] {
   def findLensToConclusion(root: DTN, bc: (BFn) => Boolean): Lens[DT, DTN] = findLensToConclusion(root, bc, rootL)
   def findLensToLastDecisionNode(root: DTN, s: S): Option[Lens[DT, Decision[Params, BFn, R, RFn]]] = findLensToLastDecisionNode(root, makeBecauseClosure(s), rootL.andThen(toDecisionL))
 
-  def findPathToConclusion(tree: DT, params: Params): List[DTN] = findPathToConclusionPrim(tree.root, makeBecauseClosure(params), List())
+  def findPathToConclusionWithParams(tree: DT, params: Params): List[DTN] = findPathToConclusionPrim(tree.root, makeBecauseClosure(params), List())
 
+  def findPathToConclusionWithConclusion(root: AnyDecisionTreeNode, conclusion: AnyConclusion, path: List[AnyDecisionTreeNode]): List[AnyDecisionTreeNode] = {
+    root match {
+      case c: AnyConclusion if c.containsConclusion(conclusion) => c :: path
+      case d: AnyDecision if d.toYes.containsConclusion(conclusion) => findPathToConclusionWithConclusion(d.toYes, conclusion, d :: path)
+      case d: AnyDecision if d.toNo.containsConclusion(conclusion) => findPathToConclusionWithConclusion(d.toNo, conclusion, d :: path)
+    }
+  }
   protected def findPathToConclusionPrim(root: DTN, becauseClosure: BecauseClosure, path: List[DTN]): List[DTN] = {
+
     root match {
       case d: Decision[Params, BFn, R, RFn] => d.isTrue(becauseClosure) match {
         case true => findPathToConclusionPrim(d.yes, becauseClosure, d :: path)

@@ -8,11 +8,16 @@ object StartChildEndType extends Enumeration {
 }
 import StartChildEndType._
 
+trait AnyTraceItem extends Reportable{
+  def toTraceItem[Main, Params, Result, Evidence] = this.asInstanceOf[TraceItem[Main, Params, Result, Evidence]]
+  def toMain[Main] = toTraceItem[Main, Any, Any, Any].main
+  def toEvidence[Main] = toTraceItem[Main, Any, Any, Any].evidence
 
+}
 case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params, result: Either[Exception, Result],
   evidence: Option[Evidence], nodes: List[TraceItem[Main, Params, Result, Evidence]], took: Long,
   textOrder: Int = Reportable.nextTextOrder)
-  extends NestedHolder[TraceItem[Main, Params, Result, Evidence]] with Reportable {
+  extends NestedHolder[TraceItem[Main, Params, Result, Evidence]]  with AnyTraceItem{
 
   override def hashCode = main.hashCode() / 2 + params.hashCode / 2
   override def equals(other: Any) =

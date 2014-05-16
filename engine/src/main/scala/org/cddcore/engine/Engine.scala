@@ -37,7 +37,8 @@ trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Param
 }
 
 trait EngineRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn] {
-  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]]
+  def requirementsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]]
+  def pathsIncludingTreeAndEngine(pathNotIncludingThis: List[Reportable]): List[List[Reportable]]
 }
 
 trait FoldingEngine[Params, BFn, R, RFn, FullR] extends HasExceptionMap[R, RFn] with EngineTools[Params, BFn, R, RFn] {

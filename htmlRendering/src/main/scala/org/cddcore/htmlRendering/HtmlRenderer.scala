@@ -10,10 +10,6 @@ import org.cddcore.utilities._
 import org.cddcore.utilities.StartChildEndType._
 import java.io.File
 
-object HtmlStrings {
-  def report = ???
-}
-
 object ReportDetails {
   def apply() = new SimpleReportDetails
 }
@@ -41,12 +37,6 @@ class SimpleReportDetails(
 case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, pathToConclusion: List[Reportable] = List(), reportDetails: ReportDetails = ReportDetails())(implicit ldp: LoggerDisplayProcessor) {
   def loggerDisplayProcessor = ldp
   override def toString = getClass.getSimpleName()
-}
-
-case class DocumentHolder(val nodes: List[Document], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable
-case class EngineHolder(val engines: List[Engine], textOrder: Int = Reportable.nextTextOrder) extends NestedHolder[Reportable] with Reportable {
-  import EngineTools._
-  val nodes = engines.map(_.asRequirement)
 }
 
 object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChildEndType, Elem] {
@@ -210,11 +200,11 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       matchOn { case (_, (s: DecisionTree[_, _, _, _]) :: _, End) => "\n</div><!-- decisionTree -->\n" }.
       renderDecisions
 
-    private def decisionPrefix(path: List[Reportable], d: Decision[_, _, _, _], injected: String) =
+    private def decisionPrefix(path: List[Reportable], d: AnyDecision, injected: String) =
       s"\n<div class='decision'>$injected${indent(path)}<span class='keyword'>if&#160;</span>" +
-        s"\n<div class='because'>${Strings.htmlEscape(d.prettyString)}</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n"
+        s"\n<div class='because'>${Strings.htmlEscape(d.toPrettyString)}</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n"
 
-    private def decisionIsTrue(path: List[Reportable], d: Decision[_, _, _, _]) = {
+    private def decisionIsTrue(path: List[Reportable], d: AnyDecision) = {
       path.indexOf(d) match {
         case -1 =>
           throw new IllegalStateException
@@ -222,14 +212,21 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
           throw new IllegalStateException
         case i => {
           val child = path(i - 1)
-          if (d.yes == child)
+          if (d.toYes == child)
             true
-          else if (d.no == child)
+          else if (d.toNo == child)
             false
           else
             throw new IllegalStateException
         }
       }
+    }
+    def conclusionPathContainsAndDecisionIs(rc: RenderContext, path: List[Reportable], d: AnyDecision, expected: Boolean) = {
+      val cPath = conclusionPath(rc, path)
+      if (cPath.contains(d))
+        expected == decisionIsTrue(cPath, d)
+      else
+        false
     }
 
     protected def renderDecisions = builder.
@@ -247,21 +244,20 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       expected("\n<div class='decision'><div class='ifTrueOnPath'><span class='keyword'>if&#160;</span>" +
         "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n").
       matchOn {
-        case (rc, path @ (d: Decision[_, _, _, _]) :: _, Start) if rc.pathToConclusion.contains(d) && decisionIsTrue(rc.pathToConclusion, d) =>
-          decisionPrefix(path, d, "<div class='ifTrueOnPath'>")
+        case (rc, path @ (d: AnyDecision) :: _, Start) if conclusionPathContainsAndDecisionIs(rc, path, d, true) => decisionPrefix(path, d, "<div class='ifTrueOnPath'>")
       }.
 
       scenario(engineReport, decision, Start, List(conclusionNo, decision)).
       expected("\n<div class='decision'><div class='ifFalseOnPath'><span class='keyword'>if&#160;</span>" +
         "\n<div class='because'>x.&gt;(0)</div><!-- because --></div><!-- because/ifTrue/ifFalse -->\n").
       matchOn {
-        case (rc, path @ (d: Decision[_, _, _, _]) :: _, Start) if rc.pathToConclusion.contains(d) && !decisionIsTrue(rc.pathToConclusion, d) =>
+        case (rc, path @ (d: Decision[_, _, _, _]) :: _, Start) if conclusionPathContainsAndDecisionIs(rc, path, d, false) =>
           decisionPrefix(path, d, "<div class='ifFalseOnPath'>")
       }.
 
       scenario(engineReport, decision, End, List(conclusionYes, decision)).
       expected("</div></div><!--decision -->\n").
-      matchOn { case (rc, path @ (d: Decision[_, _, _, _]) :: _, End) if rc.pathToConclusion.contains(d) => "</div></div><!--decision -->\n" }.
+      matchOn { case (rc, path @ (d: Decision[_, _, _, _]) :: _, End) if conclusionPath(rc, path).contains(d) => "</div></div><!--decision -->\n" }.
 
       useCase("An elseclause is artificially inserted to allow else to be displayed easily").
       scenario(engineReport, ElseClause(), Child).
@@ -287,7 +283,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
         s"<a class='scenarioLink' href='RootUrl/engineReportTitle/eWithUsecasesAndScenarios/useCase1/Scenario${uc1s2.textOrder}.Scenario.html'>${icon(uc1s2)}</a>" +
         s"<div class='conclusion'>((x: Int) =&gt; x.*(2))</div><!-- conclusion --></div><!-- result -->\n").
       matchOn {
-        case (rc, path @ (c: Conclusion[_, _, _, _]) :: _, Child) if (rc.pathToConclusion.contains(c)) => "\n" +
+        case (rc, path @ (c: Conclusion[_, _, _, _]) :: _, Child) if conclusionPath(rc, path).contains(c) => "\n" +
           s"<div class='resultWithTest '>${indent(path)}<span class='keyword'>then&#160;</span>" +
           s"${c.scenarios.map((s) => s"<a class='scenarioLink' href='${rc.urlMap(s)}'>${icon(s)}</a>").mkString("")}" +
           s"<div class='conclusion'>${Strings.htmlEscape(c.code.description)}</div><!-- conclusion --></div><!-- result -->\n"
@@ -384,6 +380,53 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
 
     build
 
+  private def findTraceItemConclusion(path: List[Reportable]): List[(AnyTraceItem, AnyConclusion)] = {
+    val result = path.flatMap {
+      case ti: AnyTraceItem => {
+        val r = ti.toEvidence[AnyConclusion].collect { case c: AnyConclusion => List((ti, c)) }.getOrElse(Nil)
+        r
+      }
+      case _ => List()
+    }
+    result
+  }
+
+  val conclusionPath = Engine[RenderContext, List[Reportable], List[Reportable]].title("conclusionPath").
+    useCase("most things don't have a conclusion path").
+    scenario(context(foldingEngineReport, List(concCe0)), List(foldingED)).expected(List()).
+    scenario(context(foldingEngineReport, List(concCe0)), List(ce0ED, foldingED)).expected(List()).
+    scenario(context(foldingEngineReport, List(concCe0)), List(ce0s0, ce0ED, foldingED)).expected(List()).
+    scenario(context(foldingEngineReport, List(concCe0)), List(ce0Tree, foldingED)).expected(List()).
+    scenario(context(foldingEngineReport, List(concCe0)), List(ce0Tree, foldingED)).expected(List()).
+
+    useCase("Decision Tree Nodes get a path from the RenderContext if it exists").
+    scenario(context(foldingEngineReport, List(concCe0)), List(concCe0, ce0Tree, foldingED)).expected(List(concCe0)).
+    matchOn { case (rc, (head: DecisionTreeNode[_, _, _, _]) :: tail) => rc.pathToConclusion }.
+    scenario(context(foldingEngineReport, List(concCe0)), List(concCe0, ce0Tree, foldingED)).expected(List(concCe0)).
+    scenario(context(foldingEngineReport, List(concCe0)), List(concCe0, ce0Tree, foldingED)).expected(List(concCe0)).
+    scenario(context(foldingEngineReport, List(concYesCe1, decisionCe1)), List(decisionCe1, ce0Tree, foldingED)).expected(List(concYesCe1, decisionCe1)).
+    scenario(context(foldingEngineReport, List(concYesCe1, decisionCe1)), List(concYesCe1, decisionCe1, ce0Tree, foldingED)).expected(List(concYesCe1, decisionCe1)).
+
+    useCase("Decision Tree Nodes get path from TraceItem if it exists").
+    scenario(context(foldingEngineReport, List()), List(concCe0, ce0Tree, ce0ED, actualCe0TI, actualFoldingTI)).expected(List(concCe0)).
+    matchOn {
+      case (rc, path) if !findTraceItemConclusion(path).isEmpty => {
+        import EngineTools._
+        val cPath = findTraceItemConclusion(path)
+        cPath match {
+          case (ti: AnyTraceItem, c) :: _ =>
+            val e = ti.toMain[EngineFromTests[_, _, _, _]]
+            e.evaluator.findPathToConclusionWithConclusion(e.tree.root, c, List())
+          case _ =>
+            List()
+        }
+      }
+    }.
+    scenario(context(foldingEngineReport, List()), List(decisionCe1, ce1Tree, ce1ED, actualCe1TI, actualFoldingTI)).expected(List(concYesCe1, decisionCe1)).
+    scenario(context(foldingEngineReport, List()), List(concYesCe1, decisionCe1, ce1Tree, ce1ED, actualCe1TI, actualFoldingTI)).expected(List(concYesCe1, decisionCe1)).
+    scenario(context(foldingEngineReport, List()), List(concNoCe1, decisionCe1, ce1Tree, ce1ED, actualCe1TI, actualFoldingTI)).expected(List(concYesCe1, decisionCe1)).
+    build
+
   val engineAndDocumentsSingleItemRenderer = Engine[RenderContext, List[Reportable], StartChildEndType, String]().
     title("Engine and Documents Single Item Renderer").
     renderReport.
@@ -438,13 +481,5 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
       matchOn { case _: Requirement => useCaseOrScenarioReportRenderer }.
       scenario(uc0s0).expected(useCaseOrScenarioReportRenderer).
       build
-
-  def main(args: Array[String]) {
-    println(ReportDetails())
-    println("------------------DocumentAndEngine----------------------")
-    println(Report.html(Report.documentAndEngineReport(Some("Some title"), new Date, List(eBlankTitle)), engineAndDocumentsSingleItemRenderer))
-    println("------------------SingleEngine----------------------")
-    println(Report.html(Report.engineReport(Some("Some title"), new Date, folding), engineReportSingleItemRenderer))
-  }
 
 }

@@ -48,13 +48,13 @@ class RenderedPageIntegrationTests extends AbstractTest {
       val ed = e.asRequirement
       val focusPath = focusPathReversed.reverse.toList :+ ed
       val report = Report.focusedReport(Some("sort of title"), focusPath)
-      val rc = RenderContext(UrlMap() ++ ed.pathsIncludingTree(List(report)), new Date, "")
+      val rc = RenderContext(UrlMap() ++ ed.pathsIncludingTreeAndEngine(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
       val engineWithTestsDiv = checker.onlyDivWith("engineWithTests")
       checker.checkEngineSummary(List(ed, engineReport), engineWithTestsDiv)
     }
-    checkReport(eWithUsecasesAndScenarios)
+    checkReport(eWithUsecasesAndScenarios) 
     checkReport(eWithUsecasesAndScenarios, uc0)
     checkReport(eWithUsecasesAndScenarios, uc0, uc0s0)
     checkReport(eWithUsecasesAndScenarios, uc1, uc1s1)
@@ -67,7 +67,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
       val fed = e.asRequirement
       val focusPath = focusPathReversed.reverse.toList :+ fed
       val report = Report.focusedReport(Some("sort of title"), focusPath)
-      val rc = RenderContext(UrlMap() ++ fed.pathsIncludingTree(List(report)), new Date, "")
+      val rc = RenderContext(UrlMap() ++ fed.pathsIncludingTreeAndEngine(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
       val childEngineDivs = checker.divsWith("childEngine")
@@ -86,7 +86,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
       val report = Report.focusedReport(Some("sort of title"), focusPath)
-      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
+      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTreeAndEngine(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.engineReportSingleItemRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
 
@@ -101,7 +101,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
       val report = Report.focusedReport(Some("sort of title"),  focusPath)
-      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
+      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTreeAndEngine(List(report)), new Date, "")
       val html = Report.html(report, HtmlRenderer.useCaseOrScenarioReportRenderer, rc)
       val checker = new SimpleHtmlRenderedChecker(html, rc)
 
@@ -118,7 +118,7 @@ class RenderedPageIntegrationTests extends AbstractTest {
       import EngineTools._
       val focusPath = focusPathReversed.reverse.toList :+ e.asRequirement
       val report = Report.focusedReport(Some("sort of title"), focusPath)
-      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTree(List(report)), new Date, "")
+      val rc = RenderContext(UrlMap() ++ e.asRequirement.pathsIncludingTreeAndEngine(List(report)), new Date, "")
       //      val classPaths = report.reportPaths.map(_.map(_.getClass().getSimpleName()))
       //      val paths = Lists.pathToStartChildEnd(classPaths)
       //      println(paths.mkString("\n"))

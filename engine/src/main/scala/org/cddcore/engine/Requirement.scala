@@ -162,14 +162,16 @@ case class FoldingEngineDescription[Params, BFn, R, RFn, FullR](
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]) =
     new FoldingEngineDescription[Params, BFn, R, RFn, FullR](title, description, code, priority, nodes, expected, references, foldingFn, initialValue)
 
-  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
+  def pathsIncludingTreeAndEngine(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
     val path = this :: pathNotIncludingThis
     path :: nodes.flatMap {
-      case e: EngineDescription[Params, BFn, R, RFn] => e.pathsIncludingTree(path)
+      case e: EngineDescription[Params, BFn, R, RFn] => e.pathsIncludingTreeAndEngine(path)
       case h: NestedHolder[Reportable] => h.pathsIncludingSelf(path)
       case r => List(r :: path)
     }
   }
+  def requirementsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = ???
+
   override def toString = s"FoldingEngineDescription(${initialValue.description}, $foldingFn, nodes=${nodes.mkString(", ")}"
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {
@@ -196,9 +198,11 @@ case class EngineDescription[Params, BFn, R, RFn](
     new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, tree, textOrder)
   def copyNodes(nodes: List[BuilderNode[Params, BFn, R, RFn]]): BuilderNodeAndHolder[Params, BFn, R, RFn] =
     new EngineDescription[Params, BFn, R, RFn](title, description, code, priority, nodes, expected, references, tree, textOrder)
-  def pathsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
+  def pathsIncludingTreeAndEngine(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] = {
     pathsIncludingSelf(pathNotIncludingThis).toList ::: tree.toList.flatMap(_.treePathsWithElseClause(this :: pathNotIncludingThis).toList)
   }
+  def requirementsIncludingTree(pathNotIncludingThis: List[Reportable]): List[List[Reportable]] =
+    pathsFrom(pathNotIncludingThis).toList ::: tree.toList.flatMap(_.treePathsWithElseClause(pathNotIncludingThis).toList)
 
   override def hashCode = (title.hashCode() + description.hashCode()) / 2
   override def equals(other: Any) = other match {

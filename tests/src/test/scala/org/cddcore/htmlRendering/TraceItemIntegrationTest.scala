@@ -29,26 +29,24 @@ class TraceItemIntegrationTest extends AbstractTest {
       List(foldingTI, report),
       List(ce0TI, foldingTI, report),
 
-      List(ce0ED, ce0TI, foldingTI, report),
-      List(ce0s0, ce0ED, ce0TI, foldingTI, report),
-      List(ce0Tree, ce0ED, ce0TI, foldingTI, report),
-      List(concCe0, ce0Tree, ce0ED, ce0TI, foldingTI, report),
+      List(ce0s0,  ce0TI, foldingTI, report),
+      List(ce0Tree,  ce0TI, foldingTI, report),
+      List(concCe0, ce0Tree,  ce0TI, foldingTI, report),
       List(ce1TI, foldingTI, report),
-      List(ce1ED, ce1TI, foldingTI, report),
-      List(ce1s1, ce1ED, ce1TI, foldingTI, report),
-      List(ce1s2, ce1ED, ce1TI, foldingTI, report),
-      List(ce1Tree, ce1ED, ce1TI, foldingTI, report),
-      List(decisionCe1, ce1Tree, ce1ED, ce1TI, foldingTI, report),
-      List(concYesCe1, decisionCe1, ce1Tree, ce1ED, ce1TI, foldingTI, report),
-      List(ElseClause(), decisionCe1, ce1Tree, ce1ED, ce1TI, foldingTI, report),
-      List(concNoCe1, decisionCe1, ce1Tree, ce1ED, ce1TI, foldingTI, report))
+      List(ce1s1,  ce1TI, foldingTI, report),
+      List(ce1s2,  ce1TI, foldingTI, report),
+      List(ce1Tree,  ce1TI, foldingTI, report),
+      List(decisionCe1, ce1Tree,  ce1TI, foldingTI, report),
+      List(concYesCe1, decisionCe1, ce1Tree,  ce1TI, foldingTI, report),
+      List(ElseClause(), decisionCe1, ce1Tree,  ce1TI, foldingTI, report),
+      List(concNoCe1, decisionCe1, ce1Tree,  ce1TI, foldingTI, report))
     for ((e, a) <- expected.zipAll(actual, null, null))
       if (e != a) {
         val compare = e.map(_.getClass.getSimpleName).zipAll(a.map(_.getClass.getSimpleName), null, null)
         assertEquals(e, a)
       }
     assertEquals(expected, actual)
-    //    println(Report.html(Some("title"), trace))
+        println(Report.html(Some("title"), trace))
   }
 
   it should "generate urlMapPaths based in traceItems and the requirements of the engines referenced" in {

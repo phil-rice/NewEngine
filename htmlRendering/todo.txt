@@ -3,10 +3,11 @@ Known:
 * amber
 * HtmlDisplay<--- DONE
 * Traceitems
-* Traces
+* Traces<--- DONE
 * Web tests<--- DONE
 * Live display
 * Legacy
+
 Quality of life
 * Improve the toString of the matchOn
 * allow because to have a partial function to boolean (and ensure that has a nice toString)
