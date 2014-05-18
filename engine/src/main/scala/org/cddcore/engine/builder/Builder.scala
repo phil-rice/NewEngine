@@ -45,6 +45,9 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
     new UseCase[Params, BFn, R, RFn](Some(title), description = Option(description)) :: nodes))
   def because(because: BFn, description: String): B = becauseHolder(new CodeHolder[BFn](because, description))
 
+  def assert(assertion: (Params, Either[Exception, R]) => Boolean, description: String) =
+    wrap(currentNodeL.andThen(toScenarioL).andThen(assertionL).mod(this, { _ :+ new CodeHolder(assertion, description) }))
+
   def becauseHolder(becauseHolder: CodeHolder[BFn]): B =
     wrap(currentNodeL.andThen(toScenarioL).andThen(becauseL((so, sn, b) => checkBecause(makeClosures, sn))).set(this, Some(becauseHolder)))
   def expected(r: R, title: String = null): B =
@@ -87,6 +90,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
     checkHasExpected(s)
   }
   def postValidateScenario(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
+    checkHaveCodeIfHaveExpectException(s)
     checkCodeComesToExpected(evaluateTree, s)
     checkAssertions(evaluateTree, tree, s)
     checkCorrectValue(evaluateTree, tree, s)
@@ -95,6 +99,13 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
   def checkHasExpected(s: S) = {
     if (s.expected.isEmpty) throw NoExpectedException(s)
     s
+  }
+
+  def checkHaveCodeIfHaveExpectException(s: S) {
+    (s.expected, s.code) match {
+      case (Some(Left(e)), None) => throw ScenarioShouldHaveCodeIfExpectsException(s)
+      case _ =>
+    }
   }
   def checkCodeComesToExpected(evaluateTree: EvaluateTree[Params, BFn, R, RFn], s: S) {
     (s.code, s.expected) match {
@@ -109,7 +120,7 @@ trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenari
   def checkAssertions(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S) = {
     s.assertions.foreach((a) => {
       val result = evaluateTree.safeEvaluate(tree, s)
-      val assertionResult = a.fn(s.params, result)
+      val assertionResult = try { a.fn(s.params, result) } catch { case e: Exception => throw ExceptionThrownInAssertion(s, a, e) }
       if (!assertionResult) throw AssertionException(a, s)
     })
   }

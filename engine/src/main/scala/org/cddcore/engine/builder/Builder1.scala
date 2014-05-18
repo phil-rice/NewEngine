@@ -26,6 +26,43 @@ object Builder1 {
       thisObject.codeHolder(ch)
     }
   }
+  def assertionFromRImpl[P: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[(P, R) => Boolean]): c.Expr[Builder1[P, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder1[P, R, FullR] = (c.Expr[Builder1[P, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (p: P, rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => false
+        case Right(r) => assertion.splice(p, r)
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
+  def assertionFromPartialFunctionImpl[P: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[PartialFunction[(P, R), Boolean]]): c.Expr[Builder1[P, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder1[P, R, FullR] = (c.Expr[Builder1[P, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (p: P, rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => false
+        case Right(r) => if (assertion.splice.isDefinedAt(p, r)) assertion.splice(p, r) else false
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
+
+  def assertionFromException[P: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[(P, Exception) => Boolean]): c.Expr[Builder1[P, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder1[P, R, FullR] = (c.Expr[Builder1[P, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (p: P, rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => assertion.splice(p, e)
+        case Right(r) => false
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
   def matchOnImpl[P: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P), R]]): c.Expr[Builder1[P, R, FullR]] = {
     import c.universe._
     reify {
@@ -57,8 +94,11 @@ case class Builder1[P, R, FullR](
   }
   def scenario(p: P, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) =>
     checkDuplicateScenario(bl, this, new Scenario[P, (P) => Boolean, R, (P) => R](p, title = Option(title))) :: nodes))
-  def assertionHolder(assertionHolder: CodeHolder[(P, Either[Exception, R]) => Boolean]) =
-    wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
+
+  def assert(assertion: (P, R) => Boolean) = macro Builder1.assertionFromRImpl[P, R, FullR]
+  def assertMatch(assertion: PartialFunction[(P, R), Boolean]) = macro Builder1.assertionFromPartialFunctionImpl[P, R, FullR]
+  def assertException(assertion: (P, Exception) => Boolean) = macro Builder1.assertionFromException[P, R, FullR]
+
   def configurator(cfg: (P) => Unit) = wrap(currentNodeL.andThen(toScenarioL).andThen(configuratorL).mod(this, _ :+ cfg))
   def copyNodes(nodes: List[BuilderNode[P, (P) => Boolean, R, (P) => R]]) = wrap(copy(nodes = nodes))
   def build: Engine1[P, R, FullR] = nodes match {
@@ -86,7 +126,7 @@ case class SimpleBuildEngine1[P, R] extends SimpleBuildEngine[P, (P) => Boolean,
 
 }
 class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) => Boolean, R, (P) => R, FullR, Engine1[P, R, FullR], Engine1[P, R, R]](
- BuildEngine.defaultRootCode1, new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
+  BuildEngine.defaultRootCode1, new MakeClosures1, BuildEngine.expectedToCode1, BuildEngine.builderEngine1[P, R]) {
 
   def constructFoldingEngine(
     requirement: EngineRequirement[P, (P) => Boolean, R, (P) => R],

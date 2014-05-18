@@ -89,6 +89,17 @@ object CodeDoesntProduceExpectedException {
 }
 class CodeDoesntProduceExpectedException(msg: String, scenario: Scenario[_, _, _, _], val actual: Either[Exception, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
 
+object ScenarioShouldHaveCodeIfExpectsException {
+  def apply(s: Scenario[_, _, _, _]) = new ScenarioShouldHaveCodeIfExpectsException("A code block is needed if the expected result is an exception. That code block show throw the exception", s)
+}
+class ScenarioShouldHaveCodeIfExpectsException(msg: String, scenario: Scenario[_, _, _, _]) extends ScenarioException(msg, scenario)
+
+object ExceptionThrownInAssertion {
+  def apply(s: Scenario[_, _, _, _], assertion: CodeHolder[_], e: Exception) =
+    new ExceptionThrownInAssertion(s"Threw exception $e while evaluating assertion $assertion in\n${ExceptionScenarioPrinter.full(s)}", s, e)
+}
+class ExceptionThrownInAssertion(msg: String, scenario: Scenario[_, _, _, _], cause: Throwable) extends ScenarioException(msg, scenario, cause)
+
 object ScenarioBecauseException {
   def apply(scenario: Scenario[_, _, _, _], cause: Throwable = null)(implicit ldp: LoggerDisplayProcessor) =
     new ScenarioBecauseException(s"Because is not true. Because is\n${scenario.because.getOrElse(throw new IllegalStateException).description}\n${ExceptionScenarioPrinter.full(scenario)}", scenario, cause)

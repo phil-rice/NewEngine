@@ -69,9 +69,13 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   def expected(seed: ResultSeed) = update(_.expected(result(seed)))
   def expectedAndCode(seed: ResultSeed) = update(_.expectedAndCode(result(seed)))
   def expectException(e: Exception) = update(_.expectException(e))
-  def assertion(callback: => Boolean) = builder = assertionPrim(callback)
+  def assertException(fn: (Params, Exception) => Boolean)
+  def assert(fn: (Params, R) => Boolean)
+  def assertMatch(pfn: PartialFunction[(Params, R), Boolean])
+  //  def assertion(callback: => Boolean) = builder = assertionPrim(callback)
   def configurate(cfg: (Params) => Unit) = builder = configuratorPrim(cfg)
   def code(seed: ResultSeed) = update(_.codeHolder(resultCodeHolder(seed)))
+  def codeThrows(e: Exception)
   def currentBuilder: B = builder
   def initializeBuilder(nodes: List[BuilderNode[Params, BFn, R, RFn]] = List(new EngineDescription[Params, BFn, R, RFn]))(implicit ldp: LoggerDisplayProcessor): B
   protected def scenarioImpl(params: Params, title: String): B
@@ -80,7 +84,7 @@ trait BuilderBeingTested[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R
   protected def scenarioObject(params: Params): Scenario[Params, BFn, R, RFn]
   protected def resultCodeHolder(seed: ResultSeed): CodeHolder[RFn]
   protected def becauseCodeHolder(seed: Seed) = CodeHolder[BFn](becauseBfn(seed), s"because$seed")
-  protected def assertionPrim(callback: => Boolean): B
+  //  protected def assertionPrim(callback: => Boolean): B
   protected def configuratorPrim(cfg: (Params) => Unit): B
 
   protected def buildImpl(b: B): E;
@@ -170,13 +174,20 @@ trait Builder1Test[P, R, FullR]
   def scenarioImpl(p: P, title: String) = update(_.scenario(p, title))
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p: P) => result(seed), s"(p)=>result$seed")
   protected def scenarioObject(p: P) = new Scenario[P, (P) => Boolean, R, (P) => R](p)
-  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((p: P, r: Either[Exception, R]) => callback))
+  //  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((p: P, r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode1[P, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P) => Boolean]((p) => throw e, e.toString())))
   protected def configuratorPrim(cfg: (P) => Unit) = update(_.configurator(cfg))
 
   def matchOn(seed: Seed, result: R) = update(_.matchOn({ case p if becauseBfn(seed)(p) => result }))
+
+  def assert(fn: (P, R) => Boolean) = update(_.assert(fn))
+  def assertMatch(pfn: PartialFunction[(P, R), Boolean]) = update { _.assertMatch(pfn) }
+  def assertException(fn: (P, Exception) => Boolean) = update { _.assertException(fn) }
+
+  def codeThrows(e: Exception) = update(_.code((p) => throw e))
+
 }
 trait FoldingBuilderTest[R, FullR] {
   def foldingFn: (FullR, R) => FullR
@@ -202,13 +213,18 @@ trait Builder2Test[P1, P2, R, FullR]
   protected def scenarioImpl(params: (P1, P2), title: String) = { val (p1, p2) = params; update(_.scenario(p1, p2, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2) => result(seed), s"(p1,p2)=>result$seed")
   protected def scenarioObject(p: (P1, P2)) = new Scenario[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R](p)
-  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2), r: Either[Exception, R]) => callback))
+  //  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2), r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode2[P1, P2, R])
   protected def configuratorPrim(cfg: ((P1, P2)) => Unit) = update(_.configurator((p1, p2) => cfg(p1, p2)))
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P1, P2) => Boolean]((p1, p2) => throw e, e.toString())))
   def matchOn(seed: Seed, result: R) = update(_.matchOn({ case (p1, p2) if becauseBfn(seed)(p1, p2) => result }))
 
+  def assert(fn: ((P1, P2), R) => Boolean) = update(_.assert((p1, p2, r) => fn((p1, p2), r)))
+  def assertMatch(pfn: PartialFunction[((P1, P2), R), Boolean]) =
+    update { _.assert { case (p1, p2, r) if (pfn.isDefinedAt((p1, p2), r)) => pfn((p1, p2), r); case _ => false } }
+  def assertException(fn: ((P1, P2), Exception) => Boolean) = update { _.assertException((p1, p2, e) => fn((p1, p2), e)) }
+  def codeThrows(e: Exception) = update(_.code((p1, p2) => throw e))
 }
 
 trait SimpleBuilder2Test[P1, P2, R] extends Builder2Test[P1, P2, R, R] {
@@ -229,13 +245,17 @@ trait Builder3Test[P1, P2, P3, R, FullR]
   protected def scenarioImpl(params: (P1, P2, P3), title: String) = { val (p1, p2, p3) = params; update(_.scenario(p1, p2, p3, title)) }
   protected def resultCodeHolder(seed: ResultSeed) = new CodeHolder((p1: P1, p2: P2, p3: P3) => result(seed), s"(p1: P1, p2: P2, p3: P3) => Builder3Test.this.result($seed)")
   protected def scenarioObject(p: (P1, P2, P3)) = new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R](p)
-  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2, P3), r: Either[Exception, R]) => callback))
+  //  protected def assertionPrim(callback: => Boolean) = update(_.assertionHolder((params: (P1, P2, P3), r: Either[Exception, R]) => callback))
   def defaultRoot = BuildEngine.defaultRoot(BuildEngine.defaultRootCode3[P1, P2, P3, R])
   protected def becauseImpl(seed: Seed) = update(_.becauseHolder(becauseCodeHolder(seed)))
   def matchOn(seed: Seed, result: R) = update(_.matchOn({ case (p1, p2, p3) if becauseBfn(seed)(p1, p2, p3) => result }))
   protected def becauseExceptionImpl(e: Exception) = update(_.becauseHolder(CodeHolder[(P1, P2, P3) => Boolean]((p1, p2, p3) => throw e, e.toString())))
   protected def configuratorPrim(cfg: ((P1, P2, P3)) => Unit) = update(_.configurator((p1, p2, p3) => cfg(p1, p2, p3)))
-
+  def assert(fn: ((P1, P2, P3), R) => Boolean) = update(_.assert((p1, p2, p3, r) => fn((p1, p2, p3), r)))
+  def assertMatch(pfn: PartialFunction[((P1, P2, P3), R), Boolean]) =
+    update { _.assert { case (p1, p2, p3, r) if (pfn.isDefinedAt((p1, p2, p3), r)) => pfn((p1, p2, p3), r); case _ => false } }
+  def assertException(fn: ((P1, P2, P3), Exception) => Boolean) = update { _.assertException((p1, p2, p3, e) => fn((p1, p2, p3), e)) }
+  def codeThrows(e: Exception) = update(_.code((p1, p2, p3) => throw e))
 }
 trait SimpleBuilder3Test[P1, P2, P3, R] extends Builder3Test[P1, P2, P3, R, R] {
   lazy val buildEngine = BuildEngine.builderEngine3[P1, P2, P3, R]

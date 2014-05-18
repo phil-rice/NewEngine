@@ -71,10 +71,13 @@ object Requirement {
 
 }
 
-trait TitledReportable extends Reportable {
+trait Titled {
   def title: Option[String]
-  def description: Option[String]
   lazy val titleString = title.getOrElse("")
+}
+
+trait TitledReportable extends Reportable with Titled {
+  def description: Option[String]
   def titleOrDescription(default: String) = title.getOrElse(description.getOrElse(default))
 
 }

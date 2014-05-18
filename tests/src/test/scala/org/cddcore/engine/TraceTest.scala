@@ -21,7 +21,7 @@ abstract class TraceTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RFn, 
   resetBuilder
 
   val exception = new RuntimeException
-  scenario("A"); expectException(exception)
+  scenario("A"); expectException(exception); codeThrows(exception)
   val eException = build
   resetBuilder
 

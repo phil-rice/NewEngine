@@ -26,6 +26,15 @@ object Builder3 {
       thisObject.codeHolder(ch)
     }
   }
+  def assertionImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(code: c.Expr[(P1, P2, P3) => R]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
+    import c.universe._
+    reify {
+      val l = bl[P1, P2, P3, R, FullR]()
+      val ch = CodeHolder[(P1, P2, P3) => R](code.splice, c.literal(show(code.tree)).splice)
+      val thisObject: Builder3[P1, P2, P3, R, FullR] = (c.Expr[Builder3[P1, P2, P3, R, FullR]](c.prefix.tree)).splice
+      thisObject.codeHolder(ch)
+    }
+  }
   def matchOnImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(pf: c.Expr[PartialFunction[(P1, P2, P3), R]]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
     import c.universe._
     reify {
@@ -35,7 +44,48 @@ object Builder3 {
       thisObject.matchOnPrim(pf.splice, literal, literal)
     }
   }
+  def assertionFromRImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[(P1, P2, P3, R) => Boolean]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder3[P1, P2, P3, R, FullR] = (c.Expr[Builder3[P1, P2, P3, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (params: (P1, P2, P3), rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => false
+        case Right(r) => assertion.splice(params._1, params._2, params._3, r)
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
+  def assertionFromPartialFunctionImpl[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[PartialFunction[(P1, P2, P3, R), Boolean]]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder3[P1, P2, P3, R, FullR] = (c.Expr[Builder3[P1, P2, P3, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (params: (P1, P2, P3), rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => false
+        case Right(r) => if (assertion.splice.isDefinedAt(params._1, params._2, params._3, r))
+          assertion.splice(params._1, params._2, params._3, r)
+        else
+          false
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
+
+  def assertionFromException[P1: c.WeakTypeTag, P2: c.WeakTypeTag, P3: c.WeakTypeTag, R: c.WeakTypeTag, FullR: c.WeakTypeTag](c: Context)(assertion: c.Expr[(P1, P2, P3, Exception) => Boolean]): c.Expr[Builder3[P1, P2, P3, R, FullR]] = {
+    import c.universe._
+    reify {
+      val description = c.literal(show(assertion.tree)).splice
+      val thisObject: Builder3[P1, P2, P3, R, FullR] = (c.Expr[Builder3[P1, P2, P3, R, FullR]](c.prefix.tree)).splice
+      val actualAssertion = (params: (P1, P2, P3), rOrE: Either[Exception, R]) => rOrE match {
+        case Left(e) => assertion.splice(params._1, params._2, params._3, e)
+        case Right(r) => false
+      }
+      thisObject.assert(actualAssertion, description)
+    }
+  }
 }
+
 case class Builder3[P1, P2, P3, R, FullR](
   nodes: List[BuilderNode[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]] = List(new EngineDescription[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]),
   buildExceptions: ExceptionMap = ExceptionMap(),
@@ -50,9 +100,13 @@ case class Builder3[P1, P2, P3, R, FullR](
   import validator._
 
   def scenario(p1: P1, p2: P2, p3: P3, title: String = null) = wrap(nextScenarioHolderL.andThen(nodesL).mod(this, (nodes) => checkDuplicateScenario(bl, this, new Scenario[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R]((p1, p2, p3), Option(title))) :: nodes))
+
   def because(because: (P1, P2, P3) => Boolean) = macro Builder3.becauseImpl[P1, P2, P3, R, FullR]
-  def assertionHolder(assertionHolder: CodeHolder[((P1, P2, P3), Either[Exception, R]) => Boolean]) =
-    wrap(currentNodeL.andThen(toScenarioL).mod(this, (s) => s.copyScenario(assertions = s.assertions :+ assertionHolder)))
+
+  def assert(assertion: (P1, P2, P3, R) => Boolean) = macro Builder3.assertionFromRImpl[P1, P2, P3, R, FullR]
+  def assertMatch(assertion: PartialFunction[(P1, P2, P3, R), Boolean]) = macro Builder3.assertionFromPartialFunctionImpl[P1, P2, P3, R, FullR]
+  def assertException(assertion: (P1, P2, P3, Exception) => Boolean) = macro Builder3.assertionFromException[P1, P2, P3, R, FullR]
+
   def code(code: (P1, P2, P3) => R) = macro Builder3.codeImpl[P1, P2, P3, R, FullR]
   def matchOn(pf: PartialFunction[(P1, P2, P3), R]) = macro Builder3.matchOnImpl[P1, P2, P3, R, FullR]
   def matchOnPrim(pf: PartialFunction[(P1, P2, P3), R], becauseToString: String, resultToString: String) = {

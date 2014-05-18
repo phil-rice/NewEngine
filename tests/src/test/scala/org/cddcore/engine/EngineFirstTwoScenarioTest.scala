@@ -51,7 +51,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
 
   it should "allow expectedAndCode" in {
     code("Q")
-    scenario("A"); expectedAndCode("X"); because ("A")
+    scenario("A"); expectedAndCode("X"); because("A")
     scenario("B"); expectedAndCode("Y"); because("B")
     val e = build
     assertEquals(result("X"), e.applyParams("A"))
@@ -150,11 +150,18 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   }
 
   it should "allow exceptException " in {
-    val ex = new RuntimeException
-    scenario("A"); expectException(ex)
+    val ex1 = new RuntimeException
+    val ex2 = new RuntimeException
+    scenario("A"); expectException(ex1); codeThrows(ex2)
     val e = build
     val actual = evaluating { e.applyParams("A") } should produce[RuntimeException]
-    assertEquals(ex, actual)
+    assertEquals(ex2, actual)
+  }
+
+  it should "throw ScenarioShouldHaveCodeIfExpectsException if there is exceptException without a code block" in {
+    val ex1 = new RuntimeException
+    scenario("A"); expectException(ex1);
+  evaluating { build } should produce[ScenarioShouldHaveCodeIfExpectsException]
   }
 
   it should "throw CodeDoesntProduceExpectedException if there is a code block that produces the wrong expected" in {
@@ -164,15 +171,6 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     evaluating { build } should produce[CodeDoesntProduceExpectedException]
 
   }
-  //  it should "Add scenario to root if adding with same conclusion, different reason" in {
-  //    val b = builderWithDefault.scenario("B").because("B").expected("Z")
-  //    val e1 = builderWithDefault.build
-  //    val e2 = b.build
-  //    val bScenario = e2.tests(1)
-  //    assertEngineMatches(e1, Left(CodeAndScenarios("Z", List(defaultScenario))))
-  //    assertEngineMatches(e2, Left(CodeAndScenarios("Z", List(bScenario, defaultScenario))))
-  //  }
-  //
 
 }
 

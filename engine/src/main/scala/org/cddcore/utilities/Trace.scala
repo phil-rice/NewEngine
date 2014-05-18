@@ -1,6 +1,7 @@
 package org.cddcore.utilities
 
 import org.cddcore.engine.Reportable
+import org.cddcore.engine.Titled
 
 object StartChildEndType extends Enumeration {
   type StartChildEndType = Value
@@ -8,16 +9,36 @@ object StartChildEndType extends Enumeration {
 }
 import StartChildEndType._
 
-trait AnyTraceItem extends Reportable{
+trait AnyTraceItem extends Reportable {
   def toTraceItem[Main, Params, Result, Evidence] = this.asInstanceOf[TraceItem[Main, Params, Result, Evidence]]
   def toMain[Main] = toTraceItem[Main, Any, Any, Any].main
+  def toParams[Params] = toTraceItem[Any, Params, Any, Any].params
   def toEvidence[Main] = toTraceItem[Main, Any, Any, Any].evidence
-
+  def toResult[Result] = toTraceItem[Any, Any, Result, Any].result
+  def toNodes[Main, Params, Result, Evidence] = toTraceItem[Main, Params, Result, Evidence].nodes
+  def took: Long
+  def mainString(implicit ldp: LoggerDisplayProcessor) = toMain[Any] match {
+    case titled: Titled => titled.titleString;
+    case main => ldp(main)
+  }
+  def toString(indent: String)(implicit ldp: LoggerDisplayProcessor): String = {
+    s"${indent}TraceItem(${mainString(ldp)}, ${ldp(toParams)} => ${ldp(toResult)}\n${toNodes.map((x: AnyTraceItem) => x.toString(ldp, indent + "  "))}"
+  }
+  def toString(loggerDisplayProcesser: LoggerDisplayProcessor): String = toString(loggerDisplayProcesser, "")
 }
+
+object TraceItem {
+  def print[Main, Params, Result, Evidence](item: TraceItem[Main, Params, Result, Evidence])(implicit ldp: LoggerDisplayProcessor): String =
+    item.paths.foldLeft("")((acc, path) => {
+      val i = path.head
+      acc + "\n" + Strings.blanks(path.size) + path.head.mainString(ldp) + "(" + ldp(i.params).mkString(",") + ") => " + ldp(i.result) + " ... " + i.took
+    })
+}
+
 case class TraceItem[Main, Params, Result, Evidence](main: Main, params: Params, result: Either[Exception, Result],
   evidence: Option[Evidence], nodes: List[TraceItem[Main, Params, Result, Evidence]], took: Long,
   textOrder: Int = Reportable.nextTextOrder)
-  extends NestedHolder[TraceItem[Main, Params, Result, Evidence]]  with AnyTraceItem{
+  extends NestedHolder[TraceItem[Main, Params, Result, Evidence]] with AnyTraceItem {
 
   override def hashCode = main.hashCode() / 2 + params.hashCode / 2
   override def equals(other: Any) =
