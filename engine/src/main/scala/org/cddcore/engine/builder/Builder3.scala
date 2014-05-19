@@ -153,7 +153,13 @@ case class SimpleBuildEngine3[P1, P2, P3, R] extends SimpleBuildEngine[(P1, P2, 
     Engine3FromTests(requirement, dt, evaluateTree, exceptionMap)(ldp)
 }
 
-trait Engine3[P1, P2, P3, R, FullR] extends EngineTools[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] with Function3[P1, P2, P3, FullR]
+trait Engine3[P1, P2, P3, R, FullR] extends EngineTools[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R] with Function3[P1, P2, P3, FullR] {
+  def cached: Function3[P1, P2, P3, FullR] with Engine = new CachedEngine3[P1, P2, P3, R, FullR](this)
+}
+
+class CachedEngine3[P1, P2, P3, R, FullR](val delegate: Engine3[P1, P2, P3, R, FullR], val textOrder: Int = Reportable.nextTextOrder) extends Engine3[P1, P2, P3, R, FullR] with CachedEngine[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR] {
+  def apply(p1: P1, p2: P2, p3: P3) = Maps.getOrCreate(cache, (p1, p2, p3), delegate(p1, p2, p3))
+}
 
 case class Engine3FromTests[P1, P2, P3, R](
   asRequirement: EngineRequirement[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R],

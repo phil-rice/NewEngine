@@ -4,6 +4,8 @@ import scala.reflect.macros.Context
 import org.cddcore.engine._
 import org.cddcore.utilities._
 import scala.language.experimental.macros
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.Future
 
 object Builder1 {
   def bl[P, R, FullR]() = new FullBuilderLens[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR]]
@@ -137,7 +139,14 @@ class FoldingBuildEngine1[P, R, FullR] extends SimpleFoldingBuildEngine[P, (P) =
     ldp: LoggerDisplayProcessor): FoldingEngine1[P, R, FullR] =
     FoldingEngine1(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)(ldp)
 }
-trait Engine1[P, R, FullR] extends EngineTools[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR]
+
+trait Engine1[P, R, FullR] extends EngineTools[P, (P) => Boolean, R, (P) => R] with Function1[P, FullR] {
+  def cached: Function1[P, FullR] with Engine = new CachedEngine1[P, R, FullR](this)
+}
+
+class CachedEngine1[P, R, FullR](val delegate: Engine1[P, R, FullR], val textOrder: Int = Reportable.nextTextOrder) extends Engine1[P, R, FullR] with CachedEngine[P, (P) => Boolean, R, (P) => R, FullR] {
+  def apply(p: P) = Maps.getOrCreate(cache, p, delegate(p))
+}
 
 case class Engine1FromTests[P, R](
   asRequirement: EngineRequirement[P, (P) => Boolean, R, (P) => R],

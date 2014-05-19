@@ -8,6 +8,8 @@ import org.cddcore.utilities.CodeHolder
 import org.cddcore.engine.builder._
 import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.utilities.ExceptionMap
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.Future
 
 object TemplateLike {
   implicit object ReportableTemplateLike extends TemplateLike[Reportable] {
@@ -28,12 +30,24 @@ trait Engine extends Reportable {
 object EngineTools {
   implicit def toEngineTools[Params, BFn, R, RFn](e: Engine) = e.asInstanceOf[EngineTools[Params, BFn, R, RFn]]
 }
+
 trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] with WithLoggerDisplayProcessor {
   def titleString = asRequirement.titleString
   def asRequirement: EngineRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: ExceptionMap
+}
 
+trait DelegatedEngine[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, RFn] {
+  val delegate: EngineTools[Params, BFn, R, RFn]
+  def asRequirement = delegate.asRequirement
+  def evaluator = delegate.evaluator
+  def buildExceptions = delegate.buildExceptions
+   def ldp: LoggerDisplayProcessor = delegate.ldp
+}
+
+trait CachedEngine[Params, BFn, R, RFn, FullR] extends DelegatedEngine[Params, BFn, R, RFn] {
+  protected val cache = new AtomicReference[Map[Params, Future[FullR]]](Map())
 }
 
 trait EngineRequirement[Params, BFn, R, RFn] extends BuilderNodeAndHolder[Params, BFn, R, RFn] with Requirement with TypedReportable[Params, BFn, R, RFn] {

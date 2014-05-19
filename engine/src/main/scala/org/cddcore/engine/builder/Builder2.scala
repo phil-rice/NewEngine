@@ -138,7 +138,13 @@ case class SimpleBuildEngine2[P1, P2, R] extends SimpleBuildEngine[(P1, P2), (P1
     Engine2FromTests(requirement, dt, evaluateTree, exceptionMap)(ldp)
 }
 
-trait Engine2[P1, P2, R, FullR] extends EngineTools[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, FullR]
+trait Engine2[P1, P2, R, FullR] extends EngineTools[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, FullR]{
+  def cached: Function2[P1,P2, FullR] with Engine = new CachedEngine2[P1, P2, R, FullR](this)
+}
+
+class CachedEngine2[P1, P2, R, FullR](val delegate: Engine2[P1,P2, R, FullR], val textOrder: Int = Reportable.nextTextOrder) extends Engine2[P1, P2,R, FullR] with CachedEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR] {
+  def apply(p1: P1, p2: P2) = Maps.getOrCreate(cache, (p1,p2), delegate(p1, p2))
+}
 
 case class Engine2FromTests[P1, P2, R](
   asRequirement: EngineRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
