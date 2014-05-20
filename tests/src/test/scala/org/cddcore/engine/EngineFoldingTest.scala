@@ -14,7 +14,7 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
   implicit def toFullR(seed: String): FullR
   implicit def toR(seed: String): R = result(seed)
 
-  def compareFoldingEngineDescriptions(left: FD, nodes: List[BuilderNode[Params,BFn, R, RFn]]) = {
+  def compareFoldingEngineDescriptions(left: FD, nodes: List[BuilderNode[Params, BFn, R, RFn]]) = {
     assertEquals(nodes.size, 1)
     val right = nodes.head.asInstanceOf[FD]
     val withDifferentFoldingStuff = left.copy(foldingFn = right.foldingFn, initialValue = right.initialValue)
@@ -40,7 +40,7 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     val actualCe3 = actualFr.nodes.head.asInstanceOf[EngineDescription[Params, BFn, R, RFn]]
     val actualUC32 = actualCe3.nodes.head
     val withDifferentFoldingStuff = actualFr.copy(foldingFn = fe.foldingFn, initialValue = fe.initialValue)
-    assertEquals(UseCase[Params, BFn,R, RFn](title = "uc32"), actualUC32)
+    assertEquals(UseCase[Params, BFn, R, RFn](title = "uc32"), actualUC32)
     assertEquals(ce3, actualCe3)
     assertEquals(fe.nodes, withDifferentFoldingStuff.nodes)
     assertEquals(fe, withDifferentFoldingStuff)
@@ -61,6 +61,47 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
 
   it should "throw an Exception if no child engines are specified" in {
     evaluating { build } should produce[CannotHaveFoldingEngineWithoutChildEnginesException]
+  }
+
+  it should "'modify children for build' prior to the build" in {
+    code("Q"); expected("Y"); update(_.priority(1))
+    update(_.childEngine("ce1")); update(_.priority(2))
+    scenario("A"); expected("X"); code("X"); because("A")
+    scenario("B"); expected("Q"); update(_.priority(3))
+    update(_.childEngine("ce2")); code("W")
+    scenario("C"); expected("X"); code("X"); because("C")
+    scenario("D");
+    val scenarios = Engine.test { build }.asRequirement.scenarios //not worried if it builds...
+    val sa = scenarios(0)
+    val sb = scenarios(1)
+    val sc = scenarios(2)
+    val sd = scenarios(3)
+    assertEquals(s("A", code = resultCodeHolder("X"), expected = "X", because = "A", priority = 2), sa)
+    assertEquals(s("B", code = resultCodeHolder("Q"), expected = "Q", priority = 3), sb)
+    assertEquals(s("C", code = resultCodeHolder("X"), expected = "X", because = "C", priority = 1), sc)
+    assertEquals(s("D", code = resultCodeHolder("W"), expected = "Y", priority = 1), sd)
+  }
+  it should "allow scenario to use default code in folding engine" in {
+    code("Q"); update(_.childEngine("ce1"))
+    scenario("A"); expected("X"); code("X"); because("A")
+    scenario("B"); expected("Q")
+
+    val scenarios = currentBuilder.all(classOf[Scenario[_, _, _, _]])
+    val sb = scenarios(0)
+    val sa = scenarios(1)
+    assertEquals(s("A", code = resultCodeHolder("X"), expected = "X", because = "A"), sa)
+    assertEquals(s("B", expected = "Q"), sb)
+
+    val modified = Engine.test { build }.asRequirement.scenarios
+    val sModifieda = modified(0)
+    val sModifiedb = modified(1)
+    assertEquals(s("A", code = resultCodeHolder("X"), expected = "X", because = "A"), sModifieda)
+    assertEquals(s("B", code = resultCodeHolder("Q"), expected = "Q"), sModifiedb)
+
+    val e = build
+    assertEquals("_X", e.applyParams(params("A")))
+    assertEquals("_X", e.applyParams(params("AB")))
+    assertEquals("_Q", e.applyParams(params("B")))
   }
 
   it should "allow the same scenario in multiple engine without throwing a duplicate scenario exception" in {
@@ -144,25 +185,24 @@ abstract class EngineFoldingTest[Params, BFn, R, RFn, FullR, B <: Builder[Params
     val clazz = classOf[BecauseClauseScenarioException]
     assertEquals(Map(sa.textOrder -> List(clazz), sb.textOrder -> List(clazz)), mapToListOfClasses)
     assertEquals(Map(sa.textOrder -> List(e0), sb.textOrder -> List(e1)), mapToListOfExceptions)
-
   }
 }
 
 abstract class EngineFolding1Test[P, R, FullR]
   extends EngineFoldingTest[P, (P) => Boolean, R, (P) => R, FullR, Builder1[P, R, FullR], Engine1[P, R, FullR]]
   with FoldingBuilder1Test[P, R, FullR] {
-  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P, R, FullR]( foldingFn,initialValue) }
+  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P, R, FullR](foldingFn, initialValue) }
 }
 abstract class EngineFolding2Test[P1, P2, R, FullR] extends EngineFoldingTest[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, FullR]]
   with Builder2Test[P1, P2, R, FullR]
   with FoldingBuilder2Test[P1, P2, R, FullR] {
-  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, R, FullR](foldingFn,initialValue) }
+  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, R, FullR](foldingFn, initialValue) }
 
 }
 abstract class EngineFolding3Test[P1, P2, P3, R, FullR] extends EngineFoldingTest[(P1, P2, P3), (P1, P2, P3) => Boolean, R, (P1, P2, P3) => R, FullR, Builder3[P1, P2, P3, R, FullR], Engine3[P1, P2, P3, R, FullR]]
   with Builder3Test[P1, P2, P3, R, FullR]
   with FoldingBuilder3Test[P1, P2, P3, R, FullR] {
-  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, P3, R, FullR](foldingFn,initialValue) }
+  def initialiseAsFoldingEngine = update { (x) => Engine.folding[P1, P2, P3, R, FullR](foldingFn, initialValue) }
 }
 
 trait StringToStringFoldingTest {

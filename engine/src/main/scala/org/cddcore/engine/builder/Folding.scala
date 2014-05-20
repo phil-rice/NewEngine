@@ -20,14 +20,16 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BF
         if (f.nodes.isEmpty) throw new CannotHaveFoldingEngineWithoutChildEnginesException
         val (engines: List[EngineFromTests[Params, BFn, R, RFn]], exceptionMap) = f.nodes.foldLeft(initial)((acc, ed) => ed match {
           case ed: EngineDescription[Params, BFn, R, RFn] => {
+            def modifiedEd = ed.copy(priority = ed.priority.orElse(f.priority), code = ed.code.orElse(f.code), expected = ed.expected.orElse(f.expected))
             val (engines, initialExceptionMap) = acc
-            val (dt, exceptionMap, newRequirements) = buildTree(ed, initialExceptionMap)
+
+            val (dt, exceptionMap, newRequirements) = buildTree(modifiedEd, initialExceptionMap)
             val engine = buildChildEngine.buildEngine(newRequirements, buildExceptions, ldp).asInstanceOf[EngineFromTests[Params, BFn, R, RFn]]
             (engine :: engines, exceptionMap)
           }
         });
         val requirements = f.copyNodes(engines.map(_.asRequirement))
-        constructFoldingEngine(requirements, engines, exceptionMap, f.initialValue, f.foldingFn,ldp)
+        constructFoldingEngine(requirements, engines, exceptionMap, f.initialValue, f.foldingFn, ldp)
       }
     }
   }

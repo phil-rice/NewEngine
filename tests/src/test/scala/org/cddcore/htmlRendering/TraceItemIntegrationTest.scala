@@ -46,7 +46,7 @@ class TraceItemIntegrationTest extends AbstractTest {
         assertEquals(e, a)
       }
     assertEquals(expected, actual)
-        println(Report.html(Some("title"), trace))
+        println(Report.htmlFromTrace("title", trace))
   }
 
   it should "generate urlMapPaths based in traceItems and the requirements of the engines referenced" in {

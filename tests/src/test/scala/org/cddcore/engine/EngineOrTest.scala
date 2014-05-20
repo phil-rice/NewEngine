@@ -30,9 +30,18 @@ abstract class EngineOrTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RF
 
     val e = checkOrRule((sa, sb) => dec(List(sa, sb), conc(sa, sb), defaultRoot))
     assertEquals(result("W"), e.applyParams(params("B")))
-
   }
 
+  it should "add an or rule, even if there is a default code block" in {
+    code("Q")
+    scenario("A"); expected("W"); because("A")
+    scenario("AB"); expected("W"); because("B")
+
+    val e = checkOrRule((sa, sb) => dec(List(sa, sb), conc(sa, sb), defaultRoot))
+    assertEquals(result("W"), e.applyParams(params("B")))
+    fail
+  }
+  
   it should "not add an or if there is a code block specified in first scenario" in {
     scenario("A"); expected("W"); because("A"); code("W")
     scenario("AB"); expected("W"); because("B")
@@ -48,6 +57,8 @@ abstract class EngineOrTest[Params, BFn, R, RFn, B <: Builder[Params, BFn, R, RF
     val e = checkOrRule((sa, sb) => dec(sa, dec(sb, conc(sb), conc(sa)), defaultRoot))
     evaluating { e.applyParams(params("B")) } should produce[UndecidedException]
   }
+  
+  
 
   "An engine" should "Add scenario to root if adding with same conclusion, different reason" in {
     scenario("A");

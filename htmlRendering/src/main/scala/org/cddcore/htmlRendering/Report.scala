@@ -40,8 +40,8 @@ object Report {
     (html(report, HtmlRenderer.traceReportSingleItemRenderer, renderContext), renderContext)
   }
 
-  def html(title: Option[String], traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None): String =
-    htmlAndRenderedContext(title, traceItems, description)._1
+  def htmlFromTrace(title: String, traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None): String =
+    htmlAndRenderedContext(Some(title), traceItems, description)._1
 
   def rendererFor(report: Report) =
     report match {
