@@ -94,7 +94,7 @@ object SampleContexts {
     x match { case (engine, params, result, nodes) => new TraceItem[Any, Any, Any, Any](engine, params, Right(result), None, nodes, 0) }
   val (result, trace) = Engine.trace(folding(1))
   val foldingTraceReport = Report.traceReport(Some("some title"), trace)
-
+ 
   val ce0TI: TI = (folding.engines(0), 1, 0, List())
   val ce1TI: TI = (folding.engines(1), 1, 2, List())
   val foldingTI: TI = (folding, 1, List(0, 2), List(ce0TI, ce1TI))

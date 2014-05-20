@@ -10,6 +10,11 @@ import org.cddcore.utilities.LoggerDisplayProcessor
 import org.cddcore.utilities.ExceptionMap
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Future
+import org.cddcore.utilities.AnyTraceItem
+import org.cddcore.utilities.TraceItem
+import org.cddcore.utilities.Profiler
+import org.cddcore.utilities.SimpleProfiler
+import org.cddcore.utilities.ProfilerRecord
 
 object TemplateLike {
   implicit object ReportableTemplateLike extends TemplateLike[Reportable] {
@@ -43,7 +48,7 @@ trait DelegatedEngine[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, R
   def asRequirement = delegate.asRequirement
   def evaluator = delegate.evaluator
   def buildExceptions = delegate.buildExceptions
-   def ldp: LoggerDisplayProcessor = delegate.ldp
+  def ldp: LoggerDisplayProcessor = delegate.ldp
 }
 
 trait CachedEngine[Params, BFn, R, RFn, FullR] extends DelegatedEngine[Params, BFn, R, RFn] {
@@ -144,7 +149,6 @@ class PrintlnEngineMonitor extends EngineMonitor {
 }
 
 class TraceEngineMonitor extends EngineMonitor {
-
   var traceBuilder = TraceBuilder[Engine, Any, Any, Conclusion[_, _, _, _]]()
   def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) =
     traceBuilder = traceBuilder.nest(e.asInstanceOf[Engine], params)
@@ -153,6 +157,13 @@ class TraceEngineMonitor extends EngineMonitor {
   def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) =
     traceBuilder = traceBuilder.failed(exception, conclusion)
   def trace = traceBuilder.children
+}
+
+class ProfileEngineMonitor extends EngineMonitor {
+  val profiler = new SimpleProfiler[Engine]
+  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) = profiler.start(e)
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) = profiler.end(e)
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) = profiler.end(e)
 }
 
 object Engine {
@@ -209,6 +220,28 @@ object Engine {
     val tm = new TraceEngineMonitor
     val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
     (result, tm.trace)
+  }
+  def traceNoException[X](fn: => X) = {
+    val tm = new TraceEngineMonitor
+    val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
+    result match {
+      case Left(e) => throw new RuntimeException("Exception in trace", e)
+      case Right(r) => (r, tm.trace)
+    }
+  }
+  def profile[X](fn: => X) = {
+    val pm = new ProfileEngineMonitor
+    val result = try { Right(withMonitor(pm, fn)) } catch { case e: Exception => Left(e) }
+    (result, pm.profiler.results)
+  }
+  def profileNoException[X](fn: => X) = {
+    val pm = new ProfileEngineMonitor
+    val result = try { Right(withMonitor(pm, fn)) } catch { case e: Exception => Left(e) }
+    result match {
+      case Left(e) => throw new RuntimeException("Exception in profile", e)
+      case Right(r) => (r, pm.profiler.results)
+    }
+
   }
 
 }
