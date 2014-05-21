@@ -28,7 +28,8 @@ trait LoggerDisplayProcessor extends Function[Any, String] {
       })
   def html(a: Any): String =
     a match {
-      case h: HtmlDisplay => h.htmlDisplay
+      case h: HtmlDisplay =>
+        h.htmlDisplay
       case _ => Strings.htmlEscape(a.toString)
     }
 }

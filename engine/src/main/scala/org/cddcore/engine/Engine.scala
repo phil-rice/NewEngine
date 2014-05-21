@@ -222,26 +222,21 @@ object Engine {
     (result, tm.trace)
   }
   def traceNoException[X](fn: => X) = {
-    val tm = new TraceEngineMonitor
-    val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
-    result match {
-      case Left(e) => throw new RuntimeException("Exception in trace", e)
-      case Right(r) => (r, tm.trace)
+    trace(fn) match {
+      case (Left(e), _) => throw new RuntimeException("Exception in trace", e)
+      case (Right(r), trace) => (r, trace)
     }
   }
   def profile[X](fn: => X) = {
     val pm = new ProfileEngineMonitor
     val result = try { Right(withMonitor(pm, fn)) } catch { case e: Exception => Left(e) }
-    (result, pm.profiler.results)
+    (result, pm.profiler)
   }
   def profileNoException[X](fn: => X) = {
-    val pm = new ProfileEngineMonitor
-    val result = try { Right(withMonitor(pm, fn)) } catch { case e: Exception => Left(e) }
-    result match {
-      case Left(e) => throw new RuntimeException("Exception in profile", e)
-      case Right(r) => (r, pm.profiler.results)
+    profile(fn) match {
+      case (Left(e), _) => throw new RuntimeException("Exception in profile", e)
+      case (Right(r), profiler) => (r, profiler)
     }
-
   }
 
 }

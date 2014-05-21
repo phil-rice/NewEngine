@@ -89,16 +89,17 @@ class ProfilerTest extends AbstractTest {
       result
     }
     assertEquals(Right("HelloWorld"), r);
-    assertEquals(1, res.size)
-    assertEquals(1, res(e).count)
+    val pr = res.results
+    assertEquals(1, pr.size)
+    assertEquals(1, pr(e).count)
   }
 
   it should "return the result and profiler" in {
     val e = Engine[Int, String].code((x: Int) => "HelloWorld").build
     val (r, res) = Engine.profileNoException { e(1) }
     assertEquals("HelloWorld", r);
-    assertEquals(1, res.size)
-    assertEquals(1, res(e).count)
+    assertEquals(1, res.results.size)
+    assertEquals(1, res.results(e).count)
 
   }
 }

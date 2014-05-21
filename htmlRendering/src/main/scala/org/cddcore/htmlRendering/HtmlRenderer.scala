@@ -350,7 +350,7 @@ object HtmlRenderer extends DecisionTreeBuilderForTests2[RenderContext, StartChi
     scenario(uc0s0).expected("<img height='15' width='15' src='http://www.constraintdrivendevelopment.org/mediawiki/images/7/73/Scenario.png' alt='scenario icon' title='0'/>").
     matchOn {
       case (s: Scenario[_, _, _, _]) =>
-        s"<img height='15' width='15' src='http://www.constraintdrivendevelopment.org/mediawiki/images/7/73/Scenario.png' alt='scenario icon' title='${s.prettyPrintParams}'/>"
+        s"<img height='15' width='15' src='http://www.constraintdrivendevelopment.org/mediawiki/images/7/73/Scenario.png' alt='scenario icon' title='${Strings.htmlTooltipEscape(s.prettyPrintParams)}'/>"
     }.
     build
 

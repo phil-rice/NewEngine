@@ -140,6 +140,7 @@ trait CddRunner extends Runner {
         case scenario: Scenario[Params, BFn, R, RFn] => import e._; evaluator.validator.checkCorrectValue(evaluator, tree, scenario)
       })
     def runEngine[Params, BFn, R, RFn, FullR](e: EngineTools[Params, BFn, R, RFn]): Unit = e match {
+      case d: DelegatedEngine[Params, BFn, R, RFn] => { runEngine(d.delegate); return }
       case f: FoldingEngine[Params, BFn, R, RFn, FullR] => runReportable(f.asRequirement, for (e <- f.engines) runEngine(e))
       case e: EngineFromTests[Params, BFn, R, RFn] => runReportableAndChildren(e.asRequirement, e)
     }
