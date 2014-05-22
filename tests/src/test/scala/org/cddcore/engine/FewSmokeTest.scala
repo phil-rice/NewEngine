@@ -1,9 +1,11 @@
 package org.cddcore.engine
 
+import org.cddcore.engine.builder.DecisionTree
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import ReportableHelper._
-import org.cddcore.engine.builder.DecisionTree
+import org.cddcore.utilities.TraceItem
+import org.cddcore.engine.builder.FoldingEngine1
 
 @RunWith(classOf[JUnitRunner])
 class FewSmokeTest extends AbstractTest {

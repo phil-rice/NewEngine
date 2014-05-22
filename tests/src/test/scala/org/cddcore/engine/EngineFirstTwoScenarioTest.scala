@@ -25,6 +25,15 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
     assertEquals(result("X"), e.applyParams("B"))
   }
 
+  it should "allow that even if the scenario throws an exception" in {
+    val e = new RuntimeException
+    scenario("A"); expectException(e); codeThrows(e)
+    val engine = build
+    val ex = evaluating {engine.applyParams("A")} should produce[RuntimeException]
+    assertEquals(e, ex)
+
+  }
+
   it should " allow the first scenario not to have a because, and become the default value when we add a second scenario " in {
     scenario("A"); expected("X")
     scenario("B"); expected("Y"); because("B")
@@ -161,7 +170,7 @@ abstract class EngineFirstTwoScenarioTest[Params, BFn, R, RFn, B <: Builder[Para
   it should "throw ScenarioShouldHaveCodeIfExpectsException if there is exceptException without a code block" in {
     val ex1 = new RuntimeException
     scenario("A"); expectException(ex1);
-  evaluating { build } should produce[ScenarioShouldHaveCodeIfExpectsException]
+    evaluating { build } should produce[ScenarioShouldHaveCodeIfExpectsException]
   }
 
   it should "throw CodeDoesntProduceExpectedException if there is a code block that produces the wrong expected" in {

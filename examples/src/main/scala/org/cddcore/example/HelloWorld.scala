@@ -11,10 +11,11 @@ object HelloWorld {
     useCase("Returns hello world the requested number of times").
     scenario(1, "Just once").
     expected("Hello World").
-    code((i: Int) => List.fill(i)("Hello World").mkString(", ")).
+    code((i) => List.fill(i)("Hello World").mkString(", ")).
     scenario(2, "Two times").
     expected("Hello World, Hello World").
     scenario(0).
+    matchOn { case x => "asdjsd" + x }.
     expected("").
     scenario(-1).
     expected("").

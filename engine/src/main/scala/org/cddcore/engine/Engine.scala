@@ -28,7 +28,7 @@ trait TemplateLike[T] {
   def apply(t: T): String
 }
 
-trait Engine extends Reportable {
+trait Engine extends Reportable with Titled{
   def titleString: String
 }
 
@@ -37,10 +37,18 @@ object EngineTools {
 }
 
 trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] with WithLoggerDisplayProcessor {
-  def titleString = asRequirement.titleString
+  def title = asRequirement.title
   def asRequirement: EngineRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
   def buildExceptions: ExceptionMap
+  import ReportableHelper._
+  lazy val exceptionsItCanThrow = asRequirement.scenarios.flatMap {
+    (s: Scenario[Params, BFn, R, RFn]) =>
+      s.expected match {
+        case Some(Left(e)) => List[Class[_ <: Exception]](e.getClass())
+        case _ => List[Class[_ <: Exception]]()
+      }
+  }.toSet
 }
 
 trait DelegatedEngine[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, RFn] {
@@ -98,7 +106,11 @@ trait EngineFromTests[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, R
     } catch {
       case e: Exception =>
         monitor.failed(this, Some(c), e)
-        throw e
+        e match {
+          case u: UndecidedException => throw new UndecidedException(u.getMessage(), u.params, this)
+          case _ if exceptionsItCanThrow.find((ex) => ex.isAssignableFrom(e.getClass)).isDefined => throw e
+          case _ => throw FailedToExecuteException(this, params, e)
+        }
     }
   }
   def toString(indent: String, root: DecisionTreeNode[Params, BFn, R, RFn]): String = {
@@ -148,14 +160,16 @@ class PrintlnEngineMonitor extends EngineMonitor {
   }
 }
 
-class TraceEngineMonitor extends EngineMonitor {
+class TraceEngineMonitor(implicit ldp: LoggerDisplayProcessor) extends EngineMonitor {
+  var logging = true
   var traceBuilder = TraceBuilder[Engine, Any, Any, Conclusion[_, _, _, _]]()
+  def log(prefix: String, stuff: => {}) = { stuff; if (logging) println(prefix + " " + Strings.oneLine(traceBuilder.shortToString)) }
   def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) =
-    traceBuilder = traceBuilder.nest(e.asInstanceOf[Engine], params)
+    log("call", traceBuilder = traceBuilder.nest(e.asInstanceOf[Engine], params))
   def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) =
-    traceBuilder = traceBuilder.finished(result, conclusion)
+    log("finished", traceBuilder = traceBuilder.finished(result, conclusion))
   def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) =
-    traceBuilder = traceBuilder.failed(exception, conclusion)
+    log("failed", traceBuilder = traceBuilder.failed(exception, conclusion))
   def trace = traceBuilder.children
 }
 
@@ -166,8 +180,14 @@ class ProfileEngineMonitor extends EngineMonitor {
   def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) = profiler.end(e)
 }
 
+class MultipleEngineMonitors(monitors: List[EngineMonitor]) extends EngineMonitor {
+  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.call(e, params)
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.finished(e, conclusion, result)
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.failed(e, conclusion, exception)
+}
+
 object Engine {
-  var logging = false
+  var logging = ("true" == System.getenv("cdd.junit.log")) || false
   /** returns a builder for an engine that implements Function[P,R] */
   def apply[P, R]()(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine1)(ldp)
   /** returns a builder for an engine that implements Function2[P1,P2,R] */
@@ -209,19 +229,20 @@ object Engine {
 
   def withMonitor[X](m: EngineMonitor, fn: => X) = {
     val oldMonitor = defaultMonitor.get
-    defaultMonitor.set(m)
+    val newMonitor = new MultipleEngineMonitors(List(m, oldMonitor))
+    defaultMonitor.set(newMonitor)
     try {
       fn
     } finally {
       defaultMonitor.set(oldMonitor)
     }
   }
-  def trace[X](fn: => X) = {
+  def trace[X](fn: => X)(implicit ldp: LoggerDisplayProcessor) = {
     val tm = new TraceEngineMonitor
     val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
     (result, tm.trace)
   }
-  def traceNoException[X](fn: => X) = {
+  def traceNoException[X](fn: => X)(implicit ldp: LoggerDisplayProcessor) = {
     trace(fn) match {
       case (Left(e), _) => throw new RuntimeException("Exception in trace", e)
       case (Right(r), trace) => (r, trace)

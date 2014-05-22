@@ -116,7 +116,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
     val oldConclusion = concLToConclusionL.get(tree)
     val actual = actualFromNewScenario(oldConclusion)
     val expected = scenario.expected.get
-    val comesToSameConclusion = Reportable.compare(actual, expected)
+    val comesToSameConclusion = Reportable.compare(expected, actual)
     def newConclusion = Conclusion(code = scenario.actualCode(expectedToCode), scenarios = List(scenario))
     def addAssertion(lensToNode: Lens[DT, Conc]) = lensToNode.mod(tree, (c) => c.copy(scenarios = c.scenarios :+ scenario))
     def addOrRule = {

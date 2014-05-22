@@ -19,17 +19,36 @@ class EngineException(msg: String, cause: Throwable) extends Exception(msg, caus
   def this() = this("", null)
   def this(msg: String) = this(msg, null)
 }
-class CannotHaveChildEnginesWithoutFolderException extends EngineException
 
-object UndecidedException {
+trait ParamsException {
   protected def params(ps: Any*)(implicit ldp: LoggerDisplayProcessor) =
     (ps.size match { case 0 => "Param: "; case _ => "\nParams:\n  " }) + ps.zipWithIndex.map { case (p, i) => s"Param${i + 1}: ${ldp(p)}" }.mkString("\n  ")
+
+}
+class CannotHaveChildEnginesWithoutFolderException extends EngineException
+
+object FailedToExecuteException extends ParamsException {
+  import EngineTools._
+  def apply[Params](e: Engine, p: Params, cause: Throwable)(implicit ldp: LoggerDisplayProcessor) = {
+      val paramString = p match {
+        case (p1, p2, p3) => params(p1, p2, p3)
+        case (p1, p2) => params(p1, p2)
+        case p => params(p)
+      }
+      new FailedToExecuteException(s"Failed to execute\nEngine: ${e.titleString}\n$paramString", e, p, cause)
+    }
+}
+
+class FailedToExecuteException(msg: String, val e: Engine, val params: Any, cause: Throwable) extends EngineException(msg, cause)
+
+object UndecidedException extends ParamsException {
   def apply[P](p: P)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p), p)
   def apply[P1, P2](p1: P1, p2: P2)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2), (p1, p2))
   def apply[P1, P2, P3](p1: P1, p2: P2, p3: P3)(implicit ldp: LoggerDisplayProcessor) = new UndecidedException(params(p1, p2, p3), (p1, p2, p3))
 }
 
-class UndecidedException(msg: String, val params: Any) extends EngineException(msg)
+class UndecidedException(msg: String, val params: Any, val engine: Engine = null) extends EngineException(msg) {
+}
 
 object NeedScenarioException {
   def apply() = new NeedScenarioException("This operation needed a scenario")

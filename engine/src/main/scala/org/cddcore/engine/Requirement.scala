@@ -27,12 +27,19 @@ trait HtmlDisplay {
 object Reportable {
   private final val count = new AtomicInteger(0)
   def nextTextOrder = count.getAndIncrement()
-  def compare[R](left: Either[Exception, R], right: Either[Exception, R]) = {
-    (left, right) match {
-      case (Left(le), Left(re)) => le.getClass() == re.getClass()
+  def compare[R](expected: Either[Exception, R], actual: Either[Exception, R]) = {
+    (expected, actual) match {
+      case (Left(le), Left(re)) => le.getClass==re.getClass//expected.getClass.isAssignableFrom(actual.getClass())
       case (Right(lr), Right(rr)) => lr == rr
       case _ => false
     }
+  }
+  def compareAllowingExceptionToBeMoreSpecific[R](expected: Either[Exception, R], actual: Either[Exception, R]) = {
+	  (expected, actual) match {
+	  case (Left(le), Left(re)) => expected.getClass.isAssignableFrom(actual.getClass())
+	  case (Right(lr), Right(rr)) => lr == rr
+	  case _ => false
+	  }
   }
 }
 object PathUtils {

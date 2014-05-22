@@ -21,10 +21,11 @@ trait AnyTraceItem extends Reportable {
     case titled: Titled => titled.titleString;
     case main => ldp(main)
   }
+  def shortToString(implicit ldp: LoggerDisplayProcessor) = s"TraceItem(${mainString(ldp)}"
   def toString(indent: String)(implicit ldp: LoggerDisplayProcessor): String = {
     s"${indent}TraceItem(${mainString(ldp)}, ${ldp(toParams)} => ${ldp(toResult)}\n${toNodes.map((x: AnyTraceItem) => x.toString(ldp, indent + "  "))}"
   }
-  def toString(loggerDisplayProcesser: LoggerDisplayProcessor): String = toString(loggerDisplayProcesser, "")
+  def toString(implicit loggerDisplayProcesser: LoggerDisplayProcessor): String = toString(loggerDisplayProcesser, "")
 }
 
 object TraceItem {
@@ -60,6 +61,7 @@ class TraceBuilder[Main, Params, Result, Evidence](val children: List[TraceItem[
   def copyWithNewItem(item: TraceItem[Main, Params, Result, Evidence]) = new TraceBuilder(children :+ item, ignore)
   def finished(result: Result, evidence: Option[Evidence] = None): TraceBuilder[Main, Params, Result, Evidence] = throw new IllegalStateException;
   def failed(exception: Exception, evidence: Option[Evidence] = None): TraceBuilder[Main, Params, Result, Evidence] = throw new IllegalStateException;
+  def shortToString(implicit ldp: LoggerDisplayProcessor) = s"${getClass.getSimpleName}(${children.map(_.shortToString)})"
 }
 
 class NestedTraceBuilder[Main, Params, Result, Evidence](main: Main, val params: Params, children: List[TraceItem[Main, Params, Result, Evidence]], val parent: TraceBuilder[Main, Params, Result, Evidence]) extends TraceBuilder[Main, Params, Result, Evidence](children, parent.ignore) {
@@ -68,6 +70,7 @@ class NestedTraceBuilder[Main, Params, Result, Evidence](main: Main, val params:
   override def failed(exception: Exception, evidence: Option[Evidence]) =
     parent.copyWithNewItem(TraceItem(main, params, Left(exception), evidence, children, System.nanoTime() - startTime))
   override def copyWithNewItem(item: TraceItem[Main, Params, Result, Evidence]) = new NestedTraceBuilder(main, params, children :+ item, parent)
+  override def shortToString(implicit ldp: LoggerDisplayProcessor) = s"${getClass.getSimpleName}(parent=${parent.shortToString}, main=${ldp(main)}, ${children.map(_.shortToString)})"
 }
 
 class IgnoreTraceBuilder[Main, Params, Result, Evidence](val parent: TraceBuilder[Main, Params, Result, Evidence]) extends TraceBuilder[Main, Params, Result, Evidence](List(), parent.ignore) {
