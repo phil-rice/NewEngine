@@ -34,7 +34,7 @@ trait CddPathHandler {
 
 case class Param(name: String, valueAsString: String, value: Any)
 
-class CddHandler(title: String, engines: List[Engine], pathHandlers: List[CddPathHandler], val prefix: String = "")(implicit ldp: LoggerDisplayProcessor) extends AbstractHandler {
+class CddHandler(title: String, engines: List[Engine], pathHandlers: List[CddPathHandler], val prefix: String = "")(implicit ldp: CddDisplayProcessor) extends AbstractHandler {
   import EngineTools._
   val urlMap = UrlMap() ++ engines
   if (Engine.logging)
@@ -129,7 +129,7 @@ class PathHandler extends CddPathHandler {
 //        }
 //      }
 //    } catch { case t: Throwable => t.printStackTrace(); (formHtml(context, params.map((n) => Param(n._1, n._2, "")), t.getClass + ": " + t.getMessage()), None, None) }
-//    HtmlRenderer(loggerDisplayProcessor, true).liveEngineHtml(reportCreator.rootUrl, paramNameAndValues, conclusion, Set(), engineForm).render(reportCreator.reportableToUrl, urlMap,
+//    HtmlRenderer(CddDisplayProcessor, true).liveEngineHtml(reportCreator.rootUrl, paramNameAndValues, conclusion, Set(), engineForm).render(reportCreator.reportableToUrl, urlMap,
 //      Report("Try: " + engine.titleOrDescription(""),
 //        engine))
 //  }

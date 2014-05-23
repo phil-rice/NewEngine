@@ -15,7 +15,7 @@ trait Builder[Params, BFn, R, RFn, FullR, B <: Builder[Params, BFn, R, RFn, Full
   extends BuilderNodeHolder[Params, BFn, R, RFn]
   with CanCopyWithNewExceptionMap[R, RFn]
   with WhileBuildingValidateScenario[Params, BFn, R, RFn]
-  with WithLoggerDisplayProcessor {
+  with WithCddDisplayProcessor {
   val bl = new FullBuilderLens[Params, BFn, R, RFn, FullR, Builder[Params, BFn, R, RFn, FullR, B, E]]
   import bl._
   def expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]
@@ -71,7 +71,7 @@ trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
     if (scenarios.contains(s)) throw DuplicateScenarioException(s)
     s
   }
-  def checkBecause(mc: MC, s: S)(implicit ldp: LoggerDisplayProcessor) = {
+  def checkBecause(mc: MC, s: S)(implicit ldp: CddDisplayProcessor) = {
     s.because match {
       case Some(_) => if (!mc.evaluateBecause(s, s)) throw ScenarioBecauseException(s);
       case _ =>
@@ -83,13 +83,13 @@ trait WhileBuildingValidateScenario[Params, BFn, R, RFn] {
 class SimpleValidateScenario[Params, BFn, R, RFn] extends ValidateScenario[Params, BFn, R, RFn]
 
 trait ValidateScenario[Params, BFn, R, RFn] extends WhileBuildingValidateScenario[Params, BFn, R, RFn] {
-  def preValidateScenario(mc: MC, s: S)(implicit ldp: LoggerDisplayProcessor) = {
+  def preValidateScenario(mc: MC, s: S)(implicit ldp: CddDisplayProcessor) = {
     if (!s.expected.isDefined)
       throw NoExpectedException(s)
     checkBecause(mc, s)
     checkHasExpected(s)
   }
-  def postValidateScenario(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: LoggerDisplayProcessor) = {
+  def postValidateScenario(evaluateTree: EvaluateTree[Params, BFn, R, RFn], tree: DecisionTree[Params, BFn, R, RFn], s: S)(implicit ldp: CddDisplayProcessor) = {
     checkHaveCodeIfHaveExpectException(s)
     checkCodeComesToExpected(evaluateTree, s)
     checkAssertions(evaluateTree, tree, s)

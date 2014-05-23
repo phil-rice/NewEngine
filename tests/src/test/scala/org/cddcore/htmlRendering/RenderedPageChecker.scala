@@ -77,7 +77,7 @@ trait HtmlRenderedChecker extends HtmlChecker {
   val renderContext: RenderContext
 
   def urlMap: UrlMap = renderContext.urlMap
-  def ldp = renderContext.loggerDisplayProcessor
+  def ldp = renderContext.CddDisplayProcessor
   val reportDiv = onlyDivWith("report");
 
   def checkTopLine(expectedTitle: String) {

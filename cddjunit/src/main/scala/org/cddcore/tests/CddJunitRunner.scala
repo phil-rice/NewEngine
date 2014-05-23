@@ -39,7 +39,7 @@ trait EngineWalker {
 trait CddRunner extends Runner {
   type ExceptionOrEngine = Either[(Exception, String), EngineTools[_, _, _, _]]
   def instance: Either[Exception, Any]
-  def ldp: LoggerDisplayProcessor = implicitly[LoggerDisplayProcessor]
+  def ldp: CddDisplayProcessor = implicitly[CddDisplayProcessor]
   val templateLike = implicitly[TemplateLike[Reportable]]
   def clazz: Class[_ <: Any]
   val rootEngines: List[ExceptionOrEngine]

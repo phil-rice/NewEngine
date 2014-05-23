@@ -34,8 +34,8 @@ class SimpleReportDetails(
 
 }
 
-case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, pathToConclusion: List[Reportable] = List(), reportDetails: ReportDetails = ReportDetails())(implicit ldp: LoggerDisplayProcessor) {
-  def loggerDisplayProcessor = ldp
+case class RenderContext(urlMap: UrlMap, reportDate: Date, iconUrl: String, pathToConclusion: List[Reportable] = List(), reportDetails: ReportDetails = ReportDetails())(implicit ldp: CddDisplayProcessor) {
+  def CddDisplayProcessor = ldp
   override def toString = getClass.getSimpleName()
 }
 

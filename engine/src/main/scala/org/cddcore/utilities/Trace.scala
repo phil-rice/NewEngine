@@ -17,19 +17,19 @@ trait AnyTraceItem extends Reportable {
   def toResult[Result] = toTraceItem[Any, Any, Result, Any].result
   def toNodes[Main, Params, Result, Evidence] = toTraceItem[Main, Params, Result, Evidence].nodes
   def took: Long
-  def mainString(implicit ldp: LoggerDisplayProcessor) = toMain[Any] match {
+  def mainString(implicit ldp: CddDisplayProcessor) = toMain[Any] match {
     case titled: Titled => titled.titleString;
     case main => ldp(main)
   }
-  def shortToString(implicit ldp: LoggerDisplayProcessor) = s"TraceItem(${mainString(ldp)}"
-  def toString(indent: String)(implicit ldp: LoggerDisplayProcessor): String = {
+  def shortToString(implicit ldp: CddDisplayProcessor) = s"TraceItem(${mainString(ldp)}"
+  def toString(indent: String)(implicit ldp: CddDisplayProcessor): String = {
     s"${indent}TraceItem(${mainString(ldp)}, ${ldp(toParams)} => ${ldp(toResult)}\n${toNodes.map((x: AnyTraceItem) => x.toString(ldp, indent + "  "))}"
   }
-  def toString(implicit loggerDisplayProcesser: LoggerDisplayProcessor): String = toString(loggerDisplayProcesser, "")
+  def toString(implicit cdp: CddDisplayProcessor): String = toString(cdp, "")
 }
 
 object TraceItem {
-  def print[Main, Params, Result, Evidence](item: TraceItem[Main, Params, Result, Evidence])(implicit ldp: LoggerDisplayProcessor): String =
+  def print[Main, Params, Result, Evidence](item: TraceItem[Main, Params, Result, Evidence])(implicit ldp: CddDisplayProcessor): String =
     item.paths.foldLeft("")((acc, path) => {
       val i = path.head
       acc + "\n" + Strings.blanks(path.size) + path.head.mainString(ldp) + "(" + ldp(i.params).mkString(",") + ") => " + ldp(i.result) + " ... " + i.took
@@ -61,7 +61,7 @@ class TraceBuilder[Main, Params, Result, Evidence](val children: List[TraceItem[
   def copyWithNewItem(item: TraceItem[Main, Params, Result, Evidence]) = new TraceBuilder(children :+ item, ignore)
   def finished(result: Result, evidence: Option[Evidence] = None): TraceBuilder[Main, Params, Result, Evidence] = throw new IllegalStateException;
   def failed(exception: Exception, evidence: Option[Evidence] = None): TraceBuilder[Main, Params, Result, Evidence] = throw new IllegalStateException;
-  def shortToString(implicit ldp: LoggerDisplayProcessor) = s"${getClass.getSimpleName}(${children.map(_.shortToString)})"
+  def shortToString(implicit ldp: CddDisplayProcessor) = s"${getClass.getSimpleName}(${children.map(_.shortToString)})"
 }
 
 class NestedTraceBuilder[Main, Params, Result, Evidence](main: Main, val params: Params, children: List[TraceItem[Main, Params, Result, Evidence]], val parent: TraceBuilder[Main, Params, Result, Evidence]) extends TraceBuilder[Main, Params, Result, Evidence](children, parent.ignore) {
@@ -70,7 +70,7 @@ class NestedTraceBuilder[Main, Params, Result, Evidence](main: Main, val params:
   override def failed(exception: Exception, evidence: Option[Evidence]) =
     parent.copyWithNewItem(TraceItem(main, params, Left(exception), evidence, children, System.nanoTime() - startTime))
   override def copyWithNewItem(item: TraceItem[Main, Params, Result, Evidence]) = new NestedTraceBuilder(main, params, children :+ item, parent)
-  override def shortToString(implicit ldp: LoggerDisplayProcessor) = s"${getClass.getSimpleName}(parent=${parent.shortToString}, main=${ldp(main)}, ${children.map(_.shortToString)})"
+  override def shortToString(implicit ldp: CddDisplayProcessor) = s"${getClass.getSimpleName}(parent=${parent.shortToString}, main=${ldp(main)}, ${children.map(_.shortToString)})"
 }
 
 class IgnoreTraceBuilder[Main, Params, Result, Evidence](val parent: TraceBuilder[Main, Params, Result, Evidence]) extends TraceBuilder[Main, Params, Result, Evidence](List(), parent.ignore) {

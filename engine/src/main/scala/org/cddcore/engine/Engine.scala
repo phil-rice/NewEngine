@@ -6,7 +6,7 @@ import org.cddcore.utilities.Strings
 import org.cddcore.utilities.TraceBuilder
 import org.cddcore.utilities.CodeHolder
 import org.cddcore.engine.builder._
-import org.cddcore.utilities.LoggerDisplayProcessor
+import org.cddcore.utilities.CddDisplayProcessor
 import org.cddcore.utilities.ExceptionMap
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.Future
@@ -36,7 +36,7 @@ object EngineTools {
   implicit def toEngineTools[Params, BFn, R, RFn](e: Engine) = e.asInstanceOf[EngineTools[Params, BFn, R, RFn]]
 }
 
-trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] with WithLoggerDisplayProcessor {
+trait EngineTools[Params, BFn, R, RFn] extends Engine with TypedReportable[Params, BFn, R, RFn] with WithCddDisplayProcessor {
   def title = asRequirement.title
   def asRequirement: EngineRequirement[Params, BFn, R, RFn]
   def evaluator: EvaluateTree[Params, BFn, R, RFn]
@@ -56,7 +56,7 @@ trait DelegatedEngine[Params, BFn, R, RFn] extends EngineTools[Params, BFn, R, R
   def asRequirement = delegate.asRequirement
   def evaluator = delegate.evaluator
   def buildExceptions = delegate.buildExceptions
-  def ldp: LoggerDisplayProcessor = delegate.ldp
+  def ldp: CddDisplayProcessor = delegate.ldp
 }
 
 trait CachedEngine[Params, BFn, R, RFn, FullR] extends DelegatedEngine[Params, BFn, R, RFn] {
@@ -132,80 +132,80 @@ object EngineMonitor {
 
 }
 trait EngineMonitor {
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor)
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor)
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor)
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor)
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor)
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor)
 }
 
 class NoEngineMonitor extends EngineMonitor {
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) {}
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) {}
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) {}
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) {}
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) {}
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) {}
 }
 
 class PrintlnEngineMonitor extends EngineMonitor {
   var depth = new AtomicInteger(0)
   private val indent = Strings.blanks(depth.get * 2)
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) {
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) {
     println(Strings.oneLine(s"Calling:  $indent${e.titleString} with ${ldp(params)}"))
     depth.incrementAndGet()
   }
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) {
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) {
     depth.decrementAndGet()
     println(s"Finished:  $indent ---> ${ldp(result)}")
   }
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) {
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) {
     depth.decrementAndGet()
     println(Strings.oneLine(s"Failed:  $indent ---> ${ldp(exception)}"))
   }
 }
 
-class TraceEngineMonitor(implicit ldp: LoggerDisplayProcessor) extends EngineMonitor {
+class TraceEngineMonitor(implicit ldp: CddDisplayProcessor) extends EngineMonitor {
   var logging = true
   var traceBuilder = TraceBuilder[Engine, Any, Any, Conclusion[_, _, _, _]]()
   def log(prefix: String, stuff: => {}) = { stuff; if (logging) println(prefix + " " + Strings.oneLine(traceBuilder.shortToString)) }
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) =
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) =
     log("call", traceBuilder = traceBuilder.nest(e.asInstanceOf[Engine], params))
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) =
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) =
     log("finished", traceBuilder = traceBuilder.finished(result, conclusion))
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) =
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) =
     log("failed", traceBuilder = traceBuilder.failed(exception, conclusion))
   def trace = traceBuilder.children
 }
 
 class ProfileEngineMonitor extends EngineMonitor {
   val profiler = new SimpleProfiler[Engine]
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) = profiler.start(e)
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) = profiler.end(e)
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) = profiler.end(e)
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) = profiler.start(e)
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) = profiler.end(e)
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) = profiler.end(e)
 }
 
 class MultipleEngineMonitors(monitors: List[EngineMonitor]) extends EngineMonitor {
-  def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.call(e, params)
-  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.finished(e, conclusion, result)
-  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) = for (m <- monitors) m.failed(e, conclusion, exception)
+  def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) = for (m <- monitors) m.call(e, params)
+  def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) = for (m <- monitors) m.finished(e, conclusion, result)
+  def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) = for (m <- monitors) m.failed(e, conclusion, exception)
 }
 
 object Engine {
   var logging = ("true" == System.getenv("cdd.junit.log")) || false
   /** returns a builder for an engine that implements Function[P,R] */
-  def apply[P, R]()(implicit ldp: LoggerDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine1)(ldp)
+  def apply[P, R]()(implicit ldp: CddDisplayProcessor) = Builder1[P, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine1)(ldp)
   /** returns a builder for an engine that implements Function2[P1,P2,R] */
-  def apply[P1, P2, R]()(implicit ldp: LoggerDisplayProcessor) = Builder2[P1, P2, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine2)(ldp)
+  def apply[P1, P2, R]()(implicit ldp: CddDisplayProcessor) = Builder2[P1, P2, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine2)(ldp)
   /** returns a builder for an engine that implements Function3[P1,P2,P3,R] */
-  def apply[P1, P2, P3, R]()(implicit ldp: LoggerDisplayProcessor) = Builder3[P1, P2, P3, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine3)(ldp)
+  def apply[P1, P2, P3, R]()(implicit ldp: CddDisplayProcessor) = Builder3[P1, P2, P3, R, R](BuildEngine.initialNodes, ExceptionMap(), BuildEngine.builderEngine3)(ldp)
 
-  def folding[P, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: CddDisplayProcessor) =
     Builder1[P, R, FullR](BuildEngine.initialNodes[P, (P) => Boolean, R, (P) => R, FullR](initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine1[P, R, FullR])(ldp)
   def foldList[P, R] = folding[P, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
   def foldSet[P, R] = folding[P, R, Set[R]]({ _ + _ }, Set())
 
-  def folding[P1, P2, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P1, P2, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: CddDisplayProcessor) =
     Builder2[P1, P2, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine2[P1, P2, R, FullR])(ldp)
   def foldList[P1, P2, R] = folding[P1, P2, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
   def foldSet[P1, P2, R] = folding[P1, P2, R, Set[R]]({ _ + _ }, Set())
 
-  def folding[P1, P2, P3, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: LoggerDisplayProcessor) =
+  def folding[P1, P2, P3, R, FullR](foldingFn: (FullR, R) => FullR, initialValue: FullR)(implicit ldp: CddDisplayProcessor) =
     Builder3[P1, P2, P3, R, FullR](BuildEngine.initialNodes(initialValue, foldingFn), ExceptionMap(), BuildEngine.folderBuilderEngine3[P1, P2, P3, R, FullR])(ldp)
   def foldList[P1, P2, P3, R] = folding[P1, P2, P3, R, List[R]]((acc: List[R], v: R) => acc :+ v, List())
   def foldSet[P1, P2, P3, R] = folding[P1, P2, P3, R, Set[R]]({ _ + _ }, Set())
@@ -237,12 +237,12 @@ object Engine {
       defaultMonitor.set(oldMonitor)
     }
   }
-  def trace[X](fn: => X)(implicit ldp: LoggerDisplayProcessor) = {
+  def trace[X](fn: => X)(implicit ldp: CddDisplayProcessor) = {
     val tm = new TraceEngineMonitor
     val result = try { Right(withMonitor(tm, fn)) } catch { case e: Exception => Left(e) }
     (result, tm.trace)
   }
-  def traceNoException[X](fn: => X)(implicit ldp: LoggerDisplayProcessor) = {
+  def traceNoException[X](fn: => X)(implicit ldp: CddDisplayProcessor) = {
     trace(fn) match {
       case (Left(e), _) => throw new RuntimeException("Exception in trace", e)
       case (Right(r), trace) => (r, trace)

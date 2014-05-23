@@ -2,7 +2,7 @@ package org.cddcore.engine
 
 import org.cddcore.engine.builder.Conclusion
 import org.cddcore.engine.builder.FoldingEngine1
-import org.cddcore.utilities.LoggerDisplayProcessor
+import org.cddcore.utilities.CddDisplayProcessor
 import org.cddcore.utilities.TraceItem
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -17,11 +17,11 @@ class EngineMonitorTest extends AbstractTest {
 
   class EngineMonitorMemory extends EngineMonitor {
     private var list = List[String]()
-    def call[Params](e: Engine, params: Params)(implicit ldp: LoggerDisplayProcessor) =
+    def call[Params](e: Engine, params: Params)(implicit ldp: CddDisplayProcessor) =
       list = s"call ${e.titleString}" :: list
-    def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: LoggerDisplayProcessor) =
+    def finished[R](e: Engine, conclusion: Option[Conclusion[_, _, _, _]], result: R)(implicit ldp: CddDisplayProcessor) =
       list = s"finished ${e.titleString}" :: list
-    def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: LoggerDisplayProcessor) =
+    def failed(e: Engine, conclusion: Option[Conclusion[_, _, _, _]], exception: Exception)(implicit ldp: CddDisplayProcessor) =
       list = s"failed ${e.titleString}" :: list
     def memory = list.reverse
   }

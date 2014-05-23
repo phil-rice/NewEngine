@@ -11,17 +11,12 @@ trait Reportable {
 trait ReportableWithTemplate extends Reportable {
   val template: String
 }
-trait WithLoggerDisplayProcessor {
-  def ldp: LoggerDisplayProcessor
+trait WithCddDisplayProcessor {
+  def ldp: CddDisplayProcessor
 }
 
 trait ReportableWithoutUrl extends Reportable {
 
-}
-
-/** Classes implementing this are displayed using htmlDisplay, rather than toString when shown on a website, or in HTML pages.*/
-trait HtmlDisplay {
-  def htmlDisplay: String
 }
 
 object Reportable {
@@ -29,17 +24,17 @@ object Reportable {
   def nextTextOrder = count.getAndIncrement()
   def compare[R](expected: Either[Exception, R], actual: Either[Exception, R]) = {
     (expected, actual) match {
-      case (Left(le), Left(re)) => le.getClass==re.getClass//expected.getClass.isAssignableFrom(actual.getClass())
+      case (Left(le), Left(re)) => le.getClass == re.getClass //expected.getClass.isAssignableFrom(actual.getClass())
       case (Right(lr), Right(rr)) => lr == rr
       case _ => false
     }
   }
   def compareAllowingExceptionToBeMoreSpecific[R](expected: Either[Exception, R], actual: Either[Exception, R]) = {
-	  (expected, actual) match {
-	  case (Left(le), Left(re)) => expected.getClass.isAssignableFrom(actual.getClass())
-	  case (Right(lr), Right(rr)) => lr == rr
-	  case _ => false
-	  }
+    (expected, actual) match {
+      case (Left(le), Left(re)) => expected.getClass.isAssignableFrom(actual.getClass())
+      case (Right(lr), Right(rr)) => lr == rr
+      case _ => false
+    }
   }
 }
 object PathUtils {
@@ -256,7 +251,7 @@ case class Scenario[Params, BFn, R, RFn](
   val references: Set[Reference] = Set(),
   val assertions: List[CodeHolder[(Params, Either[Exception, R]) => Boolean]] = List(),
   val configurators: List[(Params) => Unit] = List(),
-  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor) extends BuilderNode[Params, BFn, R, RFn] {
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val cdp: CddDisplayProcessor) extends BuilderNode[Params, BFn, R, RFn] {
   def copyRequirement(title: Option[String] = title, description: Option[String] = description, priority: Option[Int] = priority, references: Set[Reference] = references) =
     new Scenario[Params, BFn, R, RFn](params, title, description, because, code, priority, expected, references, assertions, configurators, textOrder)
   def copyBuilderNode(expected: Option[Either[Exception, R]] = expected, code: Option[CodeHolder[RFn]] = code): BuilderNode[Params, BFn, R, RFn] =
@@ -266,23 +261,23 @@ case class Scenario[Params, BFn, R, RFn](
 
   def prettyPrintExpected: String = expected match {
     case Some(Left(e)) => "throws " + e.getClass
-    case Some(Right(v)) => ldp(v)
+    case Some(Right(v)) => cdp(v)
     case _ => "No expected"
   }
   def htmlPrintExpected: String = expected match {
     case Some(Left(e)) => "throws " + e.getClass
-    case Some(Right(v)) => ldp.html(v)
+    case Some(Right(v)) => cdp.html(v)
     case _ => "No expected"
   }
   def prettyPrintParams: String = params match {
-    case (p1, p2) => ldp(p1) + "," + ldp(p2)
-    case (p1, p2, p3) => ldp(p1) + "," + ldp(p2) + "," + ldp(p3)
-    case _ => ldp(params)
+    case (p1, p2, p3) => cdp(p1) + "," + cdp(p2) + "," + cdp(p3)
+    case (p1, p2) => cdp(p1) + "," + cdp(p2)
+    case _ => cdp(params)
   }
   def htmlPrintParams: String = params match {
-    case (p1, p2) => ldp.html(p1) + "," + ldp.html(p2)
-    case (p1, p2, p3) => ldp.html(p1) + "," + ldp.html(p2) + "," + ldp.html(p3)
-    case _ => ldp.html(params)
+    case (p1, p2, p3) => cdp.html(p1) + "," + cdp.html(p2) + "," + cdp.html(p3)
+    case (p1, p2) => cdp.html(p1) + "," + cdp.html(p2)
+    case _ => cdp.html(params)
   }
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
   def executeConfigurators = configurators.foreach((c) => c(params))

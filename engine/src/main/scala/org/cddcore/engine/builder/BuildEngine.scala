@@ -45,7 +45,7 @@ object BuildEngine {
 abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]](
   val defaultRoot: CodeHolder[RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
-  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: LoggerDisplayProcessor)
+  val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn])(implicit val ldp: CddDisplayProcessor)
   extends BuildEngineFromTests[Params, BFn, R, RFn, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)
@@ -53,8 +53,8 @@ abstract class SimpleBuildEngine[Params, BFn, R, RFn, E <: EngineTools[Params, B
 }
 
 trait BuildEngineFromTests[Params, BFn, R, RFn, E <: EngineTools[Params, BFn, R, RFn]] extends BuildEngine[Params, BFn, R, RFn, R, E] {
-  def constructEngine(asRequirement: EngineRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap, ldp: LoggerDisplayProcessor): E
-  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: LoggerDisplayProcessor) = {
+  def constructEngine(asRequirement: EngineRequirement[Params, BFn, R, RFn], dt: DecisionTree[Params, BFn, R, RFn], exceptionMap: ExceptionMap, ldp: CddDisplayProcessor): E
+  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: CddDisplayProcessor) = {
     requirement match {
       case ed: EngineDescription[Params, BFn, R, RFn] =>
         val (dt, exceptionMap, modifiedRequirement) = buildTree(ed, buildExceptions)
@@ -79,7 +79,7 @@ trait BuildEngine[Params, BFn, R, RFn, FullR, E <: EngineTools[Params, BFn, R, R
   val mc = evaluateTree.makeClosures
   val validator = evaluateTree.validator
 
-  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: LoggerDisplayProcessor): E
+  def buildEngine(requirement: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: CddDisplayProcessor): E
 
   protected def buildTree[ED <: BuilderNodeAndHolder[Params, BFn, R, RFn]](asRequirement: ED, buildExceptions: ExceptionMap): (DT, ExceptionMap, ED) = {
     val modifiedRequirements = builderWithModifyChildrenForBuild.modifyChildrenForBuild(asRequirement)

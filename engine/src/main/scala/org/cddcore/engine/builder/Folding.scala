@@ -10,10 +10,10 @@ trait BuildFoldingEngine[Params, BFn, R, RFn, FullR, F <: EngineTools[Params, BF
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
     foldingFn: (FullR, R) => FullR,
-    ldp: LoggerDisplayProcessor): F
+    ldp: CddDisplayProcessor): F
   def buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E]
 
-  def buildEngine(r: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: LoggerDisplayProcessor) = {
+  def buildEngine(r: EngineRequirement[Params, BFn, R, RFn], buildExceptions: ExceptionMap, ldp: CddDisplayProcessor) = {
     r match {
       case f: FoldingEngineDescription[Params, BFn, R, RFn, FullR] => {
         val initial = (List[EngineFromTests[Params, BFn, R, RFn]](), buildExceptions)
@@ -39,7 +39,7 @@ abstract class SimpleFoldingBuildEngine[Params, BFn, R, RFn, FullR, F <: EngineT
   val defaultRoot: CodeHolder[RFn],
   makeClosures: MakeClosures[Params, BFn, R, RFn],
   val expectedToCode: (Either[Exception, R]) => CodeHolder[RFn],
-  val buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E])(implicit val ldp: LoggerDisplayProcessor)
+  val buildChildEngine: BuildEngine[Params, BFn, R, RFn, R, E])(implicit val ldp: CddDisplayProcessor)
   extends BuildFoldingEngine[Params, BFn, R, RFn, FullR, F, E] {
   lazy val decisionTreeLens = new DecisionTreeLens[Params, BFn, R, RFn]
   lazy val evaluateTree = new SimpleEvaluateTree(makeClosures, decisionTreeLens, BuildEngine.validateScenario)

@@ -32,7 +32,7 @@ object Report {
   def html(report: Report, engine: Function3[RenderContext, List[Reportable], StartChildEndType, String], renderContext: RenderContext): String =
     Lists.traversableToStartChildEnd(report.reportPaths).foldLeft("") { case (html, (path, cse)) => html + engine(renderContext, path, cse) }
 
-  def htmlAndRenderedContext(title: Option[String], traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None)(implicit ldp: LoggerDisplayProcessor): (String, RenderContext) = {
+  def htmlAndRenderedContext(title: Option[String], traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None)(implicit ldp: CddDisplayProcessor): (String, RenderContext) = {
     val report = new TraceReport(title, traceItems, description)
     val urlMap = UrlMap() ++ report.urlMapPaths
     val iconUrl = Strings.url(urlMap.rootUrl, report.titleString, "")
@@ -40,7 +40,7 @@ object Report {
     (html(report, HtmlRenderer.traceReportSingleItemRenderer, renderContext), renderContext)
   }
 
-  def htmlFromTrace(title: String, traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None)(implicit ldp: LoggerDisplayProcessor): String =
+  def htmlFromTrace(title: String, traceItems: List[TraceItem[Engine, Any, Any, Conclusion[_, _, _, _]]], description: Option[String] = None)(implicit ldp: CddDisplayProcessor): String =
     htmlAndRenderedContext(Some(title), traceItems, description)._1
 
   def rendererFor(report: Report) =

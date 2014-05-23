@@ -7,7 +7,7 @@ import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.Handler
 import org.eclipse.jetty.server.handler.AbstractHandler
 import org.cddcore.engine._
-import org.cddcore.utilities.LoggerDisplayProcessor
+import org.cddcore.utilities.CddDisplayProcessor
 
 object WebServer {
   def defaultPort = {
@@ -20,13 +20,13 @@ object WebServer {
 
   def defaultPathHandlers = List(new FavIconHandler, new RootPathHandler, new PathHandler)
 
-  def apply(engines: List[Engine], title: String = "Engines and Documents", port: Int = defaultPort, handlers: List[CddPathHandler] = defaultPathHandlers)(implicit ldp: LoggerDisplayProcessor) =
+  def apply(engines: List[Engine], title: String = "Engines and Documents", port: Int = defaultPort, handlers: List[CddPathHandler] = defaultPathHandlers)(implicit ldp: CddDisplayProcessor) =
     new WebServer(port, new CddHandler(title, engines, handlers)(ldp))
 
-  def withPreHandlers(port: Int, engines: List[Engine], preHandlers: CddPathHandler*)(implicit ldp: LoggerDisplayProcessor): WebServer =
+  def withPreHandlers(port: Int, engines: List[Engine], preHandlers: CddPathHandler*)(implicit ldp: CddDisplayProcessor): WebServer =
     new WebServer(port, new CddHandler("Engines and Documents", engines, preHandlers.toList ::: defaultPathHandlers)(ldp))
 
-  def defaultCddHandler(engines: List[Engine])(implicit ldp: LoggerDisplayProcessor) = new CddHandler("Engines and Documents", engines, defaultPathHandlers)(ldp)
+  def defaultCddHandler(engines: List[Engine])(implicit ldp: CddDisplayProcessor) = new CddHandler("Engines and Documents", engines, defaultPathHandlers)(ldp)
 
 }
 

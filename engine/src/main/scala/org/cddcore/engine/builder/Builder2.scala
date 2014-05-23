@@ -76,7 +76,7 @@ object Builder2 {
 case class Builder2[P1, P2, R, FullR](
   nodes: List[BuilderNode[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]] = List(new EngineDescription[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R]),
   buildExceptions: ExceptionMap = new ExceptionMap(),
-  buildEngine: BuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R, FullR]])(implicit val ldp: LoggerDisplayProcessor)
+  buildEngine: BuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Engine2[P1, P2, R, FullR]])(implicit val ldp: CddDisplayProcessor)
   extends Builder[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR, Builder2[P1, P2, R, FullR], Engine2[P1, P2, R, FullR]] {
   def expectedToCode = buildEngine.expectedToCode
 
@@ -125,7 +125,7 @@ class FoldingBuildEngine2[P1, P2, R, FullR] extends SimpleFoldingBuildEngine[(P1
     exceptionMap: ExceptionMap,
     initialValue: CodeHolder[() => FullR],
     foldingFn: (FullR, R) => FullR,
-    ldp: LoggerDisplayProcessor): FoldingEngine2[P1, P2, R, FullR] =
+    ldp: CddDisplayProcessor): FoldingEngine2[P1, P2, R, FullR] =
     FoldingEngine2(requirement, engines, evaluateTree, exceptionMap, initialValue, foldingFn)(ldp)
 }
 case class SimpleBuildEngine2[P1, P2, R] extends SimpleBuildEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, Engine2[P1, P2, R, R]](
@@ -134,7 +134,7 @@ case class SimpleBuildEngine2[P1, P2, R] extends SimpleBuildEngine[(P1, P2), (P1
     requirement: EngineRequirement[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
     dt: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
     exceptionMap: ExceptionMap,
-    ldp: LoggerDisplayProcessor) =
+    ldp: CddDisplayProcessor) =
     Engine2FromTests(requirement, dt, evaluateTree, exceptionMap)(ldp)
 }
 
@@ -151,7 +151,7 @@ case class Engine2FromTests[P1, P2, R](
   tree: DecisionTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   evaluator: EvaluateTree[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R],
   buildExceptions: ExceptionMap,
-  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor)
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: CddDisplayProcessor)
   extends Engine2[P1, P2, R, R] with EngineFromTests[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R] with Function2[P1, P2, R] {
   def apply(p1: P1, p2: P2) = applyParams((p1, p2))
 }
@@ -163,7 +163,7 @@ case class FoldingEngine2[P1, P2, R, FullR](
   buildExceptions: ExceptionMap,
   initialValue: CodeHolder[() => FullR],
   foldingFn: (FullR, R) => FullR,
-  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: LoggerDisplayProcessor)
+  val textOrder: Int = Reportable.nextTextOrder)(implicit val ldp: CddDisplayProcessor)
   extends Engine2[P1, P2, R, FullR] with FoldingEngine[(P1, P2), (P1, P2) => Boolean, R, (P1, P2) => R, FullR] {
   def apply(p1: P1, p2: P2) = applyParams(p1, p2)
 }

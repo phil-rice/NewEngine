@@ -4,6 +4,7 @@ import scala.xml.NodeSeq
 import scala.xml.Elem
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.DateTime
+import org.cddcore.utilities.CddDisplayProcessor
 
 object Xml {
   type XmlFragment[T, A] = Fragment[Elem, NodeSeq, T, A]
@@ -94,22 +95,24 @@ trait XmlSituation extends Structure[Elem, NodeSeq] {
     getClass.getSimpleName() + s"(\n  ${fragmentsToString}\n${xmlsToString})"
   }
 
-  def htmlDisplay = s"<div class='xmlSituation'><span class='XmlTitle'>${getClass.getSimpleName}</span>" +
-    "<div class='xmlSituationBody'>" +
-    "<div class='xmlFound'><table>" +
-    findFragmentsToString(fragmentFields.fieldMap, (e) => e.mkString(","), (f, a) => raw"<tr><td>${f.getName}</td><td> $a</td></tr>") +
-    annotatedFieldsToString((name, value) => raw"<tr><td>$name</td><td> $value</td></tr>") +
-    "</table></div><!--xmlFound -->\n" +
-    //    "<div class='xmlFields'>" +
-    //    structuresToString(pathMap, (s) => {
-    //      val f = xmlFields.findFieldWithValue(s) match {
-    //        case Some(f) => f.getName
-    //        case _ => ""
-    //      }
-    //      "<div class='XmlTitle' title='" + Strings.htmlTooltipEscape(s.toString) + "'>" + Strings.htmlEscape(f) + "</div><!--XmlTitle'-->\n"
-    //    }, separator = "<br />") +
-    //    "</div><!--xmlFields -->\n" +
-    "</div><!--xmlSituationBody -->\n" +
-    "</div><!--xmlSituation -->\n"
+  def plain(cdp: CddDisplayProcessor) = toString
+  override def html(cdp: CddDisplayProcessor) =
+    s"<div class='xmlSituation'><span class='XmlTitle'>${getClass.getSimpleName}</span>" +
+      "<div class='xmlSituationBody'>" +
+      "<div class='xmlFound'><table>" +
+      findFragmentsToString(fragmentFields.fieldMap, (e) => e.mkString(","), (f, a) => raw"<tr><td>${f.getName}</td><td> $a</td></tr>") +
+      annotatedFieldsToString((name, value) => raw"<tr><td>$name</td><td> $value</td></tr>") +
+      "</table></div><!--xmlFound -->\n" +
+      //    "<div class='xmlFields'>" +
+      //    structuresToString(pathMap, (s) => {
+      //      val f = xmlFields.findFieldWithValue(s) match {
+      //        case Some(f) => f.getName
+      //        case _ => ""
+      //      }
+      //      "<div class='XmlTitle' title='" + Strings.htmlTooltipEscape(s.toString) + "'>" + Strings.htmlEscape(f) + "</div><!--XmlTitle'-->\n"
+      //    }, separator = "<br />") +
+      //    "</div><!--xmlFields -->\n" +
+      "</div><!--xmlSituationBody -->\n" +
+      "</div><!--xmlSituation -->\n"
 
 }

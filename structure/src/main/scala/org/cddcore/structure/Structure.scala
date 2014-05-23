@@ -125,7 +125,7 @@ object FieldSetPrinter {
   }
 }
 
-trait Structure[S, Result] extends HtmlDisplay {
+trait Structure[S, Result] extends CddDisplay {
   val annotatedFields = new AnnotatedFieldSet(this, classOf[Display])
   
   

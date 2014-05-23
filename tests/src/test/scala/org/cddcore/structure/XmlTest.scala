@@ -6,7 +6,7 @@ import scala.xml.Elem
 import org.cddcore.engine.AbstractTest
 
 class TestXmlSituation(val xml: Elem) extends XmlSituation {
-
+ 
 }
 trait XmlTestMother {
   import Xml._
