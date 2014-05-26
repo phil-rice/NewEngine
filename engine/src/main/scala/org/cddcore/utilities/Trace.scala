@@ -9,7 +9,7 @@ object StartChildEndType extends Enumeration {
 }
 import StartChildEndType._
 
-trait AnyTraceItem extends Reportable {
+trait AnyTraceItem extends Reportable with CddDisplay {
   def toTraceItem[Main, Params, Result, Evidence] = this.asInstanceOf[TraceItem[Main, Params, Result, Evidence]]
   def toMain[Main] = toTraceItem[Main, Any, Any, Any].main
   def toParams[Params] = toTraceItem[Any, Params, Any, Any].params
@@ -17,22 +17,19 @@ trait AnyTraceItem extends Reportable {
   def toResult[Result] = toTraceItem[Any, Any, Result, Any].result
   def toNodes[Main, Params, Result, Evidence] = toTraceItem[Main, Params, Result, Evidence].nodes
   def took: Long
-  def mainString(implicit ldp: CddDisplayProcessor) = toMain[Any] match {
-    case titled: Titled => titled.titleString;
-    case main => ldp(main)
-  }
-  def shortToString(implicit ldp: CddDisplayProcessor) = s"TraceItem(${mainString(ldp)}"
+  def shortToString(implicit ldp: CddDisplayProcessor) = s"TraceItem(${ldp(toMain)}"
   def toString(indent: String)(implicit ldp: CddDisplayProcessor): String = {
-    s"${indent}TraceItem(${mainString(ldp)}, ${ldp(toParams)} => ${ldp(toResult)}\n${toNodes.map((x: AnyTraceItem) => x.toString(ldp, indent + "  "))}"
+    s"${indent}TraceItem(${ldp(toMain)}, ${ldp(toParams)} => ${ldp(toResult)}\n${toNodes.map((x: AnyTraceItem) => x.toString(ldp, indent + "  "))}"
   }
   def toString(implicit cdp: CddDisplayProcessor): String = toString(cdp, "")
+  def plain(cdp: CddDisplayProcessor) = toString(cdp)
 }
 
 object TraceItem {
   def print[Main, Params, Result, Evidence](item: TraceItem[Main, Params, Result, Evidence])(implicit ldp: CddDisplayProcessor): String =
     item.paths.foldLeft("")((acc, path) => {
       val i = path.head
-      acc + "\n" + Strings.blanks(path.size) + path.head.mainString(ldp) + "(" + ldp(i.params).mkString(",") + ") => " + ldp(i.result) + " ... " + i.took
+      acc + "\n" + Strings.blanks(path.size) + ldp(path.head.toMain) + "(" + ldp(i.params).mkString(",") + ") => " + ldp(i.result) + " ... " + i.took
     })
 }
 

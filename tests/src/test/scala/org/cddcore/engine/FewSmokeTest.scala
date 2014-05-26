@@ -136,17 +136,4 @@ class FewSmokeTest extends AbstractTest {
     assertEquals("fifteen - all", engine(1, 1, 1))
   }
 
-  "A scenario" should "use the HtmlDisplay in prettyPrintParams if it exists" in {
-    case class ParamsWithHtmlDisplay(value: String) extends CddDisplay {
-      def plain(cdp: CddDisplayProcessor) = s"plain_${value}"
-      override def html(cdp: CddDisplayProcessor) = s"html_${value}"
-    }
-
-    val e = Engine[ParamsWithHtmlDisplay, String]().
-      scenario(ParamsWithHtmlDisplay("A")).expected("A").code((x) => x.value).build
-    val s = e.asRequirement.scenarios(0)
-    assertEquals("plain_A", s.prettyPrintParams)
-    assertEquals("html_A", s.htmlPrintParams)
-  }
-
 }

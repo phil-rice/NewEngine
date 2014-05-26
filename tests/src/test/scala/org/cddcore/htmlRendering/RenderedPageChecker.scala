@@ -77,7 +77,7 @@ trait HtmlRenderedChecker extends HtmlChecker {
   val renderContext: RenderContext
 
   def urlMap: UrlMap = renderContext.urlMap
-  def ldp = renderContext.CddDisplayProcessor
+  def cdp = renderContext.cdp
   val reportDiv = onlyDivWith("report");
 
   def checkTopLine(expectedTitle: String) {
@@ -164,7 +164,7 @@ trait HtmlRenderedChecker extends HtmlChecker {
     val trs = table \ "tr"
     val paramTd = findTdInRowWithTitle(table, "Parameter")
     val paramText = paramTd.get.text
-    assertEquals(paramText, test.prettyPrintParams)
+    assertEquals(paramText, cdp(test.params))
 
     val expectedTd = findTdInRowWithTitle(table, "Expected")
     assertTextEquals(test.prettyPrintExpected, expectedTd.get)

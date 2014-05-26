@@ -269,16 +269,7 @@ case class Scenario[Params, BFn, R, RFn](
     case Some(Right(v)) => cdp.html(v)
     case _ => "No expected"
   }
-  def prettyPrintParams: String = params match {
-    case (p1, p2, p3) => cdp(p1) + "," + cdp(p2) + "," + cdp(p3)
-    case (p1, p2) => cdp(p1) + "," + cdp(p2)
-    case _ => cdp(params)
-  }
-  def htmlPrintParams: String = params match {
-    case (p1, p2, p3) => cdp.html(p1) + "," + cdp.html(p2) + "," + cdp.html(p3)
-    case (p1, p2) => cdp.html(p1) + "," + cdp.html(p2)
-    case _ => cdp.html(params)
-  }
+
   def actualCode(expectedToCode: (Either[Exception, R]) => CodeHolder[RFn]) = code.getOrElse(expectedToCode(expected.getOrElse(throw NoExpectedException(this))))
   def executeConfigurators = configurators.foreach((c) => c(params))
   override def hashCode = (title.hashCode() + params.hashCode()) / 2

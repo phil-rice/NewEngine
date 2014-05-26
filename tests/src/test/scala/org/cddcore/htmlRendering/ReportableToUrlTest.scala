@@ -8,17 +8,16 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import ReportableHelper._
 import org.cddcore.utilities.NestedHolder
+import org.cddcore.utilities.KeyedMapException
+import java.util.NoSuchElementException
 
 @RunWith(classOf[JUnitRunner])
 class ReportableToUrlTest extends AbstractTest with SomeHoldersForTest with ReportableTestFramework {
 
   val emptyR2U = new SimpleReportableToUrl("rootUrl")
 
-  def checkNoSuchElementException(e: RuntimeException) {
-    assert { e.getCause.isInstanceOf[NoSuchElementException] }
-  }
   "An empty UrlMap" should "throw exceptions or return none if things aren't found in it" in {
-    checkNoSuchElementException(evaluating { emptyR2U(en1) } should produce[RuntimeException])
+    evaluating { emptyR2U(en1) } should produce[KeyedMapException]
     assertEquals(None, emptyR2U.get(en1))
     evaluating { emptyR2U("") } should produce[NoSuchElementException]
     assertEquals(None, emptyR2U.get(""))

@@ -17,10 +17,13 @@ object KeyLike {
   implicit object ReportableLike extends KeyLike[Reportable] { def apply(r: Reportable): Int = r.textOrder }
 }
 
+class KeyedMapException(msg: String, val key: Any, val keyAsInt: Int, val map: KeyedMap[_], cause: Exception) extends Exception(msg, cause)
 class KeyedMap[V](val map: Map[Int, V] = Map[Int, V]()) {
   def wrap[X](stuff: => X, error: (Exception) => Exception): X = try { stuff } catch { case e: Exception => throw error(e) }
-  def wrapKey[X](key: Any, stuff: => X): X = try { stuff } catch { case e: Exception => 
-    throw new RuntimeException(s"Key was: $key", e) }
+  def wrapKey[T, X](key: T, stuff: => X)(implicit conv: KeyLike[T]): X = try { stuff } catch {
+    case e: Exception =>
+      throw new KeyedMapException(s"Key [${conv(key)}] was: $key\nMap:\n${map.mkString("\n")}", key, conv(key), this, e)
+  }
   def apply[T](t: T)(implicit conv: KeyLike[T]) = wrapKey(t, map(conv(t)))
   def get[T](t: T)(implicit conv: KeyLike[T]) = wrapKey(t, map.get(conv(t)))
   def +[T](kv: (T, V))(implicit conv: KeyLike[T]) = kv match { case (t, v) => wrapKey(t, new KeyedMap[V](map + (conv(t) -> v))) }

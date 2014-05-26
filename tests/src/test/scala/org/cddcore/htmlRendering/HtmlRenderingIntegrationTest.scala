@@ -34,7 +34,7 @@ class HtmlRenderingIntegrationTest extends AbstractTest with ExampleWebSiteEngin
     val item = actualFoldingTI
     val x = urlMap.get(item)
 
-    //    HtmlRenderer.titleAndIcon(rc, actualFoldingTI)
+        HtmlRenderer.titleAndIcon(rc, actualFoldingTI)
     val html = Report.htmlFromTrace("", trace)
 //    println(html)
   }
