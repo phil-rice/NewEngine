@@ -111,7 +111,7 @@ class ReportOrchestrator(rootUrl: String, title: String, engines: List[Engine], 
         val html = Report.html(report, renderer, newRenderContext)
         reportWriter.print(url, Some(r), html)
       }
-    }, (e) => { System.err.println("Failed in make report"); e.printStackTrace; if (e.getCause!=null) {System.err.println("Cause") ;e.getCause().printStackTrace; }})
+    }, (e) => { System.err.println("Failed in make report"); e.printStackTrace; if (e.getCause != null) { System.err.println("Cause"); e.getCause().printStackTrace; } })
 
   def pathToConclusion[Params, BFn, R, RFn](path: List[Reportable]): List[Reportable] = {
     def engineFromTestsFor(ed: EngineDescription[Params, BFn, R, RFn]) = {
@@ -211,17 +211,26 @@ case class TraceReport(title: Option[String],
       case path @ (ti: TraceItem[_, _, _, _]) :: tail =>
         path :: ((ti.main: @unchecked) match {
           case f: FoldingEngine[_, _, _, _, _] => List()
-          case e: EngineFromTests[_, _, _, _] => e.asRequirement.requirementsIncludingTree(path)
+          case e: EngineFromTests[_, _, _, _] =>  e.tree.treePathsWithElseClause(path)
         })
     }
-    thisPath :: result
+        thisPath :: result
   }
-  val eds = traceItems.map(_.main).collect {
-    case e: FoldingEngine[_, _, _, _, _] => e.asRequirement
-    case e: EngineFromTests[_, _, _, _] => e.asRequirement
-  }.toSet.toList
+  def edsInTraceItem[Main, Params, Result, Evidence](traceItem: TraceItem[Main, Params, Result, Evidence]): List[EngineRequirement[_, _, _, _]] = {
+    val head = traceItem.main match {
+      case e: FoldingEngine[_, _, _, _, _] => e.asRequirement
+      case e: EngineFromTests[_, _, _, _] => e.asRequirement
+    }
+    val tail = traceItem.nodes.flatMap(edsInTraceItem(_)).toList
+    head :: tail
+  }
 
-  override val urlMapPaths = eds.flatMap(_.pathsIncludingTreeAndEngine(List())) ::: traceItems.flatMap((traceItem) => traceItem.pathsIncludingSelf)
+  val eds = traceItems.flatMap(edsInTraceItem(_)).toList.removeDuplicates
+  val feds: List[NestedHolder[Reportable]] = eds.collect { case fed: FoldingEngineDescription[_, _, _, _, _] => fed.asInstanceOf[NestedHolder[Reportable]] }
+  val childEngines = feds.flatMap((fed) => fed.nodes.toSet)
+  val edsWithoutChildEngines = eds.filter(!childEngines.contains(_))
+
+  override val urlMapPaths = edsWithoutChildEngines.flatMap(_.pathsIncludingTreeAndEngine(List())) ::: traceItems.flatMap((traceItem) => traceItem.pathsIncludingSelf)
 }
 
 /** A reportable with a wrapper is used in the reports when making a projection of an original report. This allows the correct urls to be determined */
