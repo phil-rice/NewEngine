@@ -48,7 +48,8 @@ object CddBuild extends Build {
     retrieveManaged := false,
     scalaVersion := "2.10.4",
     EclipseKeys.withSource := true,
-    resolvers += Classpaths.typesafeResolver)
+    resolvers += Classpaths.typesafeResolver,
+	resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/")
 	
 	
 
